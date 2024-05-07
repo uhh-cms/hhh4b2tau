@@ -100,3 +100,26 @@ def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = self[muon_weights](events, **kwargs)
 
     return events
+
+@producer(
+    uses={
+        features, category_ids, normalization_weights, deterministic_seeds,
+    },
+    produces={
+        features, category_ids, normalization_weights, deterministic_seeds,
+    },
+)
+def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    events = self[normalization_weights](events, **kwargs)
+    # features
+    events = self[features](events, **kwargs)
+
+    # category ids
+    events = self[category_ids](events, **kwargs)
+
+    # deterministic seeds
+    events = self[deterministic_seeds](events, **kwargs)
+
+
+    return events

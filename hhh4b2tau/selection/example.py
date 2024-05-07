@@ -121,7 +121,7 @@ def example(
 
     # create process ids
     events = self[process_ids](events, **kwargs)
-
+    
     # add the mc weight
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)
@@ -154,6 +154,76 @@ def example(
                 "mask_fn": (lambda v: results.x.n_jets == v),
             },
         }
+    events, results = self[increment_stats](
+        events,
+        results,
+        stats,
+        weight_map=weight_map,
+        group_map=group_map,
+        **kwargs,
+    )
+
+    return events, results
+
+
+@selector(
+    uses={
+        # selectors / producers called within _this_ selector
+        mc_weight, cutflow_features, process_ids, muon_selection, jet_selection,
+        increment_stats,
+    },
+    produces={
+        # selectors / producers whose newly created columns should be kept
+        mc_weight, cutflow_features, process_ids,
+    },
+    exposed=True,
+)
+def empty(
+    self: Selector,
+    events: ak.Array,
+    stats: defaultdict,
+    **kwargs,
+) -> tuple[ak.Array, SelectionResult]:
+    # prepare the selection results that are updated at every step
+    results = SelectionResult(event=ak.Array(np.ones(len(events), dtype=np.bool_)))
+
+
+
+    # create process ids
+    events = self[process_ids](events, **kwargs)
+   
+
+    # add the mc weight
+    if self.dataset_inst.is_mc:
+        events = self[mc_weight](events, **kwargs)
+
+    # increment stats
+    weight_map = {
+        "num_events": Ellipsis,
+        "num_events_selected": results.event,
+    }
+    group_map = {}
+    if self.dataset_inst.is_mc:
+        weight_map = {
+            **weight_map,
+            # mc weight for all events
+            "sum_mc_weight": (events.mc_weight, Ellipsis),
+            "sum_mc_weight_selected": (events.mc_weight, results.event),
+        }
+        group_map = {
+            # per process
+            "process": {
+                "values": events.process_id,
+                "mask_fn": (lambda v: events.process_id == v),
+            },
+        }
+        """
+            # per jet multiplicity
+              "njet": {
+                "values": results.x.n_jets,
+                "mask_fn": (lambda v: results.x.n_jets == v),
+            }, """
+        
     events, results = self[increment_stats](
         events,
         results,

@@ -43,7 +43,7 @@ def add_variables(
         expression="Jet.pt",
         binning=(40, 0.0, 400.0),
         unit="GeV",
-        x_title=r"$p_{T} of all jets$",
+        x_title=r"$p_{T}$ of all jets",
     )
     # pt of the first jet in every event
     cfg.add_variable(
@@ -83,4 +83,50 @@ def add_variables(
         binning=(40, 0.0, 400.0),
         unit="GeV",
         x_title=r"Jet 1 $p_{T}$",
+    )
+ # add new variables
+
+    cfg.add_variable(
+        name="jet_phi",
+        expression="Jet.phi",
+        null_value=EMPTY_FLOAT,
+        binning=(30, -3.14, 3.14),
+        x_title=r"Jets $\phi$",
+    )
+    cfg.add_variable(
+        name="jet_delta_phi",
+        null_value=EMPTY_FLOAT,
+        binning=(30, -3.14, 3.14),
+        x_title=r"Jets $\Delta\phi_{1,2}$",
+    )
+
+    cfg.add_variable(
+        name="jet_delta_r",
+        null_value=EMPTY_FLOAT,
+        binning=(30, 0, 6),
+        x_title=r"Jets $\Delta R_{1,2}$",
+    )
+
+    cfg.add_variable(
+        name="jet_delta_r13",
+        null_value=EMPTY_FLOAT,
+        binning=(30, 0, 6),
+        x_title=r"Jets $\Delta R_{1,3}$",
+    )
+
+
+    cfg.add_variable(
+        name="ele_eta",
+        expression="Electron.eta",
+        null_value=EMPTY_FLOAT,
+        binning=(30, -3.0, 3.0),
+        x_title=r"Electrons $\eta$",
+    )
+
+    cfg.add_variable(
+        name="mtaus",
+        binning=(40, 0.0, 400.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{\tau\tau}^{gen}$",
     )

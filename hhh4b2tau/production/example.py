@@ -11,9 +11,15 @@ from columnflow.production.normalization import normalization_weights
 from columnflow.production.cms.seeds import deterministic_seeds
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.cms.muon import muon_weights
+from columnflow.production.cms.electron import electron_weights
 from columnflow.selection.util import create_collections_from_masks
 from columnflow.util import maybe_import
 from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
+
+# my own variables
+from hhh4b2tau.production.newvariables import jet_angle_difference
+from hhh4b2tau.production.newvariables import h_decay_invariant_mass
+
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -58,7 +64,9 @@ def cutflow_features(
         events = self[mc_weight](events, **kwargs)
 
     # apply object masks and create new collections
-    reduced_events = create_collections_from_masks(events, object_masks)
+    reduced_events = events
+    if object_masks:
+        reduced_events = create_collections_from_masks(events, object_masks)
 
     # create category ids per event and add categories back to the
     events = self[category_ids](reduced_events, target_events=events, **kwargs)
@@ -103,10 +111,10 @@ def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @producer(
     uses={
-        features, category_ids, normalization_weights, deterministic_seeds,
+        features, category_ids, normalization_weights, deterministic_seeds, jet_angle_difference, h_decay_invariant_mass,
     },
     produces={
-        features, category_ids, normalization_weights, deterministic_seeds,
+        features, category_ids, normalization_weights, deterministic_seeds, jet_angle_difference, h_decay_invariant_mass,
     },
 )
 def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -121,5 +129,10 @@ def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # deterministic seeds
     events = self[deterministic_seeds](events, **kwargs)
 
+    
+
+    # adding new variables
+    events = self[jet_angle_difference](events, **kwargs)
+    events = self[h_decay_invariant_mass](events, **kwargs)
 
     return events

@@ -169,7 +169,8 @@ def example(
 @selector(
     uses={
         # selectors / producers called within _this_ selector
-        mc_weight, cutflow_features, process_ids, muon_selection, jet_selection,
+        mc_weight, cutflow_features, process_ids,
+        "Jet.pt",
         increment_stats,
     },
     produces={
@@ -196,6 +197,8 @@ def empty(
     # add the mc weight
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)
+
+    #
 
     # increment stats
     weight_map = {
@@ -233,4 +236,12 @@ def empty(
         **kwargs,
     )
 
+    # sort jets
+    results.objects.update(
+        {
+            "Jet": {
+                "Jet": sorted_indices_from_mask(ak.ones_like(events.Jet.pt, dtype=bool), events.Jet.pt, ascending=False),
+            },
+        },
+    )
     return events, results

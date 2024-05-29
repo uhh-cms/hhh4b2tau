@@ -24,7 +24,8 @@ ak = maybe_import("awkward")
     # produces={"gen_higgs_decay.*", "z_pion_neg", "z_pion_pos", "z_kaon_neg", "z_kaon_pos", "pion_neg.*", "pion_pos", "pion_neg_E", "pion_pos_E"},
     produces=({
         optional(f"{field}.{var}")
-        for field in ("gen_h_to_b", "gen_b_from_h", "gen_h_to_tau", "gen_tau_from_h")
+        for field in ("gen_h_to_b", "gen_b_from_h", "gen_h_to_tau", "gen_tau_from_h", "gen_w_from_tau", "gen_nu_from_tau", "gen_tau_to_w", "gen_tau_to_nu",
+)
         for var in ('pt', 'eta', 'phi', 'mass', 'pdgId')
     }),
 )
@@ -117,10 +118,16 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
 
         return events, relevant_mother_idx, relevant_children
 
-    events, h_idx, h_b_particles = get_decay_idx(events, mother_id=25, children_id=5, children_output_name="gen_b_from_h", mother_output_name='gen_h_to_b')
-    events, h_tau_idx, h_tau_particles = get_decay_idx(events, mother_id=25, children_id=15, children_output_name="gen_tau_from_h", mother_output_name='gen_h_to_tau')
-    """ from IPython import embed
-    embed(header="after get_decay_idx") """
+    events, h_b_idx, h_b_particles = get_decay_idx(events, mother_id=25, children_id=5, children_output_name="gen_b_from_h", mother_output_name="gen_h_to_b")
+    events, h_tau_idx, h_tau_particles = get_decay_idx(events, mother_id=25, children_id=15, children_output_name="gen_tau_from_h", mother_output_name="gen_h_to_tau")
+    events, tau_w_idx, tau_w_particles = get_decay_idx(events, mother_id=15, children_id=24, children_output_name="gen_w_from_tau", mother_output_name="gen_tau_to_w")
+    events, tau_nu_idx, tau_nu_particles = get_decay_idx(events, mother_id=15, children_id=16, children_output_name="gen_nu_from_tau", mother_output_name="gen_tau_to_nu")
+    
+    
+    # from IPython import embed
+    # embed(header="after get_decay_idx")
+
+
     # get b's
     b = events.GenPart[abs_id == 5]
     b = b[b.hasFlags("isFirstCopy", "fromHardProcess")]
@@ -161,18 +168,32 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
     h_b = b.parent
     h_b = ak.drop_none(h_b, behavior=h_b.behavior)
     
+    # # get nu's
+    # nu = ak.firsts(tau_children[abs_tau_children_id == 16], axis=2)
+    # # remove optional
+    # nu = ak.drop_none(nu, behavior=nu.behavior)
+
     # get nu's
-    nu = ak.firsts(tau_children[abs_tau_children_id == 16], axis=2)
-    # remove optional
+    nu = events.GenPart[abs_id == 16]
+    nu = b[b.hasFlags("isFirstCopy", "fromHardProcess")]
+    # remove optional (first remove nones, then update the type)
     nu = ak.drop_none(nu, behavior=nu.behavior)
 
     # from IPython import embed
     # embed(header="in gen_higgs_decay_products after neutrino identification")
     
+    # # get w's
+    # w = ak.firsts(tau_children[abs_tau_children_id == 24], axis=2)
+    # # remove optional
+    # w = ak.drop_none(w, behavior=w.behavior)
+
+
     # get w's
-#     w = ak.firsts(tau_children[abs_tau_children_id == 24], axis=2)
-#     # remove optional
-#     w = ak.drop_none(w, behavior=w.behavior)
+    w = events.GenPart[abs_id == 24]
+    w = w[w.hasFlags("isFirstCopy", "fromHardProcess")]
+    # remove optional (first remove nones, then update the type)
+    w = ak.drop_none(w, behavior=w.behavior)
+
 
 #     # decays might also be effective into a variable number of mesons -> add them
 #     w_children = tau_children[abs_tau_children_id != 16]

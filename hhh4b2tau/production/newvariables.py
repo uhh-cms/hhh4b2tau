@@ -86,14 +86,14 @@ def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array
         {
             
             f"{field}.{var}"
-            for field in ("gen_h_to_b", "gen_b_from_h", "gen_h_to_tau", "gen_tau_from_h", "gen_w_from_tau", "gen_nu_from_tau", )
+            for field in ("gen_h_to_b", "gen_b_from_h", "gen_h_to_tau", "gen_tau_from_h", "gen_nu_from_tau", )
             for var in ('pt', 'eta', 'phi', 'mass', 'pdgId')
         } | {
             attach_coffea_behavior,
         }
     ),
     produces={
-        "mtaus", "mbb", "mhhh", "mnuw"
+        "mtaus", "mbb", "mhhh", #"mlnu",
     },
 )
 def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -112,13 +112,12 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
             "gen_b_from_h", 
             "gen_h_to_tau", 
             "gen_tau_from_h",
-            "gen_w_from_tau",
             "gen_nu_from_tau"
             ]},
         **kwargs,
     )
 
-    from IPython import embed; embed()
+    # from IPython import embed; embed()
 
     # four-vector sum of first four elements of each
     # tau collection (possibly fewer)
@@ -126,14 +125,14 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     ditau = events.gen_tau_from_h.sum(axis=-1)
     dib = events.gen_b_from_h.sum(axis=-1)
     trih = events.gen_h_to_tau.sum(axis=-1) + events.gen_h_to_b.sum(axis=-1)
-    dinuw = events.gen_nu_from_tau.sum(axis=1) + events.gen_w_from_tau.sum(axis=1)
+    # dinuw = events.gen_nu_from_tau.sum(axis=1) + events.gen_w_from_tau.sum(axis=1)
 
 
     # total number of taus per event
     n_taus = ak.num(events.gen_tau_from_h, axis=-1)
     n_bs = ak.num(events.gen_b_from_h, axis=-1)
     n_hs = ak.num(events.gen_h_to_tau, axis=-1) + ak.num(events.gen_h_to_b, axis=-1)
-    n_nuws = ak.num(events.gen_nu_from_tau, axis=-1) + ak.num(events.gen_w_from_tau, axis=-1)
+    # n_nuws = ak.num(events.gen_nu_from_tau, axis=-1) + ak.num(events.gen_w_from_tau, axis=-1)
 
     # four-lepton mass, taking into account only events with at least four leptons,
     # and otherwise substituting a predefined EMPTY_FLOAT value
@@ -180,11 +179,11 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         h_mass,
     )
 
-    events = set_ak_column_f32(
-        events,
-        "mnuw",
-        nuw_mass,
-    )
+    # events = set_ak_column_f32(
+    #     events,
+    #     "mlnu",
+    #     nuw_mass,
+    # )
 
     # return the events
     return events

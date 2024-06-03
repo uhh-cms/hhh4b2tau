@@ -147,10 +147,10 @@ def add_variables(
         x_title=r"$m_{HHH}^{gen}$",
     )
 
-    cfg.add_variable(
-        name="mnuw",
-        binning=(40, 0.0, 400.0),
-        null_value=EMPTY_FLOAT,
-        unit="GeV",
-        x_title=r"$m_{W\nu}^{gen}$",
-    )
+    # cfg.add_variable(
+    #     name="mlnu",
+    #     binning=(40, 0.0, 400.0),
+    #     null_value=EMPTY_FLOAT,
+    #     unit="GeV",
+    #     x_title=r"$m_{l\nu}^{gen}$",
+    # )

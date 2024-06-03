@@ -23,11 +23,23 @@ ak = maybe_import("awkward")
         ),
     # produces={"gen_higgs_decay.*", "z_pion_neg", "z_pion_pos", "z_kaon_neg", "z_kaon_pos", "pion_neg.*", "pion_pos", "pion_neg_E", "pion_pos_E"},
     produces=({
-        optional(f"{field}.{var}")
-        for field in ("gen_h_to_b", "gen_b_from_h", "gen_h_to_tau", "gen_tau_from_h", "gen_w_from_tau", "gen_nu_from_tau", "gen_tau_to_w", "gen_tau_to_nu",
-)
+
+        optional(f"gen_{mother}_to_{child}.{var}")
+        # optional(f"gen_{child}_from_{mother}.{var}")
+        for mother in ('h', 'tau', )
+        for child in ('b', 'tau', 'nu', )
+
+        # optional(f"{field}.{var}")
+        # for field in ("gen_h_to_b", "gen_b_from_h", "gen_h_to_tau", "gen_tau_from_h", "gen_w_from_tau", "gen_nu_from_tau", "gen_tau_to_w", "gen_tau_to_nu",)
+
         for var in ('pt', 'eta', 'phi', 'mass', 'pdgId')
-    }),
+    } |
+    {   optional(f"gen_{child}_from_{mother}.{var}")
+        for mother in ('h', 'tau', )
+        for child in ('b', 'tau', 'nu', )
+        for var in ('pt', 'eta', 'phi', 'mass', 'pdgId')}
+    
+    ),
 )
 def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -51,17 +63,17 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
             ...
         ]
     """
-    n = 19362
+    # n = 19362
 
-    # find hard h boson
+    # # find hard h boson
     abs_id = abs(events.GenPart.pdgId)
-    h = events.GenPart[abs_id == 25]
-    h = h[h.hasFlags("isFirstCopy", "fromHardProcess")]
-    h = ak.drop_none(h, behavior=h.behavior)
+    # h = events.GenPart[abs_id == 25]
+    # h = h[h.hasFlags("isFirstCopy", "fromHardProcess")]
+    # h = ak.drop_none(h, behavior=h.behavior)
 
-    # distinct higgs boson children (b's and tau's)
-    h_children = h.distinctChildrenDeep
-    abs_children_id = abs(h_children.pdgId)
+    # # distinct higgs boson children (b's and tau's)
+    # h_children = h.distinctChildrenDeep
+    # abs_children_id = abs(h_children.pdgId)
 
     def get_decay_idx(
         events: ak.Array,
@@ -120,79 +132,82 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
 
     events, h_b_idx, h_b_particles = get_decay_idx(events, mother_id=25, children_id=5, children_output_name="gen_b_from_h", mother_output_name="gen_h_to_b")
     events, h_tau_idx, h_tau_particles = get_decay_idx(events, mother_id=25, children_id=15, children_output_name="gen_tau_from_h", mother_output_name="gen_h_to_tau")
-    events, tau_w_idx, tau_w_particles = get_decay_idx(events, mother_id=15, children_id=24, children_output_name="gen_w_from_tau", mother_output_name="gen_tau_to_w")
-    events, tau_nu_idx, tau_nu_particles = get_decay_idx(events, mother_id=15, children_id=16, children_output_name="gen_nu_from_tau", mother_output_name="gen_tau_to_nu")
+    events, tau_nu_idx, tau_nu_particles = get_decay_idx(events, mother_id=15, children_id=16, children_output_name="gen_nu_from_tau", mother_output_name="gen_tau_to_nu", mother_gen_flags=["isLastCopy"], children_gen_flags=["isTauDecayProduct"])
     
     
-    # from IPython import embed
-    # embed(header="after get_decay_idx")
+    from IPython import embed
+    embed(header="after get_decay_idx")
 
 
-    # get b's
-    b = events.GenPart[abs_id == 5]
-    b = b[b.hasFlags("isFirstCopy", "fromHardProcess")]
-    # remove optional (first remove nones, then update the type)
-    b = ak.drop_none(b, behavior=b.behavior)
+    # # get b's
+    # b = events.GenPart[abs_id == 5]
+    # b = b[b.hasFlags("isFirstCopy", "fromHardProcess")]
+    # # remove optional (first remove nones, then update the type)
+    # b = ak.drop_none(b, behavior=b.behavior)
 
-    # get tau's
-    tau = events.GenPart[abs_id == 15]
-    tau = tau[tau.hasFlags("isLastCopy", "fromHardProcess")]
-    # remove optional
-    tau = ak.drop_none(tau, behavior=tau.behavior)
-    
-    # distinct tau children
-    tau_children = tau.distinctChildren
-    abs_tau_children_id = abs(tau_children.pdgId)
-    tau_children = ak.drop_none(tau_children, behavior=tau_children.behavior)
-
-    # separate tau-positive, tau-negative
-    tau_pos = events.GenPart[events.GenPart.pdgId == -15]
-    tau_pos = tau_pos[tau_pos.hasFlags("isLastCopy", "fromHardProcess")]
-    tau_pos = ak.drop_none(tau_pos, behavior=tau_pos.behavior)
-    
-    tau_neg = events.GenPart[events.GenPart.pdgId == 15]
-    tau_neg = tau_neg[tau_neg.hasFlags("isLastCopy", "fromHardProcess")]
-    tau_neg = ak.drop_none(tau_neg, behavior=tau_neg.behavior)
-    
-    tau_children_pos = tau_pos.distinctChildren
-    abs_tau_children_pos_id = abs(tau_children_pos.pdgId)
-    tau_children_pos = ak.drop_none(tau_children_pos, behavior=tau_children_pos.behavior)
-    
-    tau_children_neg = tau_neg.distinctChildren
-    abs_tau_children_neg_id = abs(tau_children_neg.pdgId)
-    tau_children_neg = ak.drop_none(tau_children_neg, behavior=tau_children_neg.behavior)
-
-    h_tau = tau.parent.parent
-    h_tau = ak.drop_none(h_tau, behavior=h_tau.behavior)
-   
-    h_b = b.parent
-    h_b = ak.drop_none(h_b, behavior=h_b.behavior)
-    
-    # # get nu's
-    # nu = ak.firsts(tau_children[abs_tau_children_id == 16], axis=2)
+    # # get tau's
+    # tau = events.GenPart[abs_id == 15]
+    # tau = tau[tau.hasFlags("isLastCopy", "fromHardProcess")]
     # # remove optional
+    # tau = ak.drop_none(tau, behavior=tau.behavior)
+    
+    # # distinct tau children
+    # tau_children = tau.distinctChildren
+    # abs_tau_children_id = abs(tau_children.pdgId)
+    # tau_children = ak.drop_none(tau_children, behavior=tau_children.behavior)
+
+    # # separate tau-positive, tau-negative
+    # tau_pos = events.GenPart[events.GenPart.pdgId == -15]
+    # tau_pos = tau_pos[tau_pos.hasFlags("isLastCopy", "fromHardProcess")]
+    # tau_pos = ak.drop_none(tau_pos, behavior=tau_pos.behavior)
+    
+    # tau_neg = events.GenPart[events.GenPart.pdgId == 15]
+    # tau_neg = tau_neg[tau_neg.hasFlags("isLastCopy", "fromHardProcess")]
+    # tau_neg = ak.drop_none(tau_neg, behavior=tau_neg.behavior)
+    
+    # tau_children_pos = tau_pos.distinctChildren
+    # abs_tau_children_pos_id = abs(tau_children_pos.pdgId)
+    # tau_children_pos = ak.drop_none(tau_children_pos, behavior=tau_children_pos.behavior)
+    
+    # tau_children_neg = tau_neg.distinctChildren
+    # abs_tau_children_neg_id = abs(tau_children_neg.pdgId)
+    # tau_children_neg = ak.drop_none(tau_children_neg, behavior=tau_children_neg.behavior)
+
+    # h_tau = tau.parent.parent
+    # h_tau = ak.drop_none(h_tau, behavior=h_tau.behavior)
+   
+    # h_b = b.parent
+    # h_b = ak.drop_none(h_b, behavior=h_b.behavior)
+    
+    # # # get nu's
+    # # nu = ak.firsts(tau_children[abs_tau_children_id == 16], axis=2)
+    # # # remove optional
+    # # nu = ak.drop_none(nu, behavior=nu.behavior)
+
+    # # get nu's
+    # nu = events.GenPart[abs_id == 16]
+    # nu = nu[nu.hasFlags("isFirstCopy", )]
+    # # remove optional (first remove nones, then update the type)
     # nu = ak.drop_none(nu, behavior=nu.behavior)
 
-    # get nu's
-    nu = events.GenPart[abs_id == 16]
-    nu = b[b.hasFlags("isFirstCopy", "fromHardProcess")]
-    # remove optional (first remove nones, then update the type)
-    nu = ak.drop_none(nu, behavior=nu.behavior)
-
-    # from IPython import embed
-    # embed(header="in gen_higgs_decay_products after neutrino identification")
+    # # from IPython import embed
+    # # embed(header="in gen_higgs_decay_products after neutrino identification")
     
+    # # # get w's
+    # # w = ak.firsts(tau_children[abs_tau_children_id == 24], axis=2)
+    # # # remove optional
+    # # w = ak.drop_none(w, behavior=w.behavior)
+
+
     # # get w's
-    # w = ak.firsts(tau_children[abs_tau_children_id == 24], axis=2)
-    # # remove optional
+    # w = events.GenPart[abs_id == 24]
+    # w = w[w.hasFlags("isFirstCopy", "fromHardProcess")]
+    # # remove optional (first remove nones, then update the type)
     # w = ak.drop_none(w, behavior=w.behavior)
 
-
-    # get w's
-    w = events.GenPart[abs_id == 24]
-    w = w[w.hasFlags("isFirstCopy", "fromHardProcess")]
-    # remove optional (first remove nones, then update the type)
-    w = ak.drop_none(w, behavior=w.behavior)
+    # from IPython import embed
+    # embed(header="in gen_higgs_decay_products after W identification")
+    
 
 
 #     # decays might also be effective into a variable number of mesons -> add them

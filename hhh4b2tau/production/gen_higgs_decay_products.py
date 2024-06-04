@@ -28,10 +28,6 @@ ak = maybe_import("awkward")
         # optional(f"gen_{child}_from_{mother}.{var}")
         for mother in ('h', 'tau', )
         for child in ('b', 'tau', 'nu', )
-
-        # optional(f"{field}.{var}")
-        # for field in ("gen_h_to_b", "gen_b_from_h", "gen_h_to_tau", "gen_tau_from_h", "gen_w_from_tau", "gen_nu_from_tau", "gen_tau_to_w", "gen_tau_to_nu",)
-
         for var in ('pt', 'eta', 'phi', 'mass', 'pdgId')
     } |
     {   optional(f"gen_{child}_from_{mother}.{var}")
@@ -108,18 +104,25 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
             children = children[children_gen_stati_mask]
             abs_children_id = abs(children.pdgId)
 
-            children_mask = ak.all(abs_children_id == children_id, axis=-1)
-            relevant_mother_idx = mother_idx[children_mask]
+            children_mask = abs_children_id == children_id
+            any_relevant_children_mask = ak.any(children_mask, axis=-1)
+            relevant_mother_idx = mother_idx[any_relevant_children_mask]
             relevant_mothers = events.GenPart[relevant_mother_idx]
+
+            #update children masks
+            children = children[any_relevant_children_mask]
+            children_mask = children_mask[any_relevant_children_mask]
+            
             relevant_children = children[children_mask]
             relevant_children_idx = ak.local_index(relevant_children.pt, axis=-1)
 
             sorted_children_idx = ak.argsort(relevant_children.pt, axis=-1, ascending=False)
             relevant_children_idx = relevant_children_idx[sorted_children_idx]
+
         except Exception as e:
             from IPython import embed
             embed(header=str(e))
-            raise e
+            # raise e
 
         if children_output_name:
             for var in ('pt', 'eta', 'phi', 'mass', 'pdgId'):
@@ -130,13 +133,32 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
 
         return events, relevant_mother_idx, relevant_children
 
-    events, h_b_idx, h_b_particles = get_decay_idx(events, mother_id=25, children_id=5, children_output_name="gen_b_from_h", mother_output_name="gen_h_to_b")
-    events, h_tau_idx, h_tau_particles = get_decay_idx(events, mother_id=25, children_id=15, children_output_name="gen_tau_from_h", mother_output_name="gen_h_to_tau")
-    events, tau_nu_idx, tau_nu_particles = get_decay_idx(events, mother_id=15, children_id=16, children_output_name="gen_nu_from_tau", mother_output_name="gen_tau_to_nu", mother_gen_flags=["isLastCopy"], children_gen_flags=["isTauDecayProduct"])
+    events, h_b_idx, h_b_particles = get_decay_idx(
+        events,
+        mother_id=25,
+        children_id=5,
+        children_output_name="gen_b_from_h",
+        mother_output_name="gen_h_to_b",
+    )
+    events, h_tau_idx, h_tau_particles = get_decay_idx(
+        events,
+        mother_id=25,
+        children_id=15,
+        children_output_name="gen_tau_from_h",
+        mother_output_name="gen_h_to_tau",
+    )
+    events, tau_nu_idx, tau_nu_particles = get_decay_idx(
+        events,
+        mother_id=15,
+        children_id=16,
+        children_output_name="gen_nu_from_tau",
+        mother_output_name="gen_tau_to_nu",
+        children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
+    )
     
     
-    from IPython import embed
-    embed(header="after get_decay_idx")
+    # from IPython import embed
+    # embed(header="after get_decay_idx")
 
 
     # # get b's
@@ -186,7 +208,7 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
 
     # # get nu's
     # nu = events.GenPart[abs_id == 16]
-    # nu = nu[nu.hasFlags("isFirstCopy", )]
+    # nu = nu[nu.hasFlags("isFirstCopy", "isDirectTauDecayProduct")]
     # # remove optional (first remove nones, then update the type)
     # nu = ak.drop_none(nu, behavior=nu.behavior)
 

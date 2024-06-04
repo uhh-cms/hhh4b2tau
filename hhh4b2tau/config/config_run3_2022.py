@@ -29,11 +29,16 @@ def add_config(
     year = campaign.x.year
 
     # add processes we are interested in
-    process_names = [
-        "data",
-        "tt",
-        "hhh_ggf_4b2tau",
-    ]
+    from cmsdb.processes.hhh import __all__ as all_hhh_processes
+    process_names = (
+        [
+            "data",
+            "tt",
+        ] + [
+            x for x in all_hhh_processes
+            if all(s in x for s in ["c3", "d4", "4b2tau"])
+        ]
+    )
     for process_name in process_names:
         # add the process
         proc = cfg.add_process(procs.get(process_name))
@@ -43,14 +48,16 @@ def add_config(
             proc.color1 = (244, 182, 66) if proc.name == "tt" else (244, 93, 66)
 
     # add datasets we need to study
-    dataset_names = [
+    dataset_names = ([
         # data
         "data_mu_d",
         # backgrounds
-        "tt_sl_powheg",
-        # signals
-        "hhh4b2tau_c3_0_d4_0_madgraph",
-    ]
+        "tt_sl_powheg",        
+    ] + [
+            f"{x}_madgraph" for x in all_hhh_processes
+            if all(s in x for s in ["c3", "d4", "4b2tau"])
+        ]
+    )
     for dataset_name in dataset_names:
         # add the dataset
         dataset = cfg.add_dataset(campaign.get_dataset(dataset_name))
@@ -82,7 +89,12 @@ def add_config(
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
-    cfg.x.dataset_groups = {}
+    cfg.x.dataset_groups = {
+        "hhh_couplings": [
+            f"{x}_madgraph" for x in all_hhh_processes
+            if all(s in x for s in ["c3", "d4", "4b2tau"])
+        ],
+    }
 
     # category groups for conveniently looping over certain categories
     # (used during plotting)

@@ -154,11 +154,11 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         EMPTY_FLOAT,
     )
 
-    nuw_mass = ak.where(
-        n_nuws >= 2,
-        dinuw.mass,
-        EMPTY_FLOAT,
-    )
+    # nuw_mass = ak.where(
+    #     n_nuws >= 2,
+    #     dinuw.mass,
+    #     EMPTY_FLOAT,
+    # )
 
     # write out the resulting mass to the `events` array,
     events = set_ak_column_f32(

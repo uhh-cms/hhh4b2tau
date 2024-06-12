@@ -27,13 +27,13 @@ ak = maybe_import("awkward")
         optional(f"gen_{mother}_to_{child}.{var}")
         # optional(f"gen_{child}_from_{mother}.{var}")
         for mother in ('h', 'tau', )
-        for child in ('b', 'tau', 'nu', )
-        for var in ('pt', 'eta', 'phi', 'mass', 'pdgId')
+        for child in ('b', 'tau', 'taunu', 'elektron', 'enu', 'muon', 'munu', )
+        for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )
     } |
     {   optional(f"gen_{child}_from_{mother}.{var}")
         for mother in ('h', 'tau', )
-        for child in ('b', 'tau', 'nu', )
-        for var in ('pt', 'eta', 'phi', 'mass', 'pdgId')}
+        for child in ('b', 'tau', 'taunu', 'elektron', 'enu', 'muon', 'munu', )
+        for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )}
     
     ),
 )
@@ -147,12 +147,48 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
         children_output_name="gen_tau_from_h",
         mother_output_name="gen_h_to_tau",
     )
-    events, tau_nu_idx, tau_nu_particles = get_decay_idx(
+    events, tau_taunu_idx, tau_taunu_particles = get_decay_idx(
         events,
         mother_id=15,
         children_id=16,
-        children_output_name="gen_nu_from_tau",
-        mother_output_name="gen_tau_to_nu",
+        children_output_name="gen_taunu_from_tau",
+        mother_output_name="gen_tau_to_taunu",
+        children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
+    )
+
+    events, tau_elektron_idx, tau_elektron_particles = get_decay_idx(
+        events,
+        mother_id=15,
+        children_id=11,
+        children_output_name="gen_elektron_from_tau",
+        mother_output_name="gen_tau_to_elektron",
+        children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
+    )
+
+    events, tau_enu_idx, tau_enu_particles = get_decay_idx(
+        events,
+        mother_id=15,
+        children_id=12,
+        children_output_name="gen_enu_from_tau",
+        mother_output_name="gen_tau_to_enu",
+        children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
+    )
+
+    events, tau_muon_idx, tau_muon_particles = get_decay_idx(
+        events,
+        mother_id=15,
+        children_id=13,
+        children_output_name="gen_muon_from_tau",
+        mother_output_name="gen_tau_to_muon",
+        children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
+    )
+
+    events, tau_munu_idx, tau_munu_particles = get_decay_idx(
+        events,
+        mother_id=15,
+        children_id=14,
+        children_output_name="gen_munu_from_tau",
+        mother_output_name="gen_tau_to_munu",
         children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
     )
     

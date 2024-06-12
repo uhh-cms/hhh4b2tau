@@ -85,35 +85,88 @@ def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array
     uses=(
         {
             
-            f"{field}.{var}"
-            for field in ("gen_h_to_b", "gen_b_from_h", "gen_h_to_tau", "gen_tau_from_h", "gen_nu_from_tau", )
-            for var in ('pt', 'eta', 'phi', 'mass', 'pdgId')
-        } | {
+        optional(f"gen_{mother}_to_{child}.{var}")
+        for mother in ('h', 'tau', )
+        for child in ('b', 'tau', 'taunu', 'elektron', 'enu', 'muon', 'munu', )
+        for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )
+    } |
+    {   
+        optional(f"gen_{child}_from_{mother}.{var}")
+        for mother in ('h', 'tau', )
+        for child in ('b', 'tau', 'taunu', 'elektron', 'enu', 'muon', 'munu', )
+        for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )} | 
+        {
             attach_coffea_behavior,
         }
     ),
     produces={
-        "mtaus", "mbb", "mhhh", #"mlnu",
+        "mtautau", "mbb", "mhhh", "mlnu"
     },
 )
 def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Construct b and tau invariant mass.
     """
-
+    from IPython import embed; embed()
 
     # attach coffea behavior for four-vector arithmetic
+    # events = self[attach_coffea_behavior](
+    #     events,
+    #     collections={ x : {
+    #             "type_name": "GenParticle",
+    #         } for x in [
+    #         "gen_h_to_b", 
+    #         "gen_b_from_h", 
+    #         "gen_h_to_tau", 
+    #         "gen_tau_from_h",
+    #         "gen_nu_from_tau"
+    #         ]},
+    #     **kwargs,
+    # )
+
+    # events = self[attach_coffea_behavior](
+    #     events,
+    #     collections={ x : {
+    #             "type_name": "GenParticle",
+    #         } for x in [
+    #         optional(f"gen_{mother}_to_{child}")
+    #         for mother in ('h', 'tau', )
+    #         for child in ('b', 'tau', 'taunu', 'elektron', 'enu', 'muon', 'munu', )
+    #         ]},
+    #     **kwargs,
+    # )
+
+    # events = self[attach_coffea_behavior](
+    #     events,
+    #     collections={ x : {
+    #             "type_name": "GenParticle",
+    #         } for x in [
+    #         optional(f"gen_{child}_from_{mother}")
+    #         for mother in ('h', 'tau', )
+    #         for child in ('b', 'tau', 'taunu', 'elektron', 'enu', 'muon', 'munu', )
+    #         ]},
+    #     **kwargs,
+    # )
+
+
     events = self[attach_coffea_behavior](
         events,
-        collections={ x : {
+        collections={ optional(f"gen_{mother}_to_{child}") : {
                 "type_name": "GenParticle",
-            } for x in [
-            "gen_h_to_b", 
-            "gen_b_from_h", 
-            "gen_h_to_tau", 
-            "gen_tau_from_h",
-            "gen_nu_from_tau"
-            ]},
+            } 
+            for mother in ('h', 'tau', )
+            for child in ('b', 'tau', 'taunu', 'elektron', 'enu', 'muon', 'munu', )
+            },
+        **kwargs,
+    )
+    events = self[attach_coffea_behavior](
+        events,
+        collections={ optional(f"gen_{child}_from_{mother}") : {
+                "type_name": "GenParticle",
+            } 
+            for mother in ('h', 'tau', )
+            for child in ('b', 'tau', 'taunu', 'elektron', 'enu', 'muon', 'munu', )
+            },
         **kwargs,
     )
 
@@ -125,14 +178,24 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     ditau = events.gen_tau_from_h.sum(axis=-1)
     dib = events.gen_b_from_h.sum(axis=-1)
     trih = events.gen_h_to_tau.sum(axis=-1) + events.gen_h_to_b.sum(axis=-1)
-    # dinuw = events.gen_nu_from_tau.sum(axis=1) + events.gen_w_from_tau.sum(axis=1)
-
+    # tau decay products
+    ditaunu = events.gen_taunu_from_tau.sum(axis=-1)
+    dielektron = events.gen_elektron_from_tau.sum(axis=-1)
+    dienu = events.gen_enu_from_tau.sum(axis=-1)
+    dimuon = events.gen_muon_from_tau.sum(axis=-1)
+    dimunu = events.gen_munu_from_tau.sum(axis=-1)
+    lep_nu_sum = ditaunu + dienu + dimunu + dielektron + dimuon
 
     # total number of taus per event
     n_taus = ak.num(events.gen_tau_from_h, axis=-1)
     n_bs = ak.num(events.gen_b_from_h, axis=-1)
     n_hs = ak.num(events.gen_h_to_tau, axis=-1) + ak.num(events.gen_h_to_b, axis=-1)
-    # n_nuws = ak.num(events.gen_nu_from_tau, axis=-1) + ak.num(events.gen_w_from_tau, axis=-1)
+
+    # total number of leptons per event
+    n_lep = (
+        ak.num(events.gen_elektron_from_tau, axis=-1)
+        + ak.num(events.gen_muon_from_tau, axis=-1)
+             )
 
     # four-lepton mass, taking into account only events with at least four leptons,
     # and otherwise substituting a predefined EMPTY_FLOAT value
@@ -154,16 +217,16 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         EMPTY_FLOAT,
     )
 
-    # nuw_mass = ak.where(
-    #     n_nuws >= 2,
-    #     dinuw.mass,
-    #     EMPTY_FLOAT,
-    # )
+    lep_from_tau_mass = ak.where(
+        n_lep >= 2,
+        lep_nu_sum.mass,
+        EMPTY_FLOAT
+    )
 
     # write out the resulting mass to the `events` array,
     events = set_ak_column_f32(
         events,
-        "mtaus",
+        "mtautau",
         tau_mass,
     )
 
@@ -179,11 +242,10 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         h_mass,
     )
 
-    # events = set_ak_column_f32(
-    #     events,
-    #     "mlnu",
-    #     nuw_mass,
-    # )
-
+    events = set_ak_column_f32(
+        events,
+        "mlnu",
+        lep_from_tau_mass,
+    )
     # return the events
     return events

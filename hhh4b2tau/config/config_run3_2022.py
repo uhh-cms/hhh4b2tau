@@ -45,7 +45,36 @@ def add_config(
 
         # configuration of colors, labels, etc. can happen here
         if proc.is_mc:
-            proc.color1 = (244, 182, 66) if proc.name == "tt" else (244, 93, 66)
+            # proc.color1 = (244, 182, 66) if proc.name == "tt"  else (244, 93, 66)
+            coupling_with_colors = (
+                # (c3, d4, color)
+                  (0, 0, "#3f90da"),
+                  (0, 99, "#ffa90e"),
+                  (0, -1, "#bd1f01"),
+                  (19, 19, "#94a4a2"),
+                  (1, 0, "#832db6"),
+                  (1, 2, "#a96b59"),
+                  (2, -1, "#e76300"),
+                  (4, 9, "#b9ac70"),
+                  (-1, 0, "#717581"),
+                  (-1, -1, "#92dadd"),
+                  (-1.5, -0.5, (244, 93, 66)),
+            )
+            # if proc.name == "hhh_c3_0_d4_0_4b2tau":
+            #     proc.color1 = "#5790fc"
+            # elif proc.name == "hhh_c3_0_d4_99_4b2tau":
+            #     proc.color1 = "#f89c20"
+            # elif proc.name == "hhh_c3_1_d4_0_4b2tau":
+            #     proc.color1 = "#e42536"
+            # elif proc.name == "hhh_c3_minus1_d4_0_4b2tau":
+            #     proc.color1 = "#964a8b"
+            for c3,d4,color in coupling_with_colors:
+                if proc.name == f"hhh_c3_{c3}_d4_{d4}_4b2tau":
+                    proc.color1 = color
+
+        
+        # from hhh4b2tau.config.styles import stylize_processes
+        # stylize_processes(cfg)
 
     # add datasets we need to study
     dataset_names = ([
@@ -94,6 +123,13 @@ def add_config(
             f"{x}_madgraph" for x in all_hhh_processes
             if all(s in x for s in ["c3", "d4", "4b2tau"])
         ],
+        "hhh_compare1": [
+            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (1, 0), ("minus1", 0), (0, 99))
+        ],
+
+        "hhh_compare2": [
+            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (19, 19), (4, 9), ("minus1p5", "minus0p5"), (0, "minus1"))
+        ],
     }
 
     # category groups for conveniently looping over certain categories
@@ -110,11 +146,18 @@ def add_config(
 
     # general_settings groups for conveniently looping over different values for the general-settings parameter
     # (used during plotting)
-    cfg.x.general_settings_groups = {}
+    cfg.x.general_settings_groups = {
+        "compare_shapes": {"skip_ratio": True, "shape_norm": True, "yscale": "log", "cms_label": "simpw"},
+    }
 
     # process_settings groups for conveniently looping over different values for the process-settings parameter
     # (used during plotting)
-    cfg.x.process_settings_groups = {}
+    cfg.x.process_settings_groups = {
+        "unstack_processes": {f"{x}": {"unstack": True} for x in all_hhh_processes
+            if all(s in x for s in ["c3", "d4", "4b2tau"])},
+
+        # "unstack_all": {"*": {"unstack": True}}, # does not work somehow????
+    }
 
     # variable_settings groups for conveniently looping over different values for the variable-settings parameter
     # (used during plotting)

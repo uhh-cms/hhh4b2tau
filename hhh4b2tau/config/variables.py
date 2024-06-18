@@ -149,7 +149,7 @@ def add_variables(
 
     cfg.add_variable(
         name="mlnu",
-        binning=(40, 0.0, 400.0),
+        binning=(40, 0.0, 200.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
         x_title=r"$m_{l\nu}^{gen}$",

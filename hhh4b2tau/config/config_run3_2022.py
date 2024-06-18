@@ -48,26 +48,19 @@ def add_config(
             # proc.color1 = (244, 182, 66) if proc.name == "tt"  else (244, 93, 66)
             coupling_with_colors = (
                 # (c3, d4, color)
-                  (0, 0, "#3f90da"),
-                  (0, 99, "#ffa90e"),
-                  (0, -1, "#bd1f01"),
-                  (19, 19, "#94a4a2"),
-                  (1, 0, "#832db6"),
-                  (1, 2, "#a96b59"),
-                  (2, -1, "#e76300"),
-                  (4, 9, "#b9ac70"),
-                  (-1, 0, "#717581"),
-                  (-1, -1, "#92dadd"),
-                  (-1.5, -0.5, (244, 93, 66)),
+                  (0, 0, "#000000"),
+                  (0, 99, "#3f90da"),
+                  (0, -1, "#ffa90e"),
+                  (19, 19, "#bd1f01"),
+                  (1, 0, "#94a4a2"),
+                  (1, 2, "#832db6"),
+                  (2, -1, "#a96b59"),
+                  (4, 9, "#e76300"),
+                  (-1, 0, "#b9ac70"),
+                  (-1, -1, "#717581"),
+                  (-1.5, -0.5, "#92dadd"),
             )
-            # if proc.name == "hhh_c3_0_d4_0_4b2tau":
-            #     proc.color1 = "#5790fc"
-            # elif proc.name == "hhh_c3_0_d4_99_4b2tau":
-            #     proc.color1 = "#f89c20"
-            # elif proc.name == "hhh_c3_1_d4_0_4b2tau":
-            #     proc.color1 = "#e42536"
-            # elif proc.name == "hhh_c3_minus1_d4_0_4b2tau":
-            #     proc.color1 = "#964a8b"
+
             for c3,d4,color in coupling_with_colors:
                 if proc.name == f"hhh_c3_{c3}_d4_{d4}_4b2tau":
                     proc.color1 = color

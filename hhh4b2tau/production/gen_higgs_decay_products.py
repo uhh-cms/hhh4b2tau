@@ -27,12 +27,12 @@ ak = maybe_import("awkward")
         optional(f"gen_{mother}_to_{child}.{var}")
         # optional(f"gen_{child}_from_{mother}.{var}")
         for mother in ('h', 'tau', )
-        for child in ('b', 'tau', 'taunu', 'elektron', 'enu', 'muon', 'munu', )
+        for child in ('b', 'tau', 'taunu', 'electron', 'enu', 'muon', 'munu', )
         for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )
     } |
     {   optional(f"gen_{child}_from_{mother}.{var}")
         for mother in ('h', 'tau', )
-        for child in ('b', 'tau', 'taunu', 'elektron', 'enu', 'muon', 'munu', )
+        for child in ('b', 'tau', 'taunu', 'electron', 'enu', 'muon', 'munu', )
         for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )}
     
     ),
@@ -62,7 +62,7 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
     # n = 19362
 
     # # find hard h boson
-    abs_id = abs(events.GenPart.pdgId)
+    
     # h = events.GenPart[abs_id == 25]
     # h = h[h.hasFlags("isFirstCopy", "fromHardProcess")]
     # h = ak.drop_none(h, behavior=h.behavior)
@@ -70,7 +70,7 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
     # # distinct higgs boson children (b's and tau's)
     # h_children = h.distinctChildrenDeep
     # abs_children_id = abs(h_children.pdgId)
-
+    abs_id = abs(events.GenPart.pdgId)
     def get_decay_idx(
         events: ak.Array,
         mother_id: int,
@@ -156,12 +156,12 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
         children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
     )
 
-    events, tau_elektron_idx, tau_elektron_particles = get_decay_idx(
+    events, tau_electron_idx, tau_electron_particles = get_decay_idx(
         events,
         mother_id=15,
         children_id=11,
-        children_output_name="gen_elektron_from_tau",
-        mother_output_name="gen_tau_to_elektron",
+        children_output_name="gen_electron_from_tau",
+        mother_output_name="gen_tau_to_electron",
         children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
     )
 

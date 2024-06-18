@@ -57,6 +57,14 @@ def gen_studies(
     if self.dataset_inst.is_mc and self.dataset_inst.name.startswith("h"):
         events = self[gen_higgs_decay_products](events, **kwargs)
     
+    # # get tau decay products
+
+    # if self.dataset_inst.is_mc and self.dataset_inst.name.startswith("tau"):
+    #     events = self[gen_higgs_decay_products](events, **kwargs)
+    
+
+
+
     results.event = ak.ones_like(events.event, dtype=bool)
 
     # create process ids

@@ -29,28 +29,57 @@ def add_config(
     year = campaign.x.year
 
     # add processes we are interested in
-    process_names = [
-        "data",
-        "tt",
-        "hhh_ggf_4b2tau",
-    ]
+    from cmsdb.processes.hhh import __all__ as all_hhh_processes
+    process_names = (
+        [
+            "data",
+            "tt",
+        ] + [
+            x for x in all_hhh_processes
+            if all(s in x for s in ["c3", "d4", "4b2tau"])
+        ]
+    )
     for process_name in process_names:
         # add the process
         proc = cfg.add_process(procs.get(process_name))
 
         # configuration of colors, labels, etc. can happen here
         if proc.is_mc:
-            proc.color1 = (244, 182, 66) if proc.name == "tt" else (244, 93, 66)
+            # proc.color1 = (244, 182, 66) if proc.name == "tt"  else (244, 93, 66)
+            coupling_with_colors = (
+                # (c3, d4, color)
+                  (0, 0, "#000000"),
+                  (0, 99, "#3f90da"),
+                  (0, 'minus1', "#ffa90e"),
+                  (19, 19, "#bd1f01"),
+                  (1, 0, "#94a4a2"),
+                  (1, 2, "#832db6"),
+                  (2, 'minus1', "#a96b59"),
+                  (4, 9, "#e76300"),
+                  ('minus1', 0, "#b9ac70"),
+                  ('minus1', 'minus1', "#717581"),
+                  ('minus1p5', 'minus0p5', "#92dadd"),
+            )
+
+            for c3,d4,color in coupling_with_colors:
+                if proc.name == f"hhh_c3_{c3}_d4_{d4}_4b2tau":
+                    proc.color1 = color
+
+        
+        # from hhh4b2tau.config.styles import stylize_processes
+        # stylize_processes(cfg)
 
     # add datasets we need to study
-    dataset_names = [
+    dataset_names = ([
         # data
         "data_mu_d",
         # backgrounds
-        "tt_sl_powheg",
-        # signals
-        "hhh4b2tau_c3_0_d4_0_madgraph",
-    ]
+        "tt_sl_powheg",        
+    ] + [
+            f"{x}_madgraph" for x in all_hhh_processes
+            if all(s in x for s in ["c3", "d4", "4b2tau"])
+        ]
+    )
     for dataset_name in dataset_names:
         # add the dataset
         dataset = cfg.add_dataset(campaign.get_dataset(dataset_name))
@@ -72,6 +101,9 @@ def add_config(
     cfg.x.default_categories = ("incl",)
     cfg.x.default_variables = ("n_jet", "jet1_pt")
 
+    # set default weight_producer
+    cfg.x.default_weight_producer = "all_weights"
+
 
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
@@ -79,7 +111,19 @@ def add_config(
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
-    cfg.x.dataset_groups = {}
+    cfg.x.dataset_groups = {
+        "hhh_couplings": [
+            f"{x}_madgraph" for x in all_hhh_processes
+            if all(s in x for s in ["c3", "d4", "4b2tau"])
+        ],
+        "hhh_compare_1": [
+            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (1, 0), ("minus1", 0), (0, 99), (0, "minus1"), (2, "minus1"))
+        ],
+
+        "hhh_compare_2": [
+            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (19, 19), (4, 9), ("minus1p5", "minus0p5"), ("minus1", "minus1"), (1, 2))
+        ],
+    }
 
     # category groups for conveniently looping over certain categories
     # (used during plotting)
@@ -95,11 +139,18 @@ def add_config(
 
     # general_settings groups for conveniently looping over different values for the general-settings parameter
     # (used during plotting)
-    cfg.x.general_settings_groups = {}
+    cfg.x.general_settings_groups = {
+        "compare_shapes": {"skip_ratio": True, "shape_norm": True, "yscale": "log", "cms_label": "simpw"},
+    }
 
     # process_settings groups for conveniently looping over different values for the process-settings parameter
     # (used during plotting)
-    cfg.x.process_settings_groups = {}
+    cfg.x.process_settings_groups = {
+        "unstack_processes": {f"{x}": {"unstack": True} for x in all_hhh_processes
+            if all(s in x for s in ["c3", "d4", "4b2tau"])},
+
+        # "unstack_all": {"*": {"unstack": True}}, # does not work somehow????
+    }
 
     # variable_settings groups for conveniently looping over different values for the variable-settings parameter
     # (used during plotting)

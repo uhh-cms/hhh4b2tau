@@ -50,15 +50,15 @@ def add_config(
                 # (c3, d4, color)
                   (0, 0, "#000000"),
                   (0, 99, "#3f90da"),
-                  (0, -1, "#ffa90e"),
+                  (0, 'minus1', "#ffa90e"),
                   (19, 19, "#bd1f01"),
                   (1, 0, "#94a4a2"),
                   (1, 2, "#832db6"),
-                  (2, -1, "#a96b59"),
+                  (2, 'minus1', "#a96b59"),
                   (4, 9, "#e76300"),
-                  (-1, 0, "#b9ac70"),
-                  (-1, -1, "#717581"),
-                  (-1.5, -0.5, "#92dadd"),
+                  ('minus1', 0, "#b9ac70"),
+                  ('minus1', 'minus1', "#717581"),
+                  ('minus1p5', 'minus0p5', "#92dadd"),
             )
 
             for c3,d4,color in coupling_with_colors:
@@ -116,12 +116,12 @@ def add_config(
             f"{x}_madgraph" for x in all_hhh_processes
             if all(s in x for s in ["c3", "d4", "4b2tau"])
         ],
-        "hhh_compare1": [
-            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (1, 0), ("minus1", 0), (0, 99))
+        "hhh_compare_1": [
+            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (1, 0), ("minus1", 0), (0, 99), (0, "minus1"), (2, "minus1"))
         ],
 
-        "hhh_compare2": [
-            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (19, 19), (4, 9), ("minus1p5", "minus0p5"), (0, "minus1"))
+        "hhh_compare_2": [
+            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (19, 19), (4, 9), ("minus1p5", "minus0p5"), ("minus1", "minus1"), (1, 2))
         ],
     }
 

@@ -154,3 +154,35 @@ def add_variables(
         unit="GeV",
         x_title=r"$m_{l\nu}^{gen}$",
     )
+
+    cfg.add_variable(
+        name="hpt",
+        binning=(60, 0.0, 800.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$pt_H$",
+    )
+
+    cfg.add_variable(
+        name="h1bpt",
+        binning=(60, 0.0, 800.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$pt_{H_1\rightarrow bb}$",
+    )
+
+    cfg.add_variable(
+        name="h2bpt",
+        binning=(60, 0.0, 800.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$pt_{H_2\rightarrow bb}$",
+    )
+
+    cfg.add_variable(
+        name="htaupt",
+        binning=(60, 0.0, 800.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$pt_{H\rightarrow\tau\tau}$",
+    )

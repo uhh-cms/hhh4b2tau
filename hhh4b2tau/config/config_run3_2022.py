@@ -44,10 +44,9 @@ def add_config(
         proc = cfg.add_process(procs.get(process_name))
 
         # configuration of colors, labels, etc. can happen here
-        if proc.is_mc:
-            # proc.color1 = (244, 182, 66) if proc.name == "tt"  else (244, 93, 66)
+        if proc.is_mc:         
             coupling_with_colors = (
-                # (c3, d4, color)
+                # (c3, d4, color) with colors recommended by cms
                   (0, 0, "#000000"),
                   (0, 99, "#3f90da"),
                   (0, 'minus1', "#ffa90e"),
@@ -64,8 +63,9 @@ def add_config(
             for c3,d4,color in coupling_with_colors:
                 if proc.name == f"hhh_c3_{c3}_d4_{d4}_4b2tau":
                     proc.color1 = color
+            if proc.name == "tt":
+                proc.color1 = "#e41a1c"   # else "#377eb8"
 
-        
         # from hhh4b2tau.config.styles import stylize_processes
         # stylize_processes(cfg)
 
@@ -104,7 +104,6 @@ def add_config(
     # set default weight_producer
     cfg.x.default_weight_producer = "all_weights"
 
-
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
     cfg.x.process_groups = {}
@@ -140,7 +139,7 @@ def add_config(
     # general_settings groups for conveniently looping over different values for the general-settings parameter
     # (used during plotting)
     cfg.x.general_settings_groups = {
-        "compare_shapes": {"skip_ratio": True, "shape_norm": True, "yscale": "log", "cms_label": "simpw"},
+        "compare_shapes": {"skip_ratio": True, "shape_norm": True, "cms_label": "simpw"},
     }
 
     # process_settings groups for conveniently looping over different values for the process-settings parameter

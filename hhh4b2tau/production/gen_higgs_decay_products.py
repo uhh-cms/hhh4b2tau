@@ -147,6 +147,7 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
         children_output_name="gen_tau_from_h",
         mother_output_name="gen_h_to_tau",
     )
+    # from IPython import embed; embed()
     events, tau_taunu_idx, tau_taunu_particles = get_decay_idx(
         events,
         mother_id=15,

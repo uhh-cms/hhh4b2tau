@@ -100,7 +100,7 @@ def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array
         }
     ),
     produces={
-        "mtautau", "mbb", "mhhh", "mlnu"
+        "mtautau", "mbb", "mhhh", "mlnu", "hpt", "h1bpt", "h2bpt", "htaupt",
     },
 )
 def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -134,13 +134,8 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     # total number of taus per event
     n_taus = ak.num(events.gen_tau_from_h, axis=-1)
     n_bs = ak.num(events.gen_b_from_h, axis=-1)
-    n_hs = ak.num(events.gen_h_to_tau, axis=-1) + ak.num(events.gen_h_to_b, axis=-1)
-
-    # # mask: do the particles exist?
-    # mask_electron = ak.num(events.gen_electron_from_tau, axis=1) >=1
-    # mask_muon = ak.num(events.gen_muon_from_tau, axis=1) >=1
-    # mask_munu = ak.num(events.gen_munu_from_tau, axis=1) >=1
-    # mask_enu = ak.num(events.gen_enu_from_tau, axis=1) >=1
+    n_hs = (ak.num(events.gen_h_to_tau, axis=-1) +
+    ak.num(events.gen_h_to_b, axis=-1))
   
     # total number of leptons, neutrinos per event
     n_taunu = ak.num(events.gen_taunu_from_tau, axis=1)
@@ -168,6 +163,14 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     # lep_sum = dielectron + dimuon
     # nu_sum = ditaunu + dienu + dimunu
     lep_nu_sum = ditaunu + dienu + dimunu + dielectron + dimuon
+
+    # pt of all Higgs
+    h_pt = ak.concatenate(
+        (events.gen_h_to_b.pt, events.gen_h_to_tau.pt), axis=1)
+    h1b_pt = events.gen_h_to_b.pt[:,0]
+    h2b_pt = events.gen_h_to_b.pt[:,1]
+    htau_pt = events.gen_h_to_tau.pt
+
     # from IPython import embed; embed()
     # four-lepton mass, taking into account only events with at least four leptons,
     # and otherwise substituting a predefined EMPTY_FLOAT value
@@ -218,6 +221,29 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         events,
         "mlnu",
         lep_nu_from_tau_mass,
+    )
+    events = set_ak_column_f32(
+        events,
+        "hpt",
+        h_pt,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "htaupt",
+        htau_pt,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "h1bpt",
+        h1b_pt,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "h2bpt",
+        h2b_pt,
     )
     # return the events
     # from IPython import embed; embed()

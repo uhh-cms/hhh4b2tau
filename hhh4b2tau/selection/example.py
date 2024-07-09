@@ -26,7 +26,8 @@ ak = maybe_import("awkward")
 
 
 @selector(
-    uses={"Muon.pt", "Muon.eta"},
+    uses={f"Muon.{var}" 
+          for var in ("pt", "eta", )},
 )
 def muon_selection(
     self: Selector,
@@ -51,9 +52,36 @@ def muon_selection(
         },
     )
 
+@selector(
+    uses={f"Electron.{var}" 
+          for var in ("pt", "eta", )},
+)
+def electron_selection(
+    self: Selector,
+    events: ak.Array,
+    **kwargs,
+) -> tuple[ak.Array, SelectionResult]:
+    # example electron selection: exactly one electron
+    electron_mask = (events.Electron.pt >= 20.0) & (abs(events.Electron.eta) < 2.1)
+    electron_sel = ak.sum(electron_mask, axis=1) == 1
+
+    # build and return selection results
+    # "objects" maps source columns to new columns and selections to be applied on the old columns
+    # to create them, e.g. {"Electron": {"MySelectedElectron": indices_applied_to_Electron}}
+    return events, SelectionResult(
+        steps={
+            "electron": electron_sel,
+        },
+        objects={
+            "Electron": {
+                "Electron": electron_mask,
+            },
+        },
+    )
 
 @selector(
-    uses={"Jet.pt", "Jet.eta"},
+    uses={f"Jet.{var}" 
+          for var in ("pt", "eta", )},
 )
 def jet_selection(
     self: Selector,
@@ -90,8 +118,8 @@ def jet_selection(
 @selector(
     uses={
         # selectors / producers called within _this_ selector
-        mc_weight, cutflow_features, process_ids, muon_selection, jet_selection,
-        increment_stats,
+        mc_weight, cutflow_features, process_ids, muon_selection, electron_selection,
+        jet_selection, increment_stats,
     },
     produces={
         # selectors / producers whose newly created columns should be kept
@@ -111,6 +139,10 @@ def example(
     # muon selection
     events, muon_results = self[muon_selection](events, **kwargs)
     results += muon_results
+
+    # electron selection
+    events, electron_results = self[electron_selection](events, **kwargs)
+    results += electron_results
 
     # jet selection
     events, jet_results = self[jet_selection](events, **kwargs)

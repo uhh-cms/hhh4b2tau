@@ -26,8 +26,8 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
     ),
     produces={
         "jet_delta_phi",
-        "jet_delta_r",
-        "jet_delta_r13",
+        "jet_delta_r_12",
+        "jet_delta_r_13",
     },
 )
 def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -65,14 +65,14 @@ def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array
     # get delta r values between hardest and 2nd hardest jet
     events = set_ak_column_f32(
         events,
-        "jet_delta_r",
+        "jet_delta_r_12",
         ak.where(dijet_mask, ak.mask(hardest_delta_r, dijet_mask)[:, 1], EMPTY_FLOAT),
     )
 
     # get delta r values between hardest and 3rd hardest jet
     events = set_ak_column_f32(
         events,
-        "jet_delta_r13",
+        "jet_delta_r_13",
         ak.where(trijet_mask, ak.mask(hardest_delta_r, trijet_mask)[:, 2], EMPTY_FLOAT),
     )
 
@@ -101,11 +101,17 @@ def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array
     ),
     produces={
         "mtautau", "mbb", "mhhh", "mlnu", "hpt", "h1bpt", "h2bpt", "htaupt",
+         "deltar_h12", "deltar_h13", "deltar_h23", "deltar_h1bb", "deltar_h2bb",
+        "deltar_htautau",
+        "cos_h12", "cos_h13", "cos_h23", "cos_h1bb", "cos_h2bb",
+        "cos_htautau",
     },
 )
 def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
-    Construct b and tau invariant mass.
+    Construct b and tau invariant mass. 
+    Also added pt, delta R and cos(delta) of H and their decay products.
+    All on Gen-level
     """
 
 
@@ -124,7 +130,7 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
             "gen_electron_from_tau",
             "gen_enu_from_tau",
             "gen_munu_from_tau",
-            "gen_muon_from_tau"
+            "gen_muon_from_tau",
             ]},
         **kwargs,
     )
@@ -156,9 +162,15 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     # lorenz vector sum of tau decay products
     ditaunu = ak.where(n_taunu>=1, ak.flatten(events.gen_taunu_from_tau.sum(axis=1)), zero_lorenz)
     dielectron = ak.fill_none(ak.pad_none(events.gen_electron_from_tau.sum(axis=1), 1), zero_lorenz[0])
-    dienu = ak.fill_none(ak.pad_none(events.gen_enu_from_tau.sum(axis=1), 1), zero_lorenz[0])
-    dimuon = ak.fill_none(ak.pad_none(events.gen_muon_from_tau.sum(axis=1), 1), zero_lorenz[0])
-    dimunu = ak.fill_none(ak.pad_none(events.gen_munu_from_tau.sum(axis=1), 1), zero_lorenz[0])
+    dienu = ak.fill_none(
+        ak.pad_none(events.gen_enu_from_tau.sum(axis=1), 1),
+          zero_lorenz[0])
+    dimuon = ak.fill_none(
+        ak.pad_none(events.gen_muon_from_tau.sum(axis=1), 1),
+          zero_lorenz[0])
+    dimunu = ak.fill_none(
+        ak.pad_none(events.gen_munu_from_tau.sum(axis=1), 1),
+          zero_lorenz[0])
 
     # lep_sum = dielectron + dimuon
     # nu_sum = ditaunu + dienu + dimunu
@@ -171,7 +183,31 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     h2b_pt = events.gen_h_to_b.pt[:,1]
     htau_pt = events.gen_h_to_tau.pt
 
+    # delta_r between all Higgs
+    delta_r_h12 = events.gen_h_to_b[:,0].delta_r(events.gen_h_to_b[:,1])
+    delta_r_h13 = events.gen_h_to_b[:,0].delta_r(events.gen_h_to_tau)
+    delta_r_h23 = events.gen_h_to_b[:,1].delta_r(events.gen_h_to_tau)
+
+    # delta_r between H decay products
+    delta_r_h1bb = events.gen_b_from_h[:,0,0].delta_r(events.gen_b_from_h[:,0,1])
+    delta_r_h2bb = events.gen_b_from_h[:,1,0].delta_r(events.gen_b_from_h[:,1,1])
+    delta_r_htautau = events.gen_tau_from_h[:,0,0].delta_r(events.gen_tau_from_h[:,0,1])
     # from IPython import embed; embed()
+
+    # cosine of opening angle little delta between h and between their decay products 
+    cos_h12 = (events.gen_h_to_b[:,0].dot(events.gen_h_to_b[:,1])/
+                 (events.gen_h_to_b[:,0].rho*events.gen_h_to_b[:,1].rho))
+    cos_h13 = (events.gen_h_to_b[:,0].dot(events.gen_h_to_tau)/
+               (events.gen_h_to_b[:,0].rho*events.gen_h_to_tau.rho))
+    cos_h23 = (events.gen_h_to_b[:,1].dot(events.gen_h_to_tau)/
+               (events.gen_h_to_b[:,1].rho*events.gen_h_to_tau.rho))
+    cos_h1bb = (events.gen_b_from_h[:,0,0].dot(events.gen_b_from_h[:,0,1])/
+                (events.gen_b_from_h[:,0,0].rho*events.gen_b_from_h[:,0,1].rho))
+    cos_h2bb = (events.gen_b_from_h[:,1,0].dot(events.gen_b_from_h[:,1,1])/
+                (events.gen_b_from_h[:,1,0].rho*events.gen_b_from_h[:,1,1].rho))
+    cos_htautau = (events.gen_tau_from_h[:,0,0].dot(events.gen_tau_from_h[:,0,1])/
+                   (events.gen_tau_from_h[:,0,0].rho*events.gen_tau_from_h[:,0,1].rho))
+
     # four-lepton mass, taking into account only events with at least four leptons,
     # and otherwise substituting a predefined EMPTY_FLOAT value
     tautau_mass = ak.where(
@@ -222,6 +258,7 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         "mlnu",
         lep_nu_from_tau_mass,
     )
+    # pt of h and their decay products 
     events = set_ak_column_f32(
         events,
         "hpt",
@@ -244,6 +281,81 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         events,
         "h2bpt",
         h2b_pt,
+    )
+    # delta r between h and between their decay products
+
+    events = set_ak_column_f32(
+        events,
+        "deltar_h12",
+        delta_r_h12,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "deltar_h13",
+        delta_r_h13,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "deltar_h23",
+        delta_r_h23,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "deltar_h1bb",
+        delta_r_h1bb,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "deltar_h2bb",
+        delta_r_h2bb,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "deltar_htautau",
+        delta_r_htautau,
+    )
+
+    # cos(delta) between h and between their decay products
+
+    events = set_ak_column_f32(
+        events,
+        "cos_h12",
+        cos_h12,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_h13",
+        cos_h13,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_h23",
+        cos_h23,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_h1bb",
+        cos_h1bb,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_h2bb",
+        cos_h2bb,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_htautau",
+        cos_htautau,
     )
     # return the events
     # from IPython import embed; embed()

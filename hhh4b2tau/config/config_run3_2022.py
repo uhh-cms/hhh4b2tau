@@ -17,13 +17,14 @@ def add_config(
     config_name: str or None = None,
     config_id: int or None = None,
     limit_dataset_files: int or None = None,
+    **kwargs,
 ) -> od.Config:
 
     # get all root processes
     procs = get_root_processes_from_campaign(campaign)
     # from IPython import embed; embed(header="After getting procs")
     # create a config by passing the campaign, so id and name will be identical
-    cfg = analysis.add_config(campaign, name=config_name, id=config_id)
+    cfg = od.Config(name=config_name, id=config_id, campaign=campaign)
 
     # gather campaign data
     year = campaign.x.year
@@ -397,3 +398,5 @@ def add_config(
 
     from hhh4b2tau.config.variables import add_variables
     add_variables(cfg)
+
+    return cfg

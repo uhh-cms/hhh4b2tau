@@ -39,6 +39,7 @@ def add_config(
             if all(s in x for s in ["c3", "d4", "4b2tau"])
         ]
     )
+
     for process_name in process_names:
         # add the process
         proc = cfg.add_process(procs.get(process_name))
@@ -49,19 +50,19 @@ def add_config(
                 # (c3, d4, color) with colors recommended by cms
                   (0, 0, "#000000"),
                   (0, 99, "#3f90da"),
-                  (0, 'minus1', "#ffa90e"),
+                  (0, 'm1', "#ffa90e"),
                   (19, 19, "#bd1f01"),
                   (1, 0, "#94a4a2"),
                   (1, 2, "#832db6"),
-                  (2, 'minus1', "#a96b59"),
+                  (2, 'm1', "#a96b59"),
                   (4, 9, "#e76300"),
-                  ('minus1', 0, "#b9ac70"),
-                  ('minus1', 'minus1', "#717581"),
-                  ('minus1p5', 'minus0p5', "#92dadd"),
+                  ('m1', 0, "#b9ac70"),
+                  ('m1', 'm1', "#717581"),
+                  ('m1p5', 'm0p5', "#92dadd"),
             )
 
             for c3,d4,color in coupling_with_colors:
-                if proc.name == f"hhh_c3_{c3}_d4_{d4}_4b2tau":
+                if proc.name == f"hhh_4b2tau_c3{c3}_d4{d4}":
                     proc.color1 = color
             if proc.name == "tt":
                 proc.color1 = "#e41a1c"   # else "#377eb8"
@@ -76,7 +77,7 @@ def add_config(
         # backgrounds
         "tt_sl_powheg",        
     ] + [
-            f"{x}_madgraph" for x in all_hhh_processes
+            f"{x}_amcatnlo" for x in all_hhh_processes
             if all(s in x for s in ["c3", "d4", "4b2tau"])
         ]
     )
@@ -112,15 +113,15 @@ def add_config(
     # (used in wrapper_factory and during plotting)
     cfg.x.dataset_groups = {
         "hhh_couplings": [
-            f"{x}_madgraph" for x in all_hhh_processes
+            f"{x}_amcatnlo" for x in all_hhh_processes
             if all(s in x for s in ["c3", "d4", "4b2tau"])
         ],
         "hhh_compare_1": [
-            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (1, 0), ("minus1", 0), (0, 99), (0, "minus1"), (2, "minus1"))
+            f"hhh_4b2tau_c3{x}_d4{y}_amcatnlo" for x,y in ((0, 0), (1, 0), ("m1", 0), (0, 99), (0, "m1"), (2, "m1"))
         ],
 
         "hhh_compare_2": [
-            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (19, 19), (4, 9), ("minus1p5", "minus0p5"), ("minus1", "minus1"), (1, 2))
+            f"hhh_4b2tau_c3{x}_d4{y}_amcatnlo" for x,y in ((0, 0), (19, 19), (4, 9), ("m1p5", "m0p5"), ("m1", "m1"), (1, 2))
         ],
     }
 

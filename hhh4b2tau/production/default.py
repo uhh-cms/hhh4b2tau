@@ -17,6 +17,7 @@ from hhh4b2tau.production.weights import (
 )
 from hhh4b2tau.production.btag import normalized_btag_weights
 from hhh4b2tau.production.tau import tau_weights, trigger_weights
+from hhh4b2tau.production.newvariables import jet_angle_difference
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS
 
 
@@ -26,12 +27,14 @@ ak = maybe_import("awkward")
 @producer(
     uses={
         category_ids, features, stitched_normalization_weights, normalized_pu_weight,
-        normalized_btag_weights, tau_weights, electron_weights, muon_weights, trigger_weights,
+        # tau_weights, trigger_weights,
+        electron_weights, muon_weights, jet_angle_difference,
         IF_DATASET_HAS_LHE_WEIGHTS(normalized_pdf_weight, normalized_murmuf_weight),
     },
     produces={
         category_ids, features, stitched_normalization_weights, normalized_pu_weight,
-        normalized_btag_weights, tau_weights, electron_weights, muon_weights, trigger_weights,
+        # tau_weights, trigger_weights,
+        electron_weights, muon_weights, jet_angle_difference,
         IF_DATASET_HAS_LHE_WEIGHTS(normalized_pdf_weight, normalized_murmuf_weight),
     },
 )
@@ -62,15 +65,16 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         # events = self[normalized_btag_weights](events, **kwargs)
 
         # tau weights
-        events = self[tau_weights](events, **kwargs)
+        # events = self[tau_weights](events, **kwargs)
 
         # electron weights
-        events = self[electron_weights](events, **kwargs)
+        # events = self[electron_weights](events, **kwargs)
 
         # muon weights
-        events = self[muon_weights](events, **kwargs)
+        # events = self[muon_weights](events, **kwargs)
 
         # trigger weights
-        events = self[trigger_weights](events, **kwargs)
+        # events = self[trigger_weights](events, **kwargs)
+    events = self[jet_angle_difference](events, **kwargs)
 
     return events

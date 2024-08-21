@@ -3,6 +3,7 @@ import functools
 
 import order as od
 import law
+import re
 from scinum import Number
 
 from columnflow.util import DotDict, dev_sandbox
@@ -53,48 +54,49 @@ def add_config(
     # add processes we are interested in
     from cmsdb.processes.hhh import __all__ as all_hhh_processes
     process_names = (
-        [
-            "data",
-            "tt",
-            "dy",
-        ] + [
-            x for x in all_hhh_processes
+        "data",
+        "tt",
+        "dy",
+        # hhh signal processes
+        *if_era(run=3, year=2022, tag="preEE", values=[x for x in all_hhh_processes
             if all(s in x for s in ["c3", "d4", "4b2tau"])
-        ]
+        ]),
+        *if_era(run=3, year=2022, tag="preEE", values=[
+            # hh background
+            "hh_ggf_hbb_htt_kl1_kt1",
+            "hh_ggf_hbb_htt_kl0_kt1",
+            "hh_ggf_hbb_htt_kl2p45_kt1",
+            "hh_ggf_hbb_htt_kl5_kt1",
+            "hh_ggf_hbb_htt_kl0_kt1_c21",
+            "hh_ggf_hbb_htt_kl1_kt1_c23",
+            "hh_vbf_hbb_htt_kv1_k2v1_kl1",
+            "hh_vbf_hbb_htt_kv1_k2v0_kl1",
+            "hh_vbf_hbb_htt_kv1_k2v1_kl2",
+            "hh_vbf_hbb_htt_kv1_k2v2_kl1",
+            "hh_vbf_hbb_htt_kv1p74_k2v1p37_kl14p4",
+            "hh_vbf_hbb_htt_kvm0p012_k2v0p03_kl10p2",
+            "hh_vbf_hbb_htt_kvm0p758_k2v1p44_klm19p3",
+            "hh_vbf_hbb_htt_kvm0p962_k2v0p959_klm1p43",
+            "hh_vbf_hbb_htt_kvm1p21_k2v1p94_klm0p94",
+            "hh_vbf_hbb_htt_kvm1p6_k2v2p72_klm1p36",
+            "hh_vbf_hbb_htt_kvm1p83_k2v3p57_klm3p39",
+            "hh_vbf_hbb_htt_kvm2p12_k2v3p87_klm5p96",
+            # tth background
+            "tth",
+        ]),
     )
 
     for process_name in process_names:
         # add the process
         proc = cfg.add_process(procs.get(process_name))
 
-        # configuration of colors, labels, etc. can happen here
-        if proc.is_mc:         
-            coupling_with_colors = (
-                # (c3, d4, color) with colors recommended by cms
-                  (0, 0, "#000000"),
-                  (0, 99, "#3f90da"),
-                  (0, 'm1', "#ffa90e"),
-                  (19, 19, "#bd1f01"),
-                  (1, 0, "#94a4a2"),
-                  (1, 2, "#832db6"),
-                  (2, 'm1', "#a96b59"),
-                  (4, 9, "#e76300"),
-                  ('m1', 0, "#b9ac70"),
-                  ('m1', 'm1', "#717581"),
-                  ('m1p5', 'm0p5', "#92dadd"),
-            )
+        
 
-            for c3,d4,color in coupling_with_colors:
-                if proc.name == f"hhh_4b2tau_c3{c3}_d4{d4}":
-                    proc.color1 = color
-            if proc.name == "tt":
-                proc.color1 = "#e41a1c"   # else "#377eb8"
-
-        # from hhh4b2tau.config.styles import stylize_processes
-        # stylize_processes(cfg)
+    from hhh4b2tau.config.styles import stylize_processes
+    stylize_processes(cfg)
 
     # add datasets we need to study
-    dataset_names = ([
+    dataset_names = (
         # data
         "data_mu_d",
         # backgrounds
@@ -102,6 +104,24 @@ def add_config(
         "tt_dl_powheg",
         "tt_fh_powheg",
         *if_era(run=3, year=2022, values=[
+            "hh_ggf_hbb_htt_kl1_kt1_powheg",
+            "hh_ggf_hbb_htt_kl0_kt1_powheg",
+            "hh_ggf_hbb_htt_kl2p45_kt1_powheg",
+            "hh_ggf_hbb_htt_kl5_kt1_powheg",
+            # vbf
+            "hh_vbf_hbb_htt_kv1_k2v1_kl1_madgraph",
+            "hh_vbf_hbb_htt_kv1_k2v1_kl2_madgraph",
+            "hh_vbf_hbb_htt_kv1_k2v0_kl1_madgraph",
+            "hh_vbf_hbb_htt_kv1_k2v2_kl1_madgraph",
+            "hh_vbf_hbb_htt_kv1p74_k2v1p37_kl14p4_madgraph",
+            "hh_vbf_hbb_htt_kvm0p012_k2v0p03_kl10p2_madgraph",
+            "hh_vbf_hbb_htt_kvm0p758_k2v1p44_klm19p3_madgraph",
+            "hh_vbf_hbb_htt_kvm0p962_k2v0p959_klm1p43_madgraph",
+            "hh_vbf_hbb_htt_kvm1p21_k2v1p94_klm0p94_madgraph",
+            "hh_vbf_hbb_htt_kvm1p6_k2v2p72_klm1p36_madgraph",
+            "hh_vbf_hbb_htt_kvm1p83_k2v3p57_klm3p39_madgraph",
+            "hh_vbf_hbb_htt_kvm2p12_k2v3p87_klm5p96_madgraph",
+            # dy
             "dy_m4to10_amcatnlo",
             "dy_m10to50_amcatnlo",
             "dy_m50toinf_amcatnlo",
@@ -118,17 +138,36 @@ def add_config(
             "dy_m50toinf_2j_pt200to400_amcatnlo",
             "dy_m50toinf_2j_pt400to600_amcatnlo",
             "dy_m50toinf_2j_pt600toinf_amcatnlo",
-        ] + [
+            # ttH
+            "tth_hbb_powheg",
+            "tth_hnonbb_powheg",
+        ]),
+        *if_era(run=3, year=2022, values=[
             f"{x}_amcatnlo" for x in all_hhh_processes
             if all(s in x for s in ["c3", "d4", "4b2tau"])
-            ]),
-        ]
+        ]),
     )
     for dataset_name in dataset_names:
         # add the dataset
         dataset = cfg.add_dataset(campaign.get_dataset(dataset_name))
 
-        # for testing purposes, limit the number of files
+        # add tags to datasets
+        if dataset.name.startswith("tt"):
+            dataset.add_tag(("has_top", "is_ttbar"))
+        elif dataset.name.startswith("st"):
+            dataset.add_tag(("has_top", "is_single_top"))
+        if dataset.name.startswith("dy"):
+            dataset.add_tag("is_dy")
+        if re.match(r"^(ww|wz|zz)_.*pythia$", dataset.name):
+            dataset.add_tag("no_lhe_weights")
+        if dataset_name.startswith("hh_"):
+            dataset.add_tag("signal")
+            dataset.add_tag("nonresonant_signal")
+        if dataset_name.startswith(("graviton_hh_", "radion_hh_")):
+            dataset.add_tag("signal")
+            dataset.add_tag("resonant_signal")
+
+        # apply an optional limit on the number of files
         if limit_dataset_files:
             for info in dataset.info.values():
                 info.n_files = min(info.n_files, limit_dataset_files)
@@ -150,7 +189,51 @@ def add_config(
 
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
-    cfg.x.process_groups = {}
+    cfg.x.process_groups = {
+        "backgrounds": (backgrounds := [
+            # "h",
+            "tt",
+            "dy",
+            # "qcd",
+            # "st",
+            # "v",
+            # "multiboson",
+            # "tt_multiboson",
+            # "ewk",
+            # "tth",
+        ]),
+         "split_backgrounds": (split_backgrounds := [
+            # "h",
+            "tt_sl",
+            "tt_dl",
+            "tt_fh",
+            "dy",
+            # "qcd",
+            # "st",
+            # "v",
+            # "multiboson",
+            # "tt_multiboson",
+            # "ewk",
+            # "tth",
+        ]),
+        "hhh_couplings": [
+            f"{x}" for x in all_hhh_processes
+            if all(s in x for s in ["c3", "d4", "4b2tau"])
+        ],
+        "hhh_compare_1": [
+            f"hhh_4b2tau_c3{x}_d4{y}" for x,y in ((0, 0), (1, 0), ("m1", 0), (0, 99), (0, "m1"), (2, "m1"))
+        ],
+
+        "hhh_compare_2": [
+            f"hhh_4b2tau_c3{x}_d4{y}" for x,y in ((0, 0), (19, 19), (4, 9), ("m1p5", "m0p5"), ("m1", "m1"), (1, 2))
+        ],
+        "sm_higgs": (sm_higgs := [
+            "tth",
+            "hhh_4b2tau_c30_d40",
+            "hh_ggf_hbb_htt_kl1_kt1",
+        ]),
+        "sm": sorted(list(set(split_backgrounds + sm_higgs))),
+    }
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
@@ -166,6 +249,12 @@ def add_config(
         "hhh_compare_2": [
             f"hhh_4b2tau_c3{x}_d4{y}_amcatnlo" for x,y in ((0, 0), (19, 19), (4, 9), ("m1p5", "m0p5"), ("m1", "m1"), (1, 2))
         ],
+        "sm_higgs": (sm_higgs := [
+            "tth_hbb_powheg",
+            "tth_hnonbb_powheg",
+            "hhh_4b2tau_c30_d40_amcatnlo",
+            "hh_ggf_hbb_htt_kl1_kt1_powheg",
+        ]),
     }
 
     # define inclusive datasets for the dy process identification with corresponding leaf processes
@@ -219,7 +308,12 @@ def add_config(
 
     # custom_style_config groups for conveniently looping over certain style configs
     # (used during plotting)
-    cfg.x.custom_style_config_groups = {}
+    cfg.x.custom_style_config_groups = {
+        "small_legend": {
+            "legend_cfg": {"ncols": 2, "fontsize": 16, "columnspacing": 0.6},
+        },
+    }
+    cfg.x.default_custom_style_config = "small_legend"
 
     # selector step groups for conveniently looping over certain steps
     # (used in cutflow tasks)
@@ -591,6 +685,7 @@ def add_config(
             "Tau.idDeepTau2017v2p1VSmu", "Tau.idDeepTau2017v2p1VSjet", "Tau.genPartFlav",
             "Tau.decayMode",
             "PV.npvs",
+            "PFCandidate.*",
             # all columns added during selection using a ColumnCollection flag
             ColumnCollection.ALL_FROM_SELECTOR,
         },
@@ -625,9 +720,9 @@ def add_config(
     })
 
     # define per-dataset event weights
-    for dataset in cfg.datasets:
-        if dataset.has_tag("is_ttbar"):
-            dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
+    # for dataset in cfg.datasets:
+    #     if dataset.has_tag("is_ttbar"):
+    #         dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
 
     # versions per task family, either referring to strings or to callables receving the invoking
     # task instance and parameters to be passed to the task family

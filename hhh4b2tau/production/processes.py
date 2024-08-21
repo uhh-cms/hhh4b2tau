@@ -12,7 +12,7 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import, InsertableDict
 from columnflow.columnar_util import set_ak_column
 
-from hhh4b2tau.util import IF_DATASET_IS_DY
+from hhh4b2tau.util import IF_DATASET_IS_DY, IF_DATASET_IS_TT
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -24,6 +24,8 @@ logger = law.logger.get_logger(__name__)
 
 NJetsRange = tuple[int, int]
 PtRange = tuple[float, float]
+
+HadronFlavors = tuple[str]
 
 set_ak_column_i64 = functools.partial(set_ak_column, value_type=np.int64)
 
@@ -139,4 +141,64 @@ def process_ids_dy_setup(
     # fill it
     for proc in self.dy_leaf_processes:
         key = key_func(proc.x.njets[0], proc.x("ptll", [-1])[0])
+        self.id_table[key] = proc.id
+
+
+@producer(
+    uses={IF_DATASET_IS_TT("Jet.hadronFlavour")},
+    produces={IF_DATASET_IS_TT("process_id")},
+)
+def process_ids_ttbar(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Assigns each dy event a single process id, based on the number of jets and the di-lepton pt of
+    the LHE record. This is used for the stitching of the DY samples.
+    """
+    # as always, we assume that each dataset has exactly one process associated to it
+    if len(self.dataset_inst.processes) != 1:
+        raise NotImplementedError(
+            f"dataset {self.dataset_inst.name} has {len(self.dataset_inst.processes)} processes "
+            "assigned, which is not yet implemented",
+        )
+    process_inst = self.dataset_inst.processes.get_first()
+
+    # get the number of nlo jets and the di-lepton pt
+    hadron_flavor = events.Jet.hadronFlavour
+
+    # lookup the id and check for invalid values
+    process_ids = np.squeeze(np.asarray(self.id_table[self.key_func(hadron_flavor)].todense()))
+    invalid_mask = process_ids == 0
+    if ak.any(invalid_mask):
+        raise ValueError(
+            f"found {sum(invalid_mask)} dy events that could not be assigned to a process",
+        )
+
+    # store them
+    events = set_ak_column_i64(events, "process_id", process_ids)
+
+    return events
+
+
+@process_ids_ttbar.setup
+def process_ids_ttbar_setup(
+    self: Producer,
+    reqs: dict,
+    inputs: dict,
+    reader_targets: InsertableDict,
+) -> None:
+
+    # define a key function that maps njets and pt to a unique key for use in a lookup table
+    def key_func(hadron_flavor):
+        
+        flavors = ak.array(["b", "c", "l"])
+        flavor_idx = ak.local_index(flavors)
+        return flavor_idx[flavors == hadron_flavor]
+
+    self.key_func = key_func
+
+    # define the lookup table
+    self.id_table = sp.sparse.lil_matrix((1, 3), dtype=np.int64)
+
+    # fill it
+    for proc in self.ttbar_leaf_processes:
+        key = key_func(proc.x.hadron_flavor)
         self.id_table[key] = proc.id

@@ -91,7 +91,7 @@ def morphing_hook(
     
     data_histo = []
     for c3, d4 in morphing_coupling_combinations:
-        name = "hhh_4b2tau_c3{c3}_d4{d4}_4b2tau".format(
+        name = "hhh_4b2tau_c3{c3}_d4{d4}".format(
                       c3=str(c3).replace("-", "m").replace(".", "p"),
                       d4=str(d4).replace("-", "m").replace(".", "p"),
                       )

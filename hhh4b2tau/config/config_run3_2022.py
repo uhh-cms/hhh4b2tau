@@ -258,9 +258,9 @@ def add_config(
             f"hhh_4b2tau_c3{x}_d4{y}_amcatnlo" for x,y in ((0, 0), (19, 19), (4, 9), ("m1p5", "m0p5"), ("m1", "m1"), (1, 2))
         ],
         "hhh_compare_to_morph": [
-            "hhh_c3_{c3}_d4_{d4}_amcatnlo".format(
-                      c3=str(c3).replace("-", "minus").replace(".", "p"),
-                      d4=str(d4).replace("-", "minus").replace(".", "p"),
+            "hhh_4b2tau_c3{c3}_d4{d4}_amcatnlo".format(
+                      c3=str(c3).replace("-", "m").replace(".", "p"),
+                      d4=str(d4).replace("-", "m").replace(".", "p"),
                       ) for c3,d4 in morphing.morphing_coupling_combinations
         ],
         "sm_higgs": (sm_higgs := [

@@ -76,24 +76,24 @@ def morphing_hook(
     # create hypothetical HHH_4b2tau sample by morphing given data 
     
     hhh_morph0 = od.Process(
-          "hhh_c3_{c3}_d4_{d4}_4b2tau".format(
-                      c3=str(new[0][0]).replace("-", "minus").replace(".", "p"),
-                      d4=str(new[0][1]).replace("-", "minus").replace(".", "p"),
+          "hhh_4b2tau_c3{c3}_d4{d4}".format(
+                      c3=str(new[0][0]).replace("-", "m").replace(".", "p"),
+                      d4=str(new[0][1]).replace("-", "m").replace(".", "p"),
                       ), id="+",
             label="$(\kappa_3=2, \kappa_4=0)$", color1="#bd1f01")
     
     hhh_morph1 = od.Process(
-          "hhh_c3_{c3}_d4_{d4}_4b2tau".format(
-                      c3=str(new[1][0]).replace("-", "minus").replace(".", "p"),
-                      d4=str(new[1][1]).replace("-", "minus").replace(".", "p"),
+          "hhh_4b2tau_c3{c3}_d4{d4}".format(
+                      c3=str(new[1][0]).replace("-", "m").replace(".", "p"),
+                      d4=str(new[1][1]).replace("-", "m").replace(".", "p"),
                       ), id="+",
             label="$(\kappa_3=3, \kappa_4=1)$", color1="#3f90da")
     
     data_histo = []
     for c3, d4 in morphing_coupling_combinations:
-        name = "hhh_c3_{c3}_d4_{d4}_4b2tau".format(
-                      c3=str(c3).replace("-", "minus").replace(".", "p"),
-                      d4=str(d4).replace("-", "minus").replace(".", "p"),
+        name = "hhh_4b2tau_c3{c3}_d4{d4}_4b2tau".format(
+                      c3=str(c3).replace("-", "m").replace(".", "p"),
+                      d4=str(d4).replace("-", "m").replace(".", "p"),
                       )
         for proc, histo in hists.items():
             if proc.name == name:

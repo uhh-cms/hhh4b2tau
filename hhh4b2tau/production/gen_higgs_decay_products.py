@@ -195,7 +195,7 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
     # from IPython import embed
     # embed(header="in gen_higgs_decay_products after W identification")
     
-
+    return events
 
 #     # decays might also be effective into a variable number of mesons -> add them
 #     w_children = tau_children[abs_tau_children_id != 16]
@@ -357,4 +357,3 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
 #     pion_pos = ak.flatten(tau_pos_2c[tau_pos_2c.pdgId == 211], axis=2)
 #     kaon_pos = ak.flatten(tau_pos_2c[tau_pos_2c.pdgId == 321], axis=2)
 
-    return events

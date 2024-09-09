@@ -104,9 +104,22 @@ def add_config(
     # set default weight_producer
     cfg.x.default_weight_producer = "all_weights"
 
+    # add a hist hook to work with histograms of data samples
+    # i.e. morph data for hypothetical coupling that has not been generated yet
+    import hhh4b2tau.plotting.morphing as morphing
+
+    cfg.x.hist_hooks = {
+    "morphing": morphing.morphing_hook,
+    }
+
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
-    cfg.x.process_groups = {}
+    cfg.x.process_groups = {
+        "hhh_couplings": [
+            f"{x}" for x in all_hhh_processes
+            if all(s in x for s in ["c3", "d4", "4b2tau"])
+        ],
+    }
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
@@ -116,11 +129,21 @@ def add_config(
             if all(s in x for s in ["c3", "d4", "4b2tau"])
         ],
         "hhh_compare_1": [
-            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (1, 0), ("minus1", 0), (0, 99), (0, "minus1"), (2, "minus1"))
+            f"hhh_c3_{c3}_d4_{d4}_4b2tau_madgraph" 
+            for c3,d4 in ((0, 0), (1, 0), ("minus1", 0), (0, 99),
+                           (0, "minus1"), (2, "minus1"))
         ],
 
         "hhh_compare_2": [
-            f"hhh_c3_{x}_d4_{y}_4b2tau_madgraph" for x,y in ((0, 0), (19, 19), (4, 9), ("minus1p5", "minus0p5"), ("minus1", "minus1"), (1, 2))
+            f"hhh_c3_{c3}_d4_{d4}_4b2tau_madgraph" 
+            for c3,d4 in ((0, 0), (19, 19), (4, 9), 
+                          ("minus1p5", "minus0p5"), ("minus1", "minus1"), (1, 2))
+        ],
+        "hhh_compare_to_morph": [
+            "hhh_c3_{c3}_d4_{d4}_4b2tau_madgraph".format(
+                      c3=str(c3).replace("-", "minus").replace(".", "p"),
+                      d4=str(d4).replace("-", "minus").replace(".", "p"),
+                      ) for c3,d4 in morphing.morphing_coupling_combinations
         ],
     }
 
@@ -147,8 +170,11 @@ def add_config(
     cfg.x.process_settings_groups = {
         "unstack_processes": {f"{x}": {"unstack": True} for x in all_hhh_processes
             if all(s in x for s in ["c3", "d4", "4b2tau"])},
-
-        # "unstack_all": {"*": {"unstack": True}}, # does not work somehow????
+        "unstack_morph": {"hhh_c3_{c3}_d4_{d4}_4b2tau".format(
+                      c3=str(c3).replace("-", "minus").replace(".", "p"),
+                      d4=str(d4).replace("-", "minus").replace(".", "p"),
+                      ) : {"unstack": True}
+                      for c3,d4 in morphing.all_cc}
     }
 
     # variable_settings groups for conveniently looping over different values for the variable-settings parameter
@@ -333,10 +359,6 @@ def add_config(
                 },
             },
         }))
-
-
-
-
 
 
     # target file size after MergeReducedEvents in MB

@@ -242,6 +242,4 @@ def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         children_output_name="gen_taunu",
         mother_output_name="gen_w_to_taunu",
     )
-=======
-    
     return events

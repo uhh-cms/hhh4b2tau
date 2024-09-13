@@ -91,8 +91,7 @@ def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array
         for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )
     } |
     {   
-        optional(f"gen_{child}_from_{mother}.{var}")
-        for mother in ('h', 'tau', )
+        optional(f"gen_{child}.{var}")
         for child in ('b', 'tau', 'taunu', 'electron', 'enu', 'muon', 'munu', )
         for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )} | 
         {
@@ -107,7 +106,7 @@ def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array
         "cos_htautau",
     },
 )
-def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def hhh_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Construct b and tau invariant mass. 
     Also added pt, delta R and cos(delta) of H and their decay products.
@@ -122,54 +121,51 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
                 "type_name": "GenParticle",
             } for x in [
             "gen_h_to_b", 
-            "gen_b_from_h", 
+            "gen_b", 
             "gen_h_to_tau", 
-            "gen_tau_from_h",
-            "gen_nu_from_tau",
-            "gen_taunu_from_tau",
-            "gen_electron_from_tau",
-            "gen_enu_from_tau",
-            "gen_munu_from_tau",
-            "gen_muon_from_tau",
+            "gen_tau",
+            "gen_taunu",
+            "gen_electron",
+            "gen_enu",
+            "gen_munu",
+            "gen_muon",
             ]},
         **kwargs,
     )
 
     # from IPython import embed; embed()
 
-    # total number of taus per event
-    n_taus = ak.num(events.gen_tau_from_h, axis=-1)
-    n_bs = ak.num(events.gen_b_from_h, axis=-1)
+    # total number of partons per event
+    n_taus = ak.num(events.gen_tau, axis=-1)
+    n_bs = ak.num(events.gen_b, axis=-1)
     n_hs = (ak.num(events.gen_h_to_tau, axis=-1) +
     ak.num(events.gen_h_to_b, axis=-1))
   
     # total number of leptons, neutrinos per event
-    n_taunu = ak.num(events.gen_taunu_from_tau, axis=1)
-    n_electron = ak.num(events.gen_electron_from_tau, axis=1)
-    n_muon = ak.num(events.gen_muon_from_tau, axis=1)
-    n_munu = ak.num(events.gen_munu_from_tau, axis=1)
-    n_enu = ak.num(events.gen_enu_from_tau, axis=1)
+    n_taunu = ak.num(events.gen_taunu, axis=1)
+    n_electron = ak.num(events.gen_electron, axis=1)
+    n_muon = ak.num(events.gen_muon, axis=1)
     n_lep = n_electron + n_muon   
 
     # four-vector sum of first four elements of each
     # tau collection (possibly fewer)
     
-    ditau = events.gen_tau_from_h.sum(axis=-1)
-    dib = events.gen_b_from_h.sum(axis=-1)
+    ditau = events.gen_tau.sum(axis=-1)
+    dib = events.gen_b.sum(axis=-1)
     trih = events.gen_h_to_tau.sum(axis=-1) + events.gen_h_to_b.sum(axis=-1)
     # create 0 lorenz-vector
     zero_lorenz = ditau[0]-ditau[0]
     # lorenz vector sum of tau decay products
-    ditaunu = ak.where(n_taunu>=1, ak.flatten(events.gen_taunu_from_tau.sum(axis=1)), zero_lorenz)
-    dielectron = ak.fill_none(ak.pad_none(events.gen_electron_from_tau.sum(axis=1), 1), zero_lorenz[0])
+    ditaunu = ak.where(n_taunu>=1, ak.flatten(events.gen_taunu.sum(axis=1)), zero_lorenz)
+    dielectron = ak.fill_none(ak.pad_none(events.gen_electron.sum(axis=1), 1), zero_lorenz[0])
     dienu = ak.fill_none(
-        ak.pad_none(events.gen_enu_from_tau.sum(axis=1), 1),
+        ak.pad_none(events.gen_enu.sum(axis=1), 1),
           zero_lorenz[0])
     dimuon = ak.fill_none(
-        ak.pad_none(events.gen_muon_from_tau.sum(axis=1), 1),
+        ak.pad_none(events.gen_muon.sum(axis=1), 1),
           zero_lorenz[0])
     dimunu = ak.fill_none(
-        ak.pad_none(events.gen_munu_from_tau.sum(axis=1), 1),
+        ak.pad_none(events.gen_munu.sum(axis=1), 1),
           zero_lorenz[0])
 
     # lep_sum = dielectron + dimuon
@@ -189,9 +185,9 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     delta_r_h23 = events.gen_h_to_b[:,1].delta_r(events.gen_h_to_tau)
 
     # delta_r between H decay products
-    delta_r_h1bb = events.gen_b_from_h[:,0,0].delta_r(events.gen_b_from_h[:,0,1])
-    delta_r_h2bb = events.gen_b_from_h[:,1,0].delta_r(events.gen_b_from_h[:,1,1])
-    delta_r_htautau = events.gen_tau_from_h[:,0,0].delta_r(events.gen_tau_from_h[:,0,1])
+    delta_r_h1bb = events.gen_b[:,0,0].delta_r(events.gen_b[:,0,1])
+    delta_r_h2bb = events.gen_b[:,1,0].delta_r(events.gen_b[:,1,1])
+    delta_r_htautau = events.gen_tau[:,0,0].delta_r(events.gen_tau[:,0,1])
     # from IPython import embed; embed()
 
     # cosine of opening angle little delta between h and between their decay products 
@@ -201,12 +197,12 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
                (events.gen_h_to_b[:,0].rho*events.gen_h_to_tau.rho))
     cos_h23 = (events.gen_h_to_b[:,1].dot(events.gen_h_to_tau)/
                (events.gen_h_to_b[:,1].rho*events.gen_h_to_tau.rho))
-    cos_h1bb = (events.gen_b_from_h[:,0,0].dot(events.gen_b_from_h[:,0,1])/
-                (events.gen_b_from_h[:,0,0].rho*events.gen_b_from_h[:,0,1].rho))
-    cos_h2bb = (events.gen_b_from_h[:,1,0].dot(events.gen_b_from_h[:,1,1])/
-                (events.gen_b_from_h[:,1,0].rho*events.gen_b_from_h[:,1,1].rho))
-    cos_htautau = (events.gen_tau_from_h[:,0,0].dot(events.gen_tau_from_h[:,0,1])/
-                   (events.gen_tau_from_h[:,0,0].rho*events.gen_tau_from_h[:,0,1].rho))
+    cos_h1bb = (events.gen_b[:,0,0].dot(events.gen_b[:,0,1])/
+                (events.gen_b[:,0,0].rho*events.gen_b[:,0,1].rho))
+    cos_h2bb = (events.gen_b[:,1,0].dot(events.gen_b[:,1,1])/
+                (events.gen_b[:,1,0].rho*events.gen_b[:,1,1].rho))
+    cos_htautau = (events.gen_tau[:,0,0].dot(events.gen_tau[:,0,1])/
+                   (events.gen_tau[:,0,0].rho*events.gen_tau[:,0,1].rho))
 
     # four-lepton mass, taking into account only events with at least four leptons,
     # and otherwise substituting a predefined EMPTY_FLOAT value
@@ -228,7 +224,7 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         EMPTY_FLOAT,
     )
 
-    lep_nu_from_tau_mass = ak.where(
+    lep_nu_mass = ak.where(
         n_lep >= 2,
         lep_nu_sum.mass,
         [[EMPTY_FLOAT]],
@@ -256,7 +252,7 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     events = set_ak_column_f32(
         events,
         "mlnu",
-        lep_nu_from_tau_mass,
+        lep_nu_mass,
     )
     # pt of h and their decay products 
     events = set_ak_column_f32(
@@ -359,4 +355,99 @@ def h_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     )
     # return the events
     # from IPython import embed; embed()
+    return events
+
+
+@producer(
+    uses=(
+    {   
+        optional(f"gen_{child}.{var}")
+        for child in ('b', 'b1', 'b2', 'tau', 'taunu', 'electron', 'enu', 'muon', 'munu', )
+        for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )} | 
+        {
+            attach_coffea_behavior,
+        }
+    ),
+    produces={
+        "mtautau", "mbb", "mlnu", "h1bpt", "h2bpt", "htaupt",
+         "deltar_h12", "deltar_h13", "deltar_h23", "deltar_h1bb", "deltar_h2bb",
+        "deltar_htautau",
+        "cos_h12", "cos_h13", "cos_h23", "cos_h1bb", "cos_h2bb",
+        "cos_htautau",
+    },
+)
+def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    '''
+    migrating variables previously found in hhh_decay_invariant_mass 
+    that are also compatible with background data with same final state 4b2tau 
+    '''
+    # attach lorenz vector behavior
+    events = self[attach_coffea_behavior](
+        events,
+        collections={ x : {
+                "type_name": "GenParticle",
+            } for x in [
+            "gen_b", 
+            "gen_b1",
+            "gen_b2",
+            "gen_tau",
+            "gen_taunu",
+            ]},
+        **kwargs,
+    )
+    from IPython import embed; embed()
+    # total number of taus and b quarks
+    n_tau = ak.num(events.gen_tau, axis=-1)
+    n_b = ak.num(events.gen_b1, axis=-1) + ak.num(events.gen_b2, axis=-1)
+
+    '''
+    still work in progress since array dimensions differ from hhh processes
+    ''' 
+
+    # delta_r between bb tautau
+    delta_r_bb1 = events.gen_b1[:,0,0].delta_r(events.gen_b1[:,0,1])
+    delta_r_bb2 = events.gen_b2[:,1,0].delta_r(events.gen_b2[:,1,1])
+    delta_r_tautau = events.gen_tau[:,0,0].delta_r(events.gen_tau[:,0,1])
+
+    # work still in progress since array dimensions differ from hhh
+    cos_bb1 = events.gen_b[:,0,0].unit.dot(events.gen_b[:,0,1].unit)
+    cos_bb2 = events.gen_b[:,1,0].unit.dot(events.gen_b[:,1,1].unit)
+    cos_tautau = events.gen_tau[:,0,0].unit.dot(events.gen_tau[:,0,1].unit)
+
+    events = set_ak_column_f32(
+        events,
+        "deltar_bb1",
+        delta_r_bb1,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "deltar_bb2",
+        delta_r_bb2,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "deltar_tautau",
+        delta_r_tautau,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_bb1",
+        cos_bb1,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_bb2",
+        cos_bb2,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_tautau",
+        cos_tautau,
+    )
+
     return events

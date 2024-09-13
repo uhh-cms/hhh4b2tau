@@ -201,11 +201,8 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
     )
     # from IPython import embed
     # embed(header="in gen_higgs_decay_products after W identification")
-
     return events
-
-
-
+  
 # Access decay products for ttH channel
 @_GenPartMatchBase.producer(
         mothers=(),
@@ -245,5 +242,6 @@ def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         children_output_name="gen_taunu",
         mother_output_name="gen_w_to_taunu",
     )
-
+=======
+    
     return events

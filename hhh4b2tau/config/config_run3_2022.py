@@ -187,6 +187,14 @@ def add_config(
     # set default weight_producer
     cfg.x.default_weight_producer = "all_weights"
 
+    # add a hist hook to work with histograms of data samples
+    # i.e. morph data for hypothetical coupling that has not been generated yet
+    import hhh4b2tau.plotting.morphing as morphing
+
+    cfg.x.hist_hooks = {
+    "morphing": morphing.morphing_hook,
+    }
+
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
     cfg.x.process_groups = {
@@ -249,6 +257,12 @@ def add_config(
         "hhh_compare_2": [
             f"hhh_4b2tau_c3{x}_d4{y}_amcatnlo" for x,y in ((0, 0), (19, 19), (4, 9), ("m1p5", "m0p5"), ("m1", "m1"), (1, 2))
         ],
+        "hhh_compare_to_morph": [
+            "hhh_4b2tau_c3{c3}_d4{d4}_amcatnlo".format(
+                      c3=str(c3).replace("-", "m").replace(".", "p"),
+                      d4=str(d4).replace("-", "m").replace(".", "p"),
+                      ) for c3,d4 in morphing.morphing_coupling_combinations
+        ],
         "sm_higgs": (sm_higgs := [
             "tth_hbb_powheg",
             "tth_hnonbb_powheg",
@@ -298,8 +312,11 @@ def add_config(
     cfg.x.process_settings_groups = {
         "unstack_processes": {f"{x}": {"unstack": True} for x in all_hhh_processes
             if all(s in x for s in ["c3", "d4", "4b2tau"])},
-
-        # "unstack_all": {"*": {"unstack": True}}, # does not work somehow????
+        "unstack_morph": {"hhh_4b2tau_c3{c3}_d4{d4}".format(
+                      c3=str(c3).replace("-", "m").replace(".", "p"),
+                      d4=str(d4).replace("-", "m").replace(".", "p"),
+                      ) : {"unstack": True}
+                      for c3,d4 in morphing.all_cc}
     }
 
     # variable_settings groups for conveniently looping over different values for the variable-settings parameter
@@ -332,6 +349,10 @@ def add_config(
     # ml_model groups for conveniently looping over certain ml_models
     # (used during the machine learning tasks)
     cfg.x.ml_model_groups = {}
+
+    # custom method and sandbox for determining dataset lfns
+    cfg.x.get_dataset_lfns = None
+    cfg.x.get_dataset_lfns_sandbox = None
 
     # whether to validate the number of obtained LFNs in GetDatasetLFNs
     # (currently set to false because the number of files per dataset is truncated to 2)

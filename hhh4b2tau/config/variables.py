@@ -160,7 +160,7 @@ def add_variables(
         binning=(60, 0.0, 800.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$pt_H$",
+        x_title=r"$p_T_H$",
     )
 
     cfg.add_variable(
@@ -168,7 +168,7 @@ def add_variables(
         binning=(60, 0.0, 800.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$pt_{H_1\rightarrow bb}$",
+        x_title=r"$p_T_{H_1\rightarrow bb}$",
     )
 
     cfg.add_variable(
@@ -176,7 +176,7 @@ def add_variables(
         binning=(60, 0.0, 800.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$pt_{H_2\rightarrow bb}$",
+        x_title=r"$p_T_{H_2\rightarrow bb}$",
     )
 
     cfg.add_variable(
@@ -184,7 +184,7 @@ def add_variables(
         binning=(60, 0.0, 800.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$pt_{H\rightarrow\tau\tau}$",
+        x_title=r"$p_T_{H\rightarrow\tau\tau}$",
     )
 
     cfg.add_variable(

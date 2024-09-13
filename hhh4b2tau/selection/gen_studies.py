@@ -15,7 +15,7 @@ from columnflow.util import maybe_import
 
 from hhh4b2tau.production.example import cutflow_features
 from hhh4b2tau.production.gen_higgs_decay_products import gen_higgs_decay_products
-
+from hhh4b2tau.production.gen_higgs_decay_products import gen_tth_decay_products
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -34,12 +34,14 @@ ak = maybe_import("awkward")
 @selector(
     uses={
         # selectors / producers called within _this_ selector
-        mc_weight, cutflow_features, process_ids, gen_higgs_decay_products,
-        increment_stats,
+        mc_weight, cutflow_features, process_ids, increment_stats,
+        gen_higgs_decay_products, gen_tth_decay_products,
+        
     },
     produces={
         # selectors / producers whose newly created columns should be kept
-        mc_weight, cutflow_features, process_ids, gen_higgs_decay_products,
+        mc_weight, cutflow_features, process_ids, 
+        gen_higgs_decay_products, gen_tth_decay_products,
     },
     exposed=True,
 )
@@ -54,9 +56,18 @@ def gen_studies(
 
     # get higgs decay products
 
-    if self.dataset_inst.is_mc and self.dataset_inst.name.startswith("h"):
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("h",))
+    ):
         events = self[gen_higgs_decay_products](events, **kwargs)
     
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("tth",))
+    ):
+        events = self[gen_tth_decay_products](events, **kwargs)
+        
     # # get tau decay products
 
     # if self.dataset_inst.is_mc and self.dataset_inst.name.startswith("tau"):

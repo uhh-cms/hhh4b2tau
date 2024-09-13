@@ -18,8 +18,8 @@ from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
 
 # my own variables
 from hhh4b2tau.production.newvariables import jet_angle_difference
-from hhh4b2tau.production.newvariables import h_decay_invariant_mass
-
+from hhh4b2tau.production.newvariables import hhh_decay_invariant_mass
+from hhh4b2tau.production.newvariables import final_state_variables
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -111,10 +111,10 @@ def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @producer(
     uses={
-        features, category_ids, normalization_weights, deterministic_seeds, jet_angle_difference, h_decay_invariant_mass,
+        features, category_ids, normalization_weights, deterministic_seeds, jet_angle_difference, hhh_decay_invariant_mass, final_state_variables
     },
     produces={
-        features, category_ids, normalization_weights, deterministic_seeds, jet_angle_difference, h_decay_invariant_mass,
+        features, category_ids, normalization_weights, deterministic_seeds, jet_angle_difference, hhh_decay_invariant_mass, final_state_variables
     },
 )
 def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -133,6 +133,7 @@ def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # adding new variables
     events = self[jet_angle_difference](events, **kwargs)
-    events = self[h_decay_invariant_mass](events, **kwargs)
+    events = self[hhh_decay_invariant_mass](events, **kwargs)
+    events = self[final_state_variables](events, **kwargs)
 
     return events

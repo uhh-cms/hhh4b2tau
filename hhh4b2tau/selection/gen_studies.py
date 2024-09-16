@@ -58,13 +58,13 @@ def gen_studies(
 
     if (self.dataset_inst.is_mc and
         any(self.dataset_inst.name.lower().startswith(x)
-            for x in ("h",))
+            for x in ("hhh",))
     ):
         events = self[gen_higgs_decay_products](events, **kwargs)
     
     if (self.dataset_inst.is_mc and
         any(self.dataset_inst.name.lower().startswith(x)
-            for x in ("tth",))
+            for x in ("tth_hbb_powheg",))
     ):
         events = self[gen_tth_decay_products](events, **kwargs)
         

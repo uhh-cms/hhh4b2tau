@@ -45,6 +45,17 @@ class _GenPartMatchBase(Producer):
                 optional(f"gen_{child}.{var}")
                 for child in self.children
                 for var in self.variables
+            } |
+            {   
+                optional(f"gen_tth_{child}.{var}")
+                for child in self.children
+                for var in self.variables
+            } |
+            {   
+                optional(f"gen_tth_{mother}_to_{child}.{var}")
+                for mother in self.mothers
+                for child in self.children
+                for var in self.variables
             }
         )
 
@@ -205,41 +216,41 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
   
 # Access decay products for ttH channel
 @_GenPartMatchBase.producer(
-        mothers=(),
-        children=()
+        mothers=('w', 'h', 't'),
+        children=('tau', 'taunu', 'b1', 'b2')
 )
 def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    # from IPython import embed; embed()
 
     events, h_b_idx, h_b_particles = self.get_decay_idx(
         events,
         mother_id=25,
         children_id=5,
-        children_output_name="gen_b1",
-        mother_output_name="gen_h_to_b",
+        children_output_name="gen_tth_b1",
+        mother_output_name="gen_tth_h_to_b",
     )
 
     events, t_b_idx, t_b_particles = self.get_decay_idx(
         events,
         mother_id=6,
         children_id=5,
-        children_output_name="gen_b2",
-        mother_output_name="gen_t_to_b",
+        children_output_name="gen_tth_b2",
+        mother_output_name="gen_tth_t_to_b",
     )
 
     events, w_tau_idx, w_tau_particles = self.get_decay_idx(
         events,
         mother_id=24,
         children_id=15,
-        children_output_name="gen_tau",
-        mother_output_name="gen_w_to_tau",
+        children_output_name="gen_tth_tau",
+        mother_output_name="gen_tth_w_to_tau",
     )
 
     events, h_b_idx, h_b_particles = self.get_decay_idx(
         events,
         mother_id=24,
         children_id=16,
-        children_output_name="gen_taunu",
-        mother_output_name="gen_w_to_taunu",
+        children_output_name="gen_tth_taunu",
+        mother_output_name="gen_tth_w_to_taunu",
     )
+    # from IPython import embed; embed(header='in gen_tth')
     return events

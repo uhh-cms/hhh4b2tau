@@ -101,14 +101,14 @@ def add_variables(
     )
 
     cfg.add_variable(
-        name="jet_delta_r_12",
+        name="jet_deltar_12",
         null_value=EMPTY_FLOAT,
         binning=(30, 0, 6),
         x_title=r"Jets $\Delta R_{1,2}$",
     )
 
     cfg.add_variable(
-        name="jet_delta_r_13",
+        name="jet_deltar_13",
         null_value=EMPTY_FLOAT,
         binning=(30, 0, 6),
         x_title=r"Jets $\Delta R_{1,3}$",
@@ -225,21 +225,21 @@ def add_variables(
     )
     
     cfg.add_variable(
-        name="deltar_h1bb",
+        name="deltar_bb1",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
         x_title=r"$H_1\rightarrow bb$ $\Delta R$",
     )
 
     cfg.add_variable(
-        name="deltar_h2bb",
+        name="deltar_bb2",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
         x_title=r"$H_2\rightarrow bb$ $\Delta R$",
     )
 
     cfg.add_variable(
-        name="deltar_htautau",
+        name="deltar_tautau",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
         x_title=r"$H\rightarrow\tau\tau$ $\Delta R$",
@@ -267,21 +267,21 @@ def add_variables(
     )
     
     cfg.add_variable(
-        name="cos_h1bb",
+        name="cos_bb1",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
         x_title=r"$H_1\rightarrow bb$ $cos(\delta)$",
     )
 
     cfg.add_variable(
-        name="cos_h2bb",
+        name="cos_bb2",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
         x_title=r"$H_2\rightarrow bb$ $cos(\delta)$",
     )
 
     cfg.add_variable(
-        name="cos_htautau",
+        name="cos_tautau",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
         x_title=r"$H\rightarrow\tau\tau$ $cos(\delta)$",

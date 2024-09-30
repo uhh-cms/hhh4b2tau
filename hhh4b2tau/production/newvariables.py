@@ -7,7 +7,19 @@ from columnflow.columnar_util import (
     set_ak_column, remove_ak_column, attach_behavior, EMPTY_FLOAT, get_ak_routes, remove_ak_column,
     optional_column as optional
 )
-
+# coffea cannot be imported????
+# from coffea.nanoevents.methods import vector 
+# # creates a lorentz vector with all zeros
+# zero_lorentz = ak.zip(
+#         {
+#             "x": 0.,
+#             "y": 0.,
+#             "z": 0.,
+#             "t": 0.,
+#         },
+#         with_name="LorentzVector",
+#         behavior=vector.behavior,
+#     )
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -26,8 +38,8 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
     ),
     produces={
         "jet_delta_phi",
-        "jet_deltar_12",
-        "jet_deltar_13",
+        "jet_delta_r_12",
+        "jet_delta_r_13",
     },
 )
 def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -59,21 +71,21 @@ def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array
         delta,
     )
     # calculate delta r between all jets
-    all_deltar = events.Jet.metric_table(events.Jet)
+    all_delta_r = events.Jet.metric_table(events.Jet)
     # get delta r values of first (hardest) jet to all other jets
-    hardest_deltar = ak.firsts(all_deltar)
+    hardest_delta_r = ak.firsts(all_delta_r)
     # get delta r values between hardest and 2nd hardest jet
     events = set_ak_column_f32(
         events,
-        "jet_deltar_12",
-        ak.where(dijet_mask, ak.mask(hardest_deltar, dijet_mask)[:, 1], EMPTY_FLOAT),
+        "jet_delta_r_12",
+        ak.where(dijet_mask, ak.mask(hardest_delta_r, dijet_mask)[:, 1], EMPTY_FLOAT),
     )
 
     # get delta r values between hardest and 3rd hardest jet
     events = set_ak_column_f32(
         events,
-        "jet_deltar_13",
-        ak.where(trijet_mask, ak.mask(hardest_deltar, trijet_mask)[:, 2], EMPTY_FLOAT),
+        "jet_delta_r_13",
+        ak.where(trijet_mask, ak.mask(hardest_delta_r, trijet_mask)[:, 2], EMPTY_FLOAT),
     )
 
     
@@ -100,8 +112,8 @@ def jet_angle_difference(self: Producer, events: ak.Array, **kwargs) -> ak.Array
     ),
     produces={
         "mtautau", "mbb", "mhhh", "mlnu", "hpt", "h1bpt", "h2bpt", "htaupt",
-         "deltar_h12", "deltar_h13", "deltar_h23", "deltar_bb1", "deltar_bb2",
-        "deltar_tautau",
+         "delta_r_h12", "delta_r_h13", "delta_r_h23", "delta_r_bb1", "delta_r_bb2",
+        "delta_r_tautau",
         "cos_h12", "cos_h13", "cos_h23", "cos_bb1", "cos_bb2",
         "cos_tautau",
     },
@@ -153,20 +165,20 @@ def hhh_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.A
     ditau = events.gen_tau.sum(axis=-1)
     dib = events.gen_b.sum(axis=-1)
     trih = events.gen_h_to_tau.sum(axis=-1) + events.gen_h_to_b.sum(axis=-1)
-    # create 0 lorenz-vector
-    zero_lorenz = ditau[0]-ditau[0]
-    # lorenz vector sum of tau decay products
-    ditaunu = ak.where(n_taunu>=1, ak.flatten(events.gen_taunu.sum(axis=1)), zero_lorenz)
-    dielectron = ak.fill_none(ak.pad_none(events.gen_electron.sum(axis=1), 1), zero_lorenz[0])
+    # create 0 lorentz-vector
+    zero_lorentz = ditau[0]-ditau[0]
+    # lorentz vector sum of tau decay products
+    ditaunu = ak.where(n_taunu>=1, ak.flatten(events.gen_taunu.sum(axis=1)), zero_lorentz)
+    dielectron = ak.fill_none(ak.pad_none(events.gen_electron.sum(axis=1), 1), zero_lorentz[0])
     dienu = ak.fill_none(
         ak.pad_none(events.gen_enu.sum(axis=1), 1),
-          zero_lorenz[0])
+          zero_lorentz[0])
     dimuon = ak.fill_none(
         ak.pad_none(events.gen_muon.sum(axis=1), 1),
-          zero_lorenz[0])
+          zero_lorentz[0])
     dimunu = ak.fill_none(
         ak.pad_none(events.gen_munu.sum(axis=1), 1),
-          zero_lorenz[0])
+          zero_lorentz[0])
 
     # lep_sum = dielectron + dimuon
     # nu_sum = ditaunu + dienu + dimunu
@@ -179,15 +191,15 @@ def hhh_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.A
     h2b_pt = events.gen_h_to_b.pt[:,1]
     htau_pt = events.gen_h_to_tau.pt
 
-    # deltar between all Higgs
-    deltar_h12 = events.gen_h_to_b[:,0].deltar(events.gen_h_to_b[:,1])
-    deltar_h13 = events.gen_h_to_b[:,0].deltar(events.gen_h_to_tau)
-    deltar_h23 = events.gen_h_to_b[:,1].deltar(events.gen_h_to_tau)
+    # delta_r between all Higgs
+    delta_r_h12 = events.gen_h_to_b[:,0].delta_r(events.gen_h_to_b[:,1])
+    delta_r_h13 = events.gen_h_to_b[:,0].delta_r(events.gen_h_to_tau)
+    delta_r_h23 = events.gen_h_to_b[:,1].delta_r(events.gen_h_to_tau)
 
-    # deltar between H decay products
-    deltar_bb1 = events.gen_b[:,0,0].deltar(events.gen_b[:,0,1])
-    deltar_bb2 = events.gen_b[:,1,0].deltar(events.gen_b[:,1,1])
-    deltar_tautau = events.gen_tau[:,0,0].deltar(events.gen_tau[:,0,1])
+    # delta_r between H decay products
+    delta_r_bb1 = events.gen_b[:,0,0].delta_r(events.gen_b[:,0,1])
+    delta_r_bb2 = events.gen_b[:,1,0].delta_r(events.gen_b[:,1,1])
+    delta_r_tautau = events.gen_tau[:,0,0].delta_r(events.gen_tau[:,0,1])
     # from IPython import embed; embed()
 
     # cosine of opening angle little delta between h and between their decay products 
@@ -276,38 +288,38 @@ def hhh_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.A
 
     events = set_ak_column_f32(
         events,
-        "deltar_h12",
-        deltar_h12,
+        "delta_r_h12",
+        delta_r_h12,
     )
 
     events = set_ak_column_f32(
         events,
-        "deltar_h13",
-        deltar_h13,
+        "delta_r_h13",
+        delta_r_h13,
     )
 
     events = set_ak_column_f32(
         events,
-        "deltar_h23",
-        deltar_h23,
+        "delta_r_h23",
+        delta_r_h23,
     )
 
     events = set_ak_column_f32(
         events,
-        "deltar_bb1",
-        deltar_bb1,
+        "delta_r_bb1",
+        delta_r_bb1,
     )
 
     events = set_ak_column_f32(
         events,
-        "deltar_bb2",
-        deltar_bb2,
+        "delta_r_bb2",
+        delta_r_bb2,
     )
 
     events = set_ak_column_f32(
         events,
-        "deltar_tautau",
-        deltar_tautau,
+        "delta_r_tautau",
+        delta_r_tautau,
     )
 
     # cos(delta) between h and between their decay products
@@ -356,26 +368,27 @@ def hhh_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.A
     uses=(
     {   
         optional(f"gen_tth_{child}.{var}")
-        for child in ('b1', 'b2', 'tau', 'taunu', 'electron', 'enu', 'muon', 'munu', )
+        for child in ('b1', 'b2', 'tau', 'taunu',)
         for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )} | 
         {
             attach_coffea_behavior,
         }
     ),
     produces={
-        "mtautau", "mbb", "mlnu", "h1bpt", "htaupt",
-        "deltar_bb1", "deltar_bb2",
-        "deltar_htautau",
+        "delta_r_bb1", "delta_r_bb2",
+        "delta_r_tautau",
         "cos_bb1", "cos_bb2",
         "cos_tautau",
+        "mhhh",
     },
 )
 def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     '''
     migrating variables previously found in hhh_decay_invariant_mass 
-    that are also compatible with background data with same final state 4b2tau 
+    that are also compatible with background data from tth
+    other processes have to manipulated BEFOREHAND to match the array structure
     '''
-    # attach lorenz vector behavior
+    # attach lorentz vector behavior
     events = self[attach_coffea_behavior](
         events,
         collections={ x : {
@@ -391,45 +404,49 @@ def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
     '''
     still work in progress since array dimensions differ from hhh processes
     ''' 
+    # from IPython import embed; embed(header='final_state_variables')
 
-    from IPython import embed; embed(header='final_state_variables')
     # masks to require each come in pairs at least
-    b1_mask = ak.num(events.gen_tth_b1, axis=-1) >= 2 
-    b2_mask = ak.num(events.gen_tth_b2, axis=-1) >= 2
-    tau_mask = ak.num(events.gen_tth_tau, axis=-1) >= 2
+    # b1_mask = ak.flatten(ak.num(events.gen_tth_b1, axis=-1) >= 2)
+    # b2_mask = ak.num(events.gen_tth_b2, axis=-2) >= 2
+    tau_mask = ak.num(events.gen_tth_tau, axis=-2) >= 2
 
-    # apply masks beforehand to avoid errors
-    b1 = ak.where(b1_mask, events.gen_tth_b1, [[EMPTY_FLOAT]*2])
-    b2 = ak.where(b2_mask, events.gen_tth_b2, [[EMPTY_FLOAT]*2])
-    tau = ak.where(tau_mask, events.gen_tth_tau, [[EMPTY_FLOAT]*2])
+    # (optionally) apply masks beforehand to avoid errors
+    # for b1,b2 not necessary since the columns are always full 
+    b1 = ak.flatten(events.gen_tth_b1)
+    b2 = events.gen_tth_b2
+    tau = ak.mask(events.gen_tth_tau, tau_mask)
 
 
-    # deltar between bb tautau
-    deltar_bb1 = b1[:,0].deltar(b1[:,1])
-    deltar_bb2 = b2[:,0].deltar(b2[:,1])
-    deltar_tautau = tau[:,0,0].deltar(tau[:,0,1])
+    # delta_r between bb tautau
+    delta_r_bb1 = b1[:,0].delta_r(b1[:,1])
+    delta_r_bb2 = b2[:,0].delta_r(b2[:,1])
+    delta_r_tautau = tau[:,0].delta_r(tau[:,1])
 
     # work still in progress since array dimensions differ from hhh
-    cos_bb1 = b1[:,0,0].unit.dot(b1[:,0,1].unit)
-    cos_bb2 = b2[:,1,0].unit.dot(b2[:,1,1].unit)
-    cos_tautau = tau[:,0,0].unit.dot(tau[:,0,1].unit)
+    cos_bb1 = b1[:,0].unit.dot(b1[:,1].unit)
+    cos_bb2 = b2[:,0].unit.dot(b2[:,1].unit)
+    cos_tautau = tau[:,0].unit.dot(tau[:,1].unit)
+
+    # invariant mass of all 4b2tau but still call it mhhh for comparison
+    mhhh = (b1.sum(axis=-1) + b2.sum(axis=-2) + tau.sum(axis=-2)).mass
 
     events = set_ak_column_f32(
         events,
-        "deltar_bb1",
-        deltar_bb1,
+        "delta_r_bb1",
+        delta_r_bb1,
     )
 
     events = set_ak_column_f32(
         events,
-        "deltar_bb2",
-        deltar_bb2,
+        "delta_r_bb2",
+        delta_r_bb2,
     )
 
     events = set_ak_column_f32(
         events,
-        "deltar_tautau",
-        deltar_tautau,
+        "delta_r_tautau",
+        delta_r_tautau,
     )
 
     events = set_ak_column_f32(
@@ -448,6 +465,12 @@ def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
         events,
         "cos_tautau",
         cos_tautau,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "mhhh",
+        mhhh,
     )
 
     return events

@@ -22,8 +22,6 @@ class _GenPartMatchBase(Producer):
         # first, call the init function of the super class (Producer)
         super().__init__(*args, **kwargs)
         # define variables that are needed for the gen matching
-        self.mothers: tuple[str] = tuple()
-        self.children: tuple[str] = tuple()
         self.variables: tuple[str] = ('pt', 'eta', 'phi', 'mass', 'pdgId', )
 
     def init_func(self):
@@ -126,7 +124,7 @@ class _GenPartMatchBase(Producer):
 
 @_GenPartMatchBase.producer(
     mothers = ('h', 'tau', ),
-    children = ('b', 'tau', 'taunu', 'electron', 'enu', 'muon', 'munu', )
+    children = ('b', 'tau', 'taunu', 'electron', 'enu', 'muon', 'munu', ),
 )
 def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -150,6 +148,7 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
             ...
         ]
     """
+
     # from IPython import embed; embed()
     events, h_b_idx, h_b_particles = self.get_decay_idx(
         events,
@@ -217,7 +216,7 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
 # Access decay products for ttH channel
 @_GenPartMatchBase.producer(
         mothers=('w', 'h', 't'),
-        children=('tau', 'taunu', 'b1', 'b2')
+        children=('tau', 'taunu', 'b1', 'b2'),
 )
 def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
@@ -226,7 +225,7 @@ def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         mother_id=25,
         children_id=5,
         children_output_name="gen_tth_b1",
-        mother_output_name="gen_tth_h_to_b",
+        mother_output_name="gen_tth_h_to_b1",
     )
 
     events, t_b_idx, t_b_particles = self.get_decay_idx(
@@ -234,7 +233,7 @@ def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         mother_id=6,
         children_id=5,
         children_output_name="gen_tth_b2",
-        mother_output_name="gen_tth_t_to_b",
+        mother_output_name="gen_tth_t_to_b1",
     )
 
     events, w_tau_idx, w_tau_particles = self.get_decay_idx(

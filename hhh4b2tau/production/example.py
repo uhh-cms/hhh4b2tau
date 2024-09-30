@@ -129,8 +129,6 @@ def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # deterministic seeds
     events = self[deterministic_seeds](events, **kwargs)
 
-    
-
     # adding new variables
     events = self[jet_angle_difference](events, **kwargs)
 

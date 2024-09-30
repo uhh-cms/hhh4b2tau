@@ -73,9 +73,6 @@ def gen_studies(
     # if self.dataset_inst.is_mc and self.dataset_inst.name.startswith("tau"):
     #     events = self[gen_higgs_decay_products](events, **kwargs)
     
-
-
-
     results.event = ak.ones_like(events.event, dtype=bool)
 
     # create process ids
@@ -121,6 +118,8 @@ def gen_studies(
         group_map=group_map,
         **kwargs,
     )
+
+    # from IPython import embed; embed(header="end selector")
 
     return events, results
 

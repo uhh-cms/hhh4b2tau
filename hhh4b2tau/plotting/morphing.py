@@ -102,6 +102,7 @@ def morphing_hook(
         else:
             raise Exception("Histograms are missing! Exactly nine are required for morphing.")
 
+    # from IPython import embed; embed()
     # create the new HHH shape
     hists[hhh_morph0] = morph(kl=new[0][0]+1,kc=new[0][1]+1,s=data_histo)
     hists[hhh_morph1] = morph(kl=new[1][0]+1,kc=new[1][1]+1,s=data_histo)

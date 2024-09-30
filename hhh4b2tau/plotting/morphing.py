@@ -80,14 +80,18 @@ def morphing_hook(
                       c3=str(new[0][0]).replace("-", "m").replace(".", "p"),
                       d4=str(new[0][1]).replace("-", "m").replace(".", "p"),
                       ), id="+",
-            label="$(\kappa_3=2, \kappa_4=0)$", color1="#bd1f01")
+            label=f"$(\kappa_\lambda={new[0][0]+1}, \kappa_\chi={new[0][1]+1})^m$", 
+            color1="#bd1f01",
+            )
     
     hhh_morph1 = od.Process(
           "hhh_4b2tau_c3{c3}_d4{d4}".format(
                       c3=str(new[1][0]).replace("-", "m").replace(".", "p"),
                       d4=str(new[1][1]).replace("-", "m").replace(".", "p"),
                       ), id="+",
-            label="$(\kappa_3=3, \kappa_4=1)$", color1="#3f90da")
+            label=f"$(\kappa_\lambda={new[1][0]+1}, \kappa_\chi={new[1][1]+1})^m$", 
+              color1="#3f90da",
+              )
     
     data_histo = []
     for c3, d4 in morphing_coupling_combinations:

@@ -44,15 +44,15 @@ coupling_with_colors = [
 # (c3, d4, color)
     (0, 0, "#000000"),
     (0, 99, "#3f90da"),
-    (0, 'minus1', "#ffa90e"),
+    (0, -1, "#ffa90e"),
     (19, 19, "#bd1f01"),
     (1, 0, "#94a4a2"),
     (1, 2, "#832db6"),
-    (2, 'minus1', "#a96b59"),
+    (2, -1, "#a96b59"),
     (4, 9, "#e76300"),
-    ('minus1', 0, "#b9ac70"),
-    ('minus1', 'minus1', "#717581"),
-    ('minus1p5', 'minus0p5', "#92dadd"),
+    (-1, 0, "#b9ac70"),
+    (-1, -1, "#717581"),
+    (-1.5, -0.5, "#92dadd"),
 ]
 
 # recommended cms colors
@@ -90,12 +90,15 @@ def stylize_processes(config: od.Config) -> None:
 
 
     for c3, d4, color in coupling_with_colors:
-        if (p := config.get_process(f"hhh_4b2tau_c3{c3}_d4{d4}", default=None)):
+        if (p := config.get_process("hhh_4b2tau_c3{c3}_d4{d4}".format(
+            c3=str(c3).replace("-", "m").replace(".", "p"),
+            d4=str(d4).replace("-", "m").replace(".", "p"),
+            ), default=None)):
             p.color1 = color
             p.unstack=True
-            p.scale="stack"
             p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$"
-
+            p.scale="stack"
+    
 
     if (p := config.get_process("hh_vbf_hbb_htt_kv1_k2v1_kl1", default=None)):
         p.color1 = cfg.x.colors.dark_blue

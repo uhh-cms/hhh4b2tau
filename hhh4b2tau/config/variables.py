@@ -207,82 +207,90 @@ def add_variables(
         name="delta_r_h12",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
-        x_title=r"H $\Delta R_{1,2}$",
+        x_title=r"H $\Delta R_{1,2}^{gen}$",
     )
 
     cfg.add_variable(
         name="delta_r_h13",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
-        x_title=r"H $\Delta R_{1,3}$",
+        x_title=r"H $\Delta R_{1,3}^{gen}$",
     )
 
     cfg.add_variable(
         name="delta_r_h23",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
-        x_title=r"H $\Delta R_{2,3}$",
+        x_title=r"H $\Delta R_{2,3}^{gen}$",
     )
     
     cfg.add_variable(
         name="delta_r_bb1",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
-        x_title=r"$bb_1$ $\Delta R$",
+        x_title=r"$bb_1$ $\Delta R^{gen}$",
     )
 
     cfg.add_variable(
         name="delta_r_bb2",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
-        x_title=r"$bb_2$ $\Delta R$",
+        x_title=r"$bb_2$ $\Delta R^{gen}$",
     )
 
     cfg.add_variable(
         name="delta_r_tautau",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
-        x_title=r"$\tau\tau$ $\Delta R$",
+        x_title=r"$\tau\tau$ $\Delta R^{gen}$",
     )
 
     cfg.add_variable(
         name="cos_h12",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
-        x_title=r"H $cos(\delta)_{1,2}$",
+        x_title=r"H $cos(\delta)_{1,2}^{gen}$",
     )
 
     cfg.add_variable(
         name="cos_h13",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
-        x_title=r"H $cos(\delta)_{1,3}$",
+        x_title=r"H $cos(\delta)_{1,3}^{gen}$",
     )
 
     cfg.add_variable(
         name="cos_h23",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
-        x_title=r"H $cos(\delta)_{2,3}$",
+        x_title=r"H $cos(\delta)_{2,3}^{gen}$",
     )
     
     cfg.add_variable(
         name="cos_bb1",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
-        x_title=r"$bb_2$ $cos(\delta)$",
+        x_title=r"$bb_2$ $cos(\delta)^{gen}$",
     )
 
     cfg.add_variable(
         name="cos_bb2",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
-        x_title=r"$bb_1$ $cos(\delta)$",
+        x_title=r"$bb_1$ $cos(\delta)^{gen}$",
     )
 
     cfg.add_variable(
         name="cos_tautau",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
-        x_title=r"$\tau\tau$ $cos(\delta)$",
+        x_title=r"$\tau\tau$ $cos(\delta)^{gen}$",
+    )
+
+    cfg.add_variable(
+        name="mhhh_hadron",
+        binning=(60, 150.0, 3500.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{HHH}^{gen,hadron}$",
     )

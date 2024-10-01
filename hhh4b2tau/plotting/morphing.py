@@ -90,7 +90,7 @@ def morphing_hook(
                       d4=str(new[1][1]).replace("-", "m").replace(".", "p"),
                       ), id="+",
             label=f"$(\kappa_\lambda={new[1][0]+1}, \kappa_\chi={new[1][1]+1})^m$", 
-              color1="#3f90da",
+            color1="#3f90da",
               )
     
     data_histo = []

@@ -707,6 +707,7 @@ def add_config(
             "Tau.decayMode",
             "PV.npvs",
             "PFCandidate.*",
+            "GenJet.*", "GenJetAK8.*", "GenVisTau.*",
             # all columns added during selection using a ColumnCollection flag
             ColumnCollection.ALL_FROM_SELECTOR,
         },

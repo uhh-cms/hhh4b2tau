@@ -97,7 +97,7 @@ def stylize_processes(config: od.Config) -> None:
             p.color1 = color
             p.unstack=True
             p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$"
-            p.scale="stack"
+            # p.scale="stack"
     
 
     if (p := config.get_process("hh_vbf_hbb_htt_kv1_k2v1_kl1", default=None)):

@@ -270,14 +270,14 @@ def add_variables(
         name="cos_bb1",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
-        x_title=r"$bb_2$ $cos(\delta)^{gen}$",
+        x_title=r"$bb_1$ $cos(\delta)^{gen}$",
     )
 
     cfg.add_variable(
         name="cos_bb2",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
-        x_title=r"$bb_1$ $cos(\delta)^{gen}$",
+        x_title=r"$bb_2$ $cos(\delta)^{gen}$",
     )
 
     cfg.add_variable(
@@ -289,7 +289,7 @@ def add_variables(
 
     cfg.add_variable(
         name="mhhh_hadron",
-        binning=(60, 150.0, 3500.0),
+        binning=(60, 0.0, 1500.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
         x_title=r"$m_{HHH}^{gen,hadron}$",

@@ -477,7 +477,7 @@ def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
 
 # variables on hadronic level
 @producer(
-    uses=({"GenJet.*", "GenJetAK8.*", "GenVisTau.*"}
+    uses=({"gen_b_jet.*", "GenVisTau.*",}
           | {attach_coffea_behavior}
           ),
     produces={"mhhh_hadron"},
@@ -485,7 +485,7 @@ def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
 )
 def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
-    from IPython import embed; embed(header="inside genHadron_variables")
+    # from IPython import embed; embed(header="inside genHadron_variables")
 
     events = self[attach_coffea_behavior](
         events,
@@ -498,16 +498,8 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = self[attach_coffea_behavior](
         events,
-        collections={ "GenJet" : {
+        collections={ "gen_b_jet" : {
                 "type_name": "Jet",
-        }},
-        **kwargs,
-    )
-
-    events = self[attach_coffea_behavior](
-        events,
-        collections={ "GenJetAK8" : {
-                "type_name": "FatJet",
         }},
         **kwargs,
     )
@@ -516,17 +508,17 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     tau = ak.mask(events.GenVisTau, tau_mask)
     tau_sum = tau.sum(axis=-1)
 
-    jet_mask = ak.num(events.GenJet, axis=-1) >= 2
-    jet = ak.mask(events.GenJet, jet_mask)
-    jet_sum = jet.sum(axis=-1)
+    b_jet_mask = ak.num(events.gen_b_jet, axis=-1) >= 2
+    b_jet = ak.mask(events.gen_b_jet, b_jet_mask)
+    b_jet_sum = b_jet.sum(axis=-1)
 
-    all_sum = tau_sum + jet_sum
-    mhhh = all_sum.mass
+    all_sum = tau_sum + b_jet_sum
+    mhhh_hadron = all_sum.mass
 
     events = set_ak_column_f32(
         events,
         "mhhh_hadron",
-        mhhh,
+        mhhh_hadron,
     )
 
     return events

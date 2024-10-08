@@ -16,7 +16,7 @@ from columnflow.util import maybe_import
 from hhh4b2tau.production.example import cutflow_features
 from hhh4b2tau.production.gen_higgs_decay_products import gen_higgs_decay_products
 from hhh4b2tau.production.gen_higgs_decay_products import gen_tth_decay_products
-
+from hhh4b2tau.production.gen_higgs_decay_products import gen_Hadron_products
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
@@ -35,13 +35,13 @@ ak = maybe_import("awkward")
     uses={
         # selectors / producers called within _this_ selector
         mc_weight, cutflow_features, process_ids, increment_stats,
-        gen_higgs_decay_products, gen_tth_decay_products,
+        gen_higgs_decay_products, gen_tth_decay_products, gen_Hadron_products,
         
     },
     produces={
         # selectors / producers whose newly created columns should be kept
         mc_weight, cutflow_features, process_ids, 
-        gen_higgs_decay_products, gen_tth_decay_products,
+        gen_higgs_decay_products, gen_tth_decay_products, gen_Hadron_products,
     },
     exposed=True,
 )
@@ -67,6 +67,22 @@ def gen_studies(
             for x in ("tth_hbb_powheg",))
     ):
         events = self[gen_tth_decay_products](events, **kwargs)
+
+    events = self[gen_Hadron_products](events, **kwargs)
+
+    # select events with at least 4 gen b jets
+    n_gen_b_jet = ak.num(events.gen_b_jet)
+
+    results.steps["one b jets"] = n_gen_b_jet >= 1
+    results.steps["two b jets"] = n_gen_b_jet >= 2
+    results.steps["three b jets"] = n_gen_b_jet >= 3
+    results.steps["four b jets"] = n_gen_b_jet >= 4
+
+    # select events with at least 2 GenVisTau
+    n_GenVisTau =ak.num(events.GenVisTau)
+    
+    results.steps["one Tau"] = n_GenVisTau >= 1
+    results.steps["two Tau"] = n_GenVisTau >= 2
         
     # # get tau decay products
 

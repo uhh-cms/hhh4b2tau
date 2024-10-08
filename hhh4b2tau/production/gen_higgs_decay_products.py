@@ -254,9 +254,10 @@ def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     # from IPython import embed; embed(header='in gen_tth')
     return events
 
-""" 
+
 # Moving from GenParton level to Gen hardronic level
-class _genHadronMatchBase(Producer):
+"""
+ class _genHadronMatchBase(Producer):
     def __init__(self, *args, **kwargs):
         # first, call the init function of the super class (Producer)
         super().__init__(*args, **kwargs)
@@ -269,4 +270,23 @@ class _genHadronMatchBase(Producer):
         self.uses=(
             {"GenJet.*", "GenJetAK8.*", "GenVisTau.*"}
         ) 
+
+    return events 
 """
+
+@producer(
+    uses=({"GenJet.*", "GenJetAK8.*", "GenVisTau.*", }),
+    produces={"gen_b_jet.*", "GenVisTau.*",},
+        
+)
+def gen_Hadron_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    # from IPython import embed; embed(header="inside gen_Hadron_products")
+
+    b_jet_mask = events.GenJet.hadronFlavour == 5
+    gen_b_jet = ak.drop_none(ak.mask(events.GenJet, b_jet_mask))
+
+    events = set_ak_column(events, "gen_b_jet", gen_b_jet)
+
+                           
+    return events

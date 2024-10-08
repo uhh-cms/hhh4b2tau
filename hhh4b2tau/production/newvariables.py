@@ -477,15 +477,16 @@ def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
 
 # variables on hadronic level
 @producer(
-    uses=({"gen_b_jet.*", "GenVisTau.*",}
+    uses=({"gen_b_jet.*", "GenVisTau.*", "gen_taunu.*"}
           | {attach_coffea_behavior}
           ),
-    produces={"mhhh_hadron"},
+    produces={"mhhh_hadron", 
+              "delta_r_bb1_hadron", "delta_r_bb2_hadron","delta_r_tautau_hadron",
+              "cos_bb1_hadron", "cos_bb2_hadron","cos_tautau_hadron",
+        },
         
 )
 def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-
-    # from IPython import embed; embed(header="inside genHadron_variables")
 
     events = self[attach_coffea_behavior](
         events,
@@ -504,16 +505,30 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         **kwargs,
     )
 
-    tau_mask = ak.num(events.GenVisTau, axis=-1) >= 1
+    events = self[attach_coffea_behavior](
+        events,
+        collections={ "gen_taunu" : {
+                "type_name": "GenParticle",
+            }},
+        **kwargs,
+    )
+
+    tau_mask = ak.num(events.GenVisTau, axis=-1) >= 2
     tau = ak.mask(events.GenVisTau, tau_mask)
     tau_sum = tau.sum(axis=-1)
 
-    b_jet_mask = ak.num(events.gen_b_jet, axis=-1) >= 2
+    taunu_mask = ak.num(events.gen_taunu, axis=-2) >= 2
+    taunu = ak.mask(events.gen_taunu, taunu_mask)
+    taunu_sum = ak.flatten(taunu.sum(axis=-2))
+
+    b_jet_mask = ak.num(events.gen_b_jet, axis=-1) >= 4
     b_jet = ak.mask(events.gen_b_jet, b_jet_mask)
     b_jet_sum = b_jet.sum(axis=-1)
 
-    all_sum = tau_sum + b_jet_sum
+    all_sum = tau_sum + taunu_sum + b_jet_sum
     mhhh_hadron = all_sum.mass
+
+    from IPython import embed; embed(header="inside genHadron_variables")
 
     events = set_ak_column_f32(
         events,

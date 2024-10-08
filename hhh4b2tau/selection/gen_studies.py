@@ -73,16 +73,16 @@ def gen_studies(
     # select events with at least 4 gen b jets
     n_gen_b_jet = ak.num(events.gen_b_jet)
 
-    results.steps["one b jets"] = n_gen_b_jet >= 1
-    results.steps["two b jets"] = n_gen_b_jet >= 2
-    results.steps["three b jets"] = n_gen_b_jet >= 3
-    results.steps["four b jets"] = n_gen_b_jet >= 4
+    results.steps["one_b_jets"] = n_gen_b_jet >= 1
+    results.steps["two_b_jets"] = n_gen_b_jet >= 2
+    results.steps["three_b_jets"] = n_gen_b_jet >= 3
+    results.steps["four_b_jets"] = n_gen_b_jet >= 4
 
     # select events with at least 2 GenVisTau
     n_GenVisTau =ak.num(events.GenVisTau)
     
-    results.steps["one Tau"] = n_GenVisTau >= 1
-    results.steps["two Tau"] = n_GenVisTau >= 2
+    results.steps["one_tau"] = n_GenVisTau >= 1
+    results.steps["two_tau"] = n_GenVisTau >= 2
         
     # # get tau decay products
 

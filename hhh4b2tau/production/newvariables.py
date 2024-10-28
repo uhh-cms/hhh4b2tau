@@ -382,11 +382,10 @@ def hhh_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.A
         "mhhh",
     },
 )
-def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def tth_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     '''
     migrating variables previously found in hhh_decay_invariant_mass 
     that are also compatible with background data from tth
-    other processes have to manipulated BEFOREHAND to match the array structure
     '''
     # attach lorentz vector behavior
     events = self[attach_coffea_behavior](
@@ -404,7 +403,7 @@ def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
     '''
     still work in progress since array dimensions differ from hhh processes
     ''' 
-    # from IPython import embed; embed(header='final_state_variables')
+    # from IPython import embed; embed(header='tth_variables')
 
     # masks to require each come in pairs at least
     # b1_mask = ak.flatten(ak.num(events.gen_tth_b1, axis=-1) >= 2)
@@ -475,7 +474,7 @@ def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
 
     return events
 
-# variables on hadronic level
+# variables on hadronic level for ggf hhh processes
 @producer(
     uses=({"gen_b_jet.*", "GenVisTau.*", "gen_taunu.*"}
           | {attach_coffea_behavior}
@@ -483,6 +482,8 @@ def final_state_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
     produces={"mhhh_hadron", 
               "delta_r_bb1_hadron", "delta_r_bb2_hadron","delta_r_tautau_hadron",
               "cos_bb1_hadron", "cos_bb2_hadron","cos_tautau_hadron",
+              "delta_r_h12_hadron", "delta_r_h13_hadron", "delta_r_h23_hadron",
+              "cos_h12_hadron", "cos_h13_hadron", "cos_h23_hadron",
         },
         
 )
@@ -512,28 +513,170 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             }},
         **kwargs,
     )
+    b_jet_mask = ak.num(events.gen_b_jet, axis=-1) >= 4
+    b_jet = ak.mask(events.gen_b_jet, b_jet_mask)
 
     tau_mask = ak.num(events.GenVisTau, axis=-1) >= 2
     tau = ak.mask(events.GenVisTau, tau_mask)
-    tau_sum = tau.sum(axis=-1)
 
-    taunu_mask = ak.num(events.gen_taunu, axis=-2) >= 2
+    taunu_mask = ak.num(events.gen_taunu, axis=-2) == 2 # this is always true
     taunu = ak.mask(events.gen_taunu, taunu_mask)
     taunu_sum = ak.flatten(taunu.sum(axis=-2))
 
-    b_jet_mask = ak.num(events.gen_b_jet, axis=-1) >= 4
-    b_jet = ak.mask(events.gen_b_jet, b_jet_mask)
-    b_jet_sum = b_jet.sum(axis=-1)
 
-    all_sum = tau_sum + taunu_sum + b_jet_sum
-    mhhh_hadron = all_sum.mass
 
-    from IPython import embed; embed(header="inside genHadron_variables")
+    # look out for all permutations of b quarks
+    # there are up to 8 b jets and 5 tau
+
+    # metric table of all possible lorentz vector sums of two jets
+    b_jet_table = b_jet.metric_table(b_jet, metric=lambda a, b: (a+b))
+    b_jet_massdiff_table1 = b_jet.metric_table(b_jet, 
+                            metric=lambda a, b: abs((a+b).mass-125))
+    # metric_table for delta_r and cos(delta)
+    b_jet_delta_r_table = b_jet.metric_table(b_jet)
+    b_jet_cos_table = b_jet.unit.metric_table(b_jet.unit, metric=lambda a, b: a.dot(b))
+
+    # create dictionary for b jets with indicies
+    b_idx1 = ak.local_index(b_jet_table, axis=-2)
+    b_idx2 = ak.local_index(b_jet_table, axis=-1)
+    b_table_combo = ak.zip({"pair_sum": b_jet_table, 
+                    "mass_diff": b_jet_massdiff_table1,
+                    "delta_r": b_jet_delta_r_table,
+                    "cos": b_jet_cos_table, 
+                    "idx1": b_idx1, "idx2": b_idx2})
+    # remove duplicates and self sums
+    b_table_combo = ak.mask(b_table_combo,b_table_combo.idx1<b_table_combo.idx2)
+    # get indicies of jet pair mass closest to 125 
+    b_optimal_mass_diff1 = ak.min(ak.min(b_table_combo.mass_diff, axis=-1),axis=-1)
+    b_min_diff_mask1 = b_optimal_mass_diff1 == b_table_combo.mass_diff
+    b_min_diff_idx1 = ak.mask(b_table_combo,b_table_combo.mass_diff==b_optimal_mass_diff1).idx1
+    b_min_diff_idx2 = ak.mask(b_table_combo,b_table_combo.mass_diff==b_optimal_mass_diff1).idx2
+    #reshape into single entry arrays
+    b_min_diff_idx1 = ak.sum(ak.sum(ak.sum(
+        ak.singletons(b_min_diff_idx1,axis=-1),axis=-1),axis=-1),axis=-1)
+    b_min_diff_idx2 = ak.sum(ak.sum(ak.sum(
+        ak.singletons(b_min_diff_idx2,axis=-1),axis=-1),axis=-1),axis=-1)
+    # create mask to remove already used jets
+    b_idx_mask = ((b_table_combo.idx1 != b_min_diff_idx1) &
+                (b_table_combo.idx2 != b_min_diff_idx2) &
+                (b_table_combo.idx1 != b_min_diff_idx2) &
+                (b_table_combo.idx2 != b_min_diff_idx1))
+    
+    b_jet_massdiff_table2 = ak.mask(b_jet_massdiff_table1, b_idx_mask)
+    b_optimal_mass_diff2 = ak.min(ak.min(b_jet_massdiff_table2, axis=-1),axis=-1)
+    b_min_diff_mask2 = b_optimal_mass_diff2 == b_jet_massdiff_table2
+    b_min_diff_mask2 = ak.fill_none(b_min_diff_mask2, False, axis=-1)
+    # mask that only contains "optimal" combinations 
+    final_b_jet_mask = (b_min_diff_mask1 | b_min_diff_mask2)
+    final_b_jet_table = ak.mask(b_table_combo,final_b_jet_mask)
+    final_b_jet_table = ak.flatten(ak.drop_none(final_b_jet_table, axis=-1),axis=-1)
+    # sort bb pairs by pt
+    sorted_b_jet_idx = ak.argsort(final_b_jet_table.pair_sum.pt, axis=-1, ascending=False)
+    final_b_jet_table = final_b_jet_table[sorted_b_jet_idx]
+    all_b_jet_sum = final_b_jet_table.pair_sum.sum(axis=-1)
+
+    # now do the same for taus but simpler since only two are required
+
+    tau_taunu_massdiff_table = tau.metric_table((tau+taunu_sum), 
+                         metric=lambda a, b: abs((a+b).mass -125))
+    tau_table = tau.metric_table((tau), metric=lambda a, b: (a+b))
+    tau_delta_r_table = tau.metric_table(tau)
+    tau_cos_table = tau.unit.metric_table(tau.unit, metric=lambda a, b: a.dot(b))
+    tau_idx1 = ak.local_index(tau_table, axis=-2)
+    tau_idx2 = ak.local_index(tau_table, axis=-1)
+    tau_table_combo = ak.zip({"pair_sum": tau_table, 
+                    "mass_diff": tau_taunu_massdiff_table, 
+                    "delta_r": tau_delta_r_table,
+                    "cos": tau_cos_table,
+                    "idx1": tau_idx1, "idx2": tau_idx2})
+
+    tau_table_combo = ak.mask(tau_table_combo,tau_table_combo.idx1<tau_table_combo.idx2)
+    tau_optimal_mass_diff = ak.min(ak.min(tau_table_combo.mass_diff, axis=-1),axis=-1)
+    tau_min_diff_mask = tau_optimal_mass_diff == tau_table_combo.mass_diff
+    final_tau_table = ak.drop_none(ak.mask(tau_table_combo, tau_min_diff_mask),axis=-1)
+    final_tau_table = ak.flatten(final_tau_table,axis=-1)[:,0]
+
+    mhhh_hadron = (final_tau_table.pair_sum + taunu_sum + all_b_jet_sum).mass
+
+    # from IPython import embed; embed(header="inside genHadron_variables")
+
 
     events = set_ak_column_f32(
         events,
         "mhhh_hadron",
         mhhh_hadron,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "delta_r_bb1_hadron",
+        final_b_jet_table.delta_r[:,0],
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_bb1_hadron",
+        final_b_jet_table.cos[:,0],
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "delta_r_bb2_hadron",
+        final_b_jet_table.delta_r[:,1],
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_bb2_hadron",
+        final_b_jet_table.cos[:,1],
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "delta_r_tautau_hadron",
+        final_tau_table.delta_r,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_tautau_hadron",
+        final_tau_table.cos,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "delta_r_h12_hadron",
+        final_b_jet_table.pair_sum[:,0].delta_r(final_b_jet_table.pair_sum[:,1]),
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "delta_r_h13_hadron",
+        final_b_jet_table.pair_sum[:,0].delta_r(final_tau_table.pair_sum),
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "delta_r_h23_hadron",
+        final_b_jet_table.pair_sum[:,1].delta_r(final_tau_table.pair_sum),
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_h12_hadron",
+        final_b_jet_table.pair_sum.unit[:,0].dot(final_b_jet_table.pair_sum.unit[:,1]),
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_h13_hadron",
+        final_b_jet_table.pair_sum.unit[:,0].dot(final_tau_table.pair_sum.unit),
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "cos_h23_hadron",
+        final_b_jet_table.pair_sum.unit[:,1].dot(final_tau_table.pair_sum.unit),
     )
 
     return events

@@ -19,7 +19,7 @@ from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
 # my own variables
 from hhh4b2tau.production.newvariables import jet_angle_difference
 from hhh4b2tau.production.newvariables import hhh_decay_invariant_mass
-from hhh4b2tau.production.newvariables import final_state_variables
+from hhh4b2tau.production.newvariables import tth_variables
 from hhh4b2tau.production.newvariables import genHadron_variables
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -112,12 +112,12 @@ def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @producer(
     uses={
         features, category_ids, normalization_weights, deterministic_seeds, 
-        jet_angle_difference, hhh_decay_invariant_mass, final_state_variables,
+        jet_angle_difference, hhh_decay_invariant_mass, tth_variables,
         genHadron_variables,
     },
     produces={
         features, category_ids, normalization_weights, deterministic_seeds, 
-        jet_angle_difference, hhh_decay_invariant_mass, final_state_variables,
+        jet_angle_difference, hhh_decay_invariant_mass, tth_variables,
         genHadron_variables,
     },
 )
@@ -147,6 +147,6 @@ def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         any(self.dataset_inst.name.lower().startswith(x)
             for x in ("tth_hbb_powheg",))
     ):
-        events = self[final_state_variables](events, **kwargs)
+        events = self[tth_variables](events, **kwargs)
 
     return events

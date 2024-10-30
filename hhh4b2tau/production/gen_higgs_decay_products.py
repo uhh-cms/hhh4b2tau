@@ -255,28 +255,15 @@ def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     return events
 
 
+
+
 # Moving from GenParton level to Gen hardronic level
-"""
- class _genHadronMatchBase(Producer):
-    def __init__(self, *args, **kwargs):
-        # first, call the init function of the super class (Producer)
-        super().__init__(*args, **kwargs)
-        # define variables that are needed for the gen matching
-        self.variables: tuple[str] = ('pt', 'eta', 'phi', 'mass', )
-
-    def init_func(self):
-        # to perform a gen matching, we need information about the GenPartons
-        # therefore, request all available information
-        self.uses=(
-            {"GenJet.*", "GenJetAK8.*", "GenVisTau.*"}
-        ) 
-
-    return events 
-"""
 
 @producer(
-    uses=({"GenJet.*", "GenJetAK8.*", "GenVisTau.*", }),
-    produces={"gen_b_jet.*", "GenVisTau.*",},
+    uses=({"GenJet.*", "GenVisTau.*", # "GenMET.*", "GenJetAK8.*", 
+           }),
+    produces={"gen_b_jet.*", "GenVisTau.*",
+              },
         
 )
 def gen_Hadron_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:

@@ -476,7 +476,8 @@ def tth_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 # variables on hadronic level for ggf hhh processes
 @producer(
-    uses=({"gen_b_jet.*", "GenVisTau.*", "gen_taunu.*"}
+    uses=({"gen_b_jet.*", "GenVisTau.*", # "GenMET.*", "gen_taunu.*",
+            }
           | {attach_coffea_behavior}
           ),
     produces={"mhhh_hadron", 
@@ -506,22 +507,23 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         **kwargs,
     )
 
-    events = self[attach_coffea_behavior](
-        events,
-        collections={ "gen_taunu" : {
-                "type_name": "GenParticle",
-            }},
-        **kwargs,
-    )
+    # events = self[attach_coffea_behavior](
+    #     events,
+    #     collections={ "gen_taunu" : {
+    #             "type_name": "GenParticle",
+    #         }},
+    #     **kwargs,
+    # )
+
     b_jet_mask = ak.num(events.gen_b_jet, axis=-1) >= 4
     b_jet = ak.mask(events.gen_b_jet, b_jet_mask)
 
     tau_mask = ak.num(events.GenVisTau, axis=-1) >= 2
     tau = ak.mask(events.GenVisTau, tau_mask)
 
-    taunu_mask = ak.num(events.gen_taunu, axis=-2) == 2 # this is always true
-    taunu = ak.mask(events.gen_taunu, taunu_mask)
-    taunu_sum = ak.flatten(taunu.sum(axis=-2))
+    # taunu_mask = ak.num(events.gen_taunu, axis=-2) == 2 # this is always true for signal samples
+    # taunu = ak.mask(events.gen_taunu, taunu_mask)
+    # taunu_sum = ak.flatten(taunu.sum(axis=-2))
 
 
 
@@ -558,9 +560,9 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         ak.singletons(b_min_diff_idx2,axis=-1),axis=-1),axis=-1),axis=-1)
     # create mask to remove already used jets
     b_idx_mask = ((b_table_combo.idx1 != b_min_diff_idx1) &
-                (b_table_combo.idx2 != b_min_diff_idx2) &
-                (b_table_combo.idx1 != b_min_diff_idx2) &
-                (b_table_combo.idx2 != b_min_diff_idx1))
+                  (b_table_combo.idx2 != b_min_diff_idx2) &
+                  (b_table_combo.idx1 != b_min_diff_idx2) &
+                  (b_table_combo.idx2 != b_min_diff_idx1))
     
     b_jet_massdiff_table2 = ak.mask(b_jet_massdiff_table1, b_idx_mask)
     b_optimal_mass_diff2 = ak.min(ak.min(b_jet_massdiff_table2, axis=-1),axis=-1)
@@ -577,7 +579,9 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # now do the same for taus but simpler since only two are required
 
-    tau_taunu_massdiff_table = tau.metric_table((tau+taunu_sum), 
+    # tau_taunu_massdiff_table = tau.metric_table((tau+taunu_sum), 
+    #                      metric=lambda a, b: abs((a+b).mass -125))
+    tau_taunu_massdiff_table = tau.metric_table(tau, 
                          metric=lambda a, b: abs((a+b).mass -125))
     tau_table = tau.metric_table((tau), metric=lambda a, b: (a+b))
     tau_delta_r_table = tau.metric_table(tau)
@@ -596,7 +600,8 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     final_tau_table = ak.drop_none(ak.mask(tau_table_combo, tau_min_diff_mask),axis=-1)
     final_tau_table = ak.flatten(final_tau_table,axis=-1)[:,0]
 
-    mhhh_hadron = (final_tau_table.pair_sum + taunu_sum + all_b_jet_sum).mass
+    mhhh_hadron = (final_tau_table.pair_sum + all_b_jet_sum).mass
+    # mhhh_hadron = (final_tau_table.pair_sum + taunu_sum + all_b_jet_sum).mass
 
     # from IPython import embed; embed(header="inside genHadron_variables")
 

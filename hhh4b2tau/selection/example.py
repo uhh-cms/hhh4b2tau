@@ -220,10 +220,16 @@ def empty(
     # prepare the selection results that are updated at every step
     results = SelectionResult(event=ak.Array(np.ones(len(events), dtype=np.bool_)))
 
+    # jet selection
+    events, jet_results = self[jet_selection](events, **kwargs)
+    results += jet_results
 
 
     # create process ids
-    events = self[process_ids](events, **kwargs)
+    if self.process_ids_dy is not None:
+        events = self[self.process_ids_dy](events, **kwargs)
+    else:
+        events = self[process_ids](events, **kwargs)
    
 
     # add the mc weight

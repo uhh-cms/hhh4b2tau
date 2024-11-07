@@ -698,13 +698,11 @@ def add_config(
             # general event info, mandatory for reading files with coffea
             ColumnCollection.MANDATORY_COFFEA,  # additional columns can be added as strings, similar to object info
             # object info
-            "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB", "Jet.hadronFlavour",           
+            "Jet.*",           
             "MET.pt", "MET.phi", "MET.significance", "MET.covXX", "MET.covXY", "MET.covYY",
             "Muon.*",
             "Electron.*",
-            "Tau.pt", "Tau.eta", "Tau.phi", "Tau.mass", "Tau.idDeepTau2017v2p1VSe", "Tau.charge",
-            "Tau.idDeepTau2017v2p1VSmu", "Tau.idDeepTau2017v2p1VSjet", "Tau.genPartFlav",
-            "Tau.decayMode",
+            "Tau.*",
             "PV.npvs",
             "PFCandidate.*",
             "GenJet.*", "GenJetAK8.*", "GenVisTau.*",

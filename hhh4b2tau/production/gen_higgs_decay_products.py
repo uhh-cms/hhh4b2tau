@@ -16,62 +16,49 @@ import numpy as np
 
 ak = maybe_import("awkward")
 
+class _GenPartMatchBase(Producer):
 
-@producer(
-    uses=(
-        {"GenPart.*"}
-        ),
-    # produces={"gen_higgs_decay.*", "z_pion_neg", "z_pion_pos", "z_kaon_neg", "z_kaon_pos", "pion_neg.*", "pion_pos", "pion_neg_E", "pion_pos_E"},
-    produces=({
+    def __init__(self, *args, **kwargs):
+        # first, call the init function of the super class (Producer)
+        super().__init__(*args, **kwargs)
+        # define variables that are needed for the gen matching
+        self.variables: tuple[str] = ('pt', 'eta', 'phi', 'mass', 'pdgId', )
 
-        optional(f"gen_{mother}_to_{child}.{var}")
-        # optional(f"gen_{child}_from_{mother}.{var}")
-        for mother in ('h', 'tau', )
-        for child in ('b', 'tau', 'taunu', 'electron', 'enu', 'muon', 'munu', )
-        for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )
-    } |
-    {   optional(f"gen_{child}_from_{mother}.{var}")
-        for mother in ('h', 'tau', )
-        for child in ('b', 'tau', 'taunu', 'electron', 'enu', 'muon', 'munu', )
-        for var in ('pt', 'eta', 'phi', 'mass', 'pdgId', )}
-    
-    ),
-)
-def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    """
-    Creates a new ragged column "gen_higgs_decay" with one element per hard higgs boson. Each element is
-    a GenParticleArray with five or more objects in a distinct order: higgs boson, bottom quark, tau lepton,
-    W boson, down-type quark or charged lepton, up-type quark or neutrino, and any additional decay
-    produces of the W boson (if any, then most likly photon radiations). Per event, the structure
-    will be similar to:
+    def init_func(self):
+        # to perform a gen matching, we need information about the GenPartons
+        # therefore, request all available information
+        self.uses=(
+            {"GenPart.*"}
+        )
+        # derived classes should produce the following output columns
+        # note that this needs to be set explicitly when calling get_decay_idx!
+        self.produces=(
+            {
+                optional(f"gen_{mother}_to_{child}.{var}")
+                for mother in self.mothers
+                for child in self.children
+                for var in self.variables
+            } |
+            {   
+                optional(f"gen_{child}.{var}")
+                for child in self.children
+                for var in self.variables
+            } |
+            {   
+                optional(f"gen_tth_{child}.{var}")
+                for child in self.children
+                for var in self.variables
+            } |
+            {   
+                optional(f"gen_tth_{mother}_to_{child}.{var}")
+                for mother in self.mothers
+                for child in self.children
+                for var in self.variables
+            }
+        )
 
-    .. code-block:: python
-
-        [
-            # event 1
-            [
-                # top 1
-                [t1, b1, W1, q1/l, q2/n(, additional_w_decay_products)],
-                # top 2
-                [...],
-            ],
-            # event 2
-            ...
-        ]
-    """
-    # n = 19362
-
-    # # find hard h boson
-    
-    # h = events.GenPart[abs_id == 25]
-    # h = h[h.hasFlags("isFirstCopy", "fromHardProcess")]
-    # h = ak.drop_none(h, behavior=h.behavior)
-
-    # # distinct higgs boson children (b's and tau's)
-    # h_children = h.distinctChildrenDeep
-    # abs_children_id = abs(h_children.pdgId)
-    abs_id = abs(events.GenPart.pdgId)
     def get_decay_idx(
+        self,
         events: ak.Array,
         mother_id: int,
         children_id: int,
@@ -80,6 +67,7 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
         mother_gen_flags: list | None = None,
         children_gen_flags: list | None = None,
     ):
+        abs_id = abs(events.GenPart.pdgId)
         try:
             if not mother_gen_flags:
                 mother_gen_flags = ["isLastCopy", "fromHardProcess"]
@@ -133,299 +121,159 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
 
         return events, relevant_mother_idx, relevant_children
 
-    events, h_b_idx, h_b_particles = get_decay_idx(
+
+@_GenPartMatchBase.producer(
+    mothers = ('h', 'tau', ),
+    children = ('b', 'tau', 'taunu', 'electron', 'enu', 'muon', 'munu', ),
+)
+def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Creates a new ragged column "gen_higgs_decay" with one element per hard higgs boson. Each element is
+    a GenParticleArray with five or more objects in a distinct order: higgs boson, bottom quark, tau lepton,
+    W boson, down-type quark or charged lepton, up-type quark or neutrino, and any additional decay
+    produces of the W boson (if any, then most likely photon radiations). Per event, the structure
+    will be similar to:
+
+    .. code-block:: python
+
+        [
+            # event 1
+            [
+                # top 1
+                [t1, b1, W1, q1/l, q2/n(, additional_w_decay_products)],
+                # top 2
+                [...],
+            ],
+            # event 2
+            ...
+        ]
+    """
+
+    # from IPython import embed; embed()
+    events, h_b_idx, h_b_particles = self.get_decay_idx(
         events,
         mother_id=25,
         children_id=5,
-        children_output_name="gen_b_from_h",
+        children_output_name="gen_b",
         mother_output_name="gen_h_to_b",
     )
-    events, h_tau_idx, h_tau_particles = get_decay_idx(
+    events, h_tau_idx, h_tau_particles = self.get_decay_idx(
         events,
         mother_id=25,
         children_id=15,
-        children_output_name="gen_tau_from_h",
+        children_output_name="gen_tau",
         mother_output_name="gen_h_to_tau",
     )
-    events, tau_taunu_idx, tau_taunu_particles = get_decay_idx(
+
+    events, tau_taunu_idx, tau_taunu_particles = self.get_decay_idx(
         events,
         mother_id=15,
         children_id=16,
-        children_output_name="gen_taunu_from_tau",
+        children_output_name="gen_taunu",
         mother_output_name="gen_tau_to_taunu",
         children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
     )
 
-    events, tau_electron_idx, tau_electron_particles = get_decay_idx(
+    events, tau_electron_idx, tau_electron_particles = self.get_decay_idx(
         events,
         mother_id=15,
         children_id=11,
-        children_output_name="gen_electron_from_tau",
+        children_output_name="gen_electron",
         mother_output_name="gen_tau_to_electron",
         children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
     )
 
-    events, tau_enu_idx, tau_enu_particles = get_decay_idx(
+    events, tau_enu_idx, tau_enu_particles = self.get_decay_idx(
         events,
         mother_id=15,
         children_id=12,
-        children_output_name="gen_enu_from_tau",
+        children_output_name="gen_enu",
         mother_output_name="gen_tau_to_enu",
         children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
     )
 
-    events, tau_muon_idx, tau_muon_particles = get_decay_idx(
+    events, tau_muon_idx, tau_muon_particles = self.get_decay_idx(
         events,
         mother_id=15,
         children_id=13,
-        children_output_name="gen_muon_from_tau",
+        children_output_name="gen_muon",
         mother_output_name="gen_tau_to_muon",
         children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
     )
 
-    events, tau_munu_idx, tau_munu_particles = get_decay_idx(
+    events, tau_munu_idx, tau_munu_particles = self.get_decay_idx(
         events,
         mother_id=15,
         children_id=14,
-        children_output_name="gen_munu_from_tau",
+        children_output_name="gen_munu",
         mother_output_name="gen_tau_to_munu",
         children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
     )
-    
-    
-    # from IPython import embed
-    # embed(header="after get_decay_idx")
-
-
-    # # get b's
-    # b = events.GenPart[abs_id == 5]
-    # b = b[b.hasFlags("isFirstCopy", "fromHardProcess")]
-    # # remove optional (first remove nones, then update the type)
-    # b = ak.drop_none(b, behavior=b.behavior)
-
-    # # get tau's
-    # tau = events.GenPart[abs_id == 15]
-    # tau = tau[tau.hasFlags("isLastCopy", "fromHardProcess")]
-    # # remove optional
-    # tau = ak.drop_none(tau, behavior=tau.behavior)
-    
-    # # distinct tau children
-    # tau_children = tau.distinctChildren
-    # abs_tau_children_id = abs(tau_children.pdgId)
-    # tau_children = ak.drop_none(tau_children, behavior=tau_children.behavior)
-
-    # # separate tau-positive, tau-negative
-    # tau_pos = events.GenPart[events.GenPart.pdgId == -15]
-    # tau_pos = tau_pos[tau_pos.hasFlags("isLastCopy", "fromHardProcess")]
-    # tau_pos = ak.drop_none(tau_pos, behavior=tau_pos.behavior)
-    
-    # tau_neg = events.GenPart[events.GenPart.pdgId == 15]
-    # tau_neg = tau_neg[tau_neg.hasFlags("isLastCopy", "fromHardProcess")]
-    # tau_neg = ak.drop_none(tau_neg, behavior=tau_neg.behavior)
-    
-    # tau_children_pos = tau_pos.distinctChildren
-    # abs_tau_children_pos_id = abs(tau_children_pos.pdgId)
-    # tau_children_pos = ak.drop_none(tau_children_pos, behavior=tau_children_pos.behavior)
-    
-    # tau_children_neg = tau_neg.distinctChildren
-    # abs_tau_children_neg_id = abs(tau_children_neg.pdgId)
-    # tau_children_neg = ak.drop_none(tau_children_neg, behavior=tau_children_neg.behavior)
-
-    # h_tau = tau.parent.parent
-    # h_tau = ak.drop_none(h_tau, behavior=h_tau.behavior)
-   
-    # h_b = b.parent
-    # h_b = ak.drop_none(h_b, behavior=h_b.behavior)
-    
-    # # # get nu's
-    # # nu = ak.firsts(tau_children[abs_tau_children_id == 16], axis=2)
-    # # # remove optional
-    # # nu = ak.drop_none(nu, behavior=nu.behavior)
-
-    # # get nu's
-    # nu = events.GenPart[abs_id == 16]
-    # nu = nu[nu.hasFlags("isFirstCopy", "isDirectTauDecayProduct")]
-    # # remove optional (first remove nones, then update the type)
-    # nu = ak.drop_none(nu, behavior=nu.behavior)
-
-    # # from IPython import embed
-    # # embed(header="in gen_higgs_decay_products after neutrino identification")
-    
-    # # # get w's
-    # # w = ak.firsts(tau_children[abs_tau_children_id == 24], axis=2)
-    # # # remove optional
-    # # w = ak.drop_none(w, behavior=w.behavior)
-
-
-    # # get w's
-    # w = events.GenPart[abs_id == 24]
-    # w = w[w.hasFlags("isFirstCopy", "fromHardProcess")]
-    # # remove optional (first remove nones, then update the type)
-    # w = ak.drop_none(w, behavior=w.behavior)
-
     # from IPython import embed
     # embed(header="in gen_higgs_decay_products after W identification")
-    
+    return events
+  
+# Access decay products for ttH channel
+@_GenPartMatchBase.producer(
+        mothers=('w', 'h', 't'),
+        children=('tau', 'taunu', 'b1', 'b2'),
+)
+def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    events, h_b_idx, h_b_particles = self.get_decay_idx(
+        events,
+        mother_id=25,
+        children_id=5,
+        children_output_name="gen_tth_b1",
+        mother_output_name="gen_tth_h_to_b1",
+    )
+
+    events, t_b_idx, t_b_particles = self.get_decay_idx(
+        events,
+        mother_id=6,
+        children_id=5,
+        children_output_name="gen_tth_b2",
+        mother_output_name="gen_tth_t_to_b1",
+    )
+
+    events, w_tau_idx, w_tau_particles = self.get_decay_idx(
+        events,
+        mother_id=24,
+        children_id=15,
+        children_output_name="gen_tth_tau",
+        mother_output_name="gen_tth_w_to_tau",
+    )
+
+    events, h_b_idx, h_b_particles = self.get_decay_idx(
+        events,
+        mother_id=24,
+        children_id=16,
+        children_output_name="gen_tth_taunu",
+        mother_output_name="gen_tth_w_to_taunu",
+    )
+    # from IPython import embed; embed(header='in gen_tth')
+    return events
 
 
-#     # decays might also be effective into a variable number of mesons -> add them
-#     w_children = tau_children[abs_tau_children_id != 16]
-#     # remove optional
-#     w_children = ak.drop_none(w_children, behavior=w_children.behavior)
-    
-#     # temporarily here: sum children and make them GenParticles
-#     w_sum = w_children.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         w_sum = set_ak_column(w_sum, c, getattr(w_sum, c))
-#     for c in ["t", "x", "y", "z"]:
-#         w_sum = remove_ak_column(w_sum, c)
-#     tau_sign = tau.pdgId // abs(tau.pdgId)
-#     w_sum = set_ak_column(w_sum, "pdgId", tau.pdgId - 39 * tau_sign)
-#     w_sum = attach_behavior(w_sum, "GenParticle")
 
 
-#    # visible decay of w
-#     w_visible = tau_children[(abs_tau_children_id != 12) & (abs_tau_children_id != 14) & (abs_tau_children_id != 16)]
-#     # remove optional
-#     w_visible = ak.drop_none(w_visible, behavior=w_visible.behavior)
+# Moving from GenParton level to Gen hardronic level
 
-#     w_visible_sum = w_visible.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         w_visible_sum = set_ak_column(w_visible_sum, c, getattr(w_visible_sum, c))
-#     for c in ["t", "x", "y", "z"]:
-#         w_visible_sum = remove_ak_column(w_visible_sum, c)
-#     tau_sign = tau.pdgId // abs(tau.pdgId)
-#     w_visible_sum = set_ak_column(w_visible_sum, "pdgId", tau.pdgId - 39 * tau_sign)
-#     w_visible_sum = attach_behavior(w_visible_sum, "GenParticle")
+@producer(
+    uses=({"GenJet.*", "GenVisTau.*", # "GenMET.*", "GenJetAK8.*", 
+           }),
+    produces={"gen_b_jet.*", "GenVisTau.*",
+              },
+        
+)
+def gen_Hadron_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
+    # from IPython import embed; embed(header="inside gen_Hadron_products")
 
+    b_jet_mask = events.GenJet.hadronFlavour == 5
+    gen_b_jet = ak.drop_none(ak.mask(events.GenJet, b_jet_mask))
 
-#     w_vis_had_ne = tau_children_neg[
-#         ((abs(tau_children_neg.pdgId) < 11) | (abs(tau_children_neg.pdgId) > 16)) &
-#         (tau_children_neg.pdgId != 22) &
-#         ~tau_children_neg.hasFlags("isPrompt")
-#     ]
-#     # visible hadronic w decay    
-#     w_vis_had_neg = w_vis_had_ne.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         w_vis_had_neg = set_ak_column(w_vis_had_neg, c, getattr(w_vis_had_neg, c))
-#     for c in ["t", "x", "y", "z"]:
-#         w_vis_had_neg = remove_ak_column(w_vis_had_neg, c)
-#     tau_neg_sign = tau_neg.pdgId // abs(tau_neg.pdgId)
-#     w_vis_had_neg = set_ak_column(w_vis_had_neg, "pdgId", tau_neg.pdgId - 39 * tau_neg_sign)
-#     w_vis_had_neg = attach_behavior(w_vis_had_neg, "GenParticle")
+    events = set_ak_column(events, "gen_b_jet", gen_b_jet)
 
-
-#     w_vis_had_po = tau_children_pos[
-#         ((abs(tau_children_pos.pdgId) < 11) | (abs(tau_children_pos.pdgId) > 16)) &
-#         (tau_children_pos.pdgId != 22) &
-#         ~tau_children_pos.hasFlags("isPrompt")
-#     ]
-#     w_vis_had_pos = w_vis_had_po.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         w_vis_had_pos = set_ak_column(w_vis_had_pos, c, getattr(w_vis_had_pos, c))
-#     for c in ["t", "x", "y", "z"]:
-#         w_vis_had_pos = remove_ak_column(w_vis_had_pos, c)
-#     tau_pos_sign = tau_pos.pdgId // abs(tau_pos.pdgId)
-#     w_vis_had_pos = set_ak_column(w_vis_had_pos, "pdgId", tau_pos.pdgId - 39 * tau_pos_sign)
-#     w_vis_had_pos = attach_behavior(w_vis_had_pos, "GenParticle")    
-
-#     # ------------------------------
-#     # visible leptonic w decay
-#     w_vis_lep_po = tau_children_pos[
-#         ((abs(tau_children_pos.pdgId) == 11) | (abs(tau_children_pos.pdgId) == 13) | (abs(tau_children_pos.pdgId) == 15)) &
-#         ~tau_children_pos.hasFlags("isPrompt")
-#     ]
-    
-#     w_vis_lep_pos = w_vis_lep_po.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         w_vis_lep_pos = set_ak_column(w_vis_lep_pos, c, getattr(w_vis_lep_pos, c))
-#     for c in ["t", "x", "y", "z"]:
-#         w_vis_lep_pos = remove_ak_column(w_vis_lep_pos, c)
-#     w_vis_lep_pos = set_ak_column(w_vis_lep_pos, "pdgId", tau_pos.pdgId - 39 * tau_pos_sign)
-#     w_vis_lep_pos = attach_behavior(w_vis_lep_pos, "GenParticle")
-
-
-#     w_vis_lep_ne = tau_children_neg[
-#         ((abs(tau_children_neg.pdgId) == 11) | (abs(tau_children_neg.pdgId) == 13) | (abs(tau_children_neg.pdgId) == 15)) &
-#         ~tau_children_neg.hasFlags("isPrompt")
-#     ]
-    
-#     w_vis_lep_neg = w_vis_lep_ne.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         w_vis_lep_neg = set_ak_column(w_vis_lep_neg, c, getattr(w_vis_lep_neg, c))
-#     for c in ["t", "x", "y", "z"]:
-#         w_vis_lep_neg = remove_ak_column(w_vis_lep_neg, c)
-#     w_vis_lep_neg = set_ak_column(w_vis_lep_neg, "pdgId", tau_neg.pdgId - 39 * tau_neg_sign)
-#     w_vis_lep_neg = attach_behavior(w_vis_lep_neg, "GenParticle")
-    
-#     # pion plus 
-#     pi_pos_neg = tau_children_neg[(tau_children_neg.pdgId == 211) & ~tau_children_neg.hasFlags("isPrompt")] 
-#     pion_pos_neg = pi_pos_neg.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         pion_pos_neg = set_ak_column(pion_pos_neg, c, getattr(pion_pos_neg, c))
-#     for c in ["t", "x", "y", "z"]:
-#         pion_pos_neg = remove_ak_column(pion_pos_neg, c)
-#     pion_pos_neg = set_ak_column(pion_pos_neg, "pdgId", 211)
-#     pion_pos_neg = attach_behavior(pion_pos_neg, "GenParticle")
-
-#     pi_pos_pos = tau_children_pos[(tau_children_pos.pdgId == 211) & ~tau_children_pos.hasFlags("isPrompt")] 
-#     pion_pos_pos = pi_pos_pos.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         pion_pos_pos = set_ak_column(pion_pos_pos, c, getattr(pion_pos_pos, c))
-#     for c in ["t", "x", "y", "z"]:
-#         pion_pos_pos = remove_ak_column(pion_pos_pos, c)
-#     pion_pos_pos = set_ak_column(pion_pos_pos, "pdgId", 211)
-#     pion_pos_pos = attach_behavior(pion_pos_pos, "GenParticle")
-    
-#     # pion minus
-#     pi_neg_neg = tau_children_neg[(tau_children_neg.pdgId == -211) & ~tau_children_neg.hasFlags("isPrompt")] 
-#     pion_neg_neg = pi_neg_neg.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         pion_neg_neg = set_ak_column(pion_neg_neg, c, getattr(pion_neg_neg, c))
-#     for c in ["t", "x", "y", "z"]:
-#         pion_neg_neg = remove_ak_column(pion_neg_neg, c)
-#     pion_neg_neg = set_ak_column(pion_neg_neg, "pdgId", -211)
-#     pion_neg_neg = attach_behavior(pion_neg_neg, "GenParticle")
-
-#     pi_neg_pos = tau_children_pos[(tau_children_pos.pdgId == -211) & ~tau_children_pos.hasFlags("isPrompt")] 
-#     pion_neg_pos = pi_neg_pos.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         pion_neg_pos = set_ak_column(pion_neg_pos, c, getattr(pion_neg_pos, c))
-#     for c in ["t", "x", "y", "z"]:
-#         pion_neg_pos = remove_ak_column(pion_neg_pos, c)
-#     pion_neg_pos = set_ak_column(pion_neg_pos, "pdgId", -211)
-#     pion_neg_pos = attach_behavior(pion_neg_pos, "GenParticle")
-    
-
-#     pion = tau_children_pos[(tau_children_pos.pdgId == 111) & ~tau_children_pos.hasFlags("isPrompt")]
-#     pion_zero_pos = pion.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         pion_zero_pos = set_ak_column(pion_zero_pos, c, getattr(pion_zero_pos, c))
-#     for c in ["t", "x", "y", "z"]:
-#         pion_zero_pos = remove_ak_column(pion_zero_pos, c)
-#     pion_zero_pos = set_ak_column(pion_zero_pos, "pdgId", 111)
-#     pion_zero_pos = attach_behavior(pion_zero_pos, "GenParticle")
-
-#     pion1 = tau_children_neg[(tau_children_neg.pdgId == 111) & ~tau_children_neg.hasFlags("isPrompt")]
-#     pion_zero_neg = pion1.sum(axis=-1)
-#     for c in ["pt", "eta", "phi", "mass"]:
-#         pion_zero_neg = set_ak_column(pion_zero_neg, c, getattr(pion_zero_neg, c))
-#     for c in ["t", "x", "y", "z"]:
-#         pion_zero_neg = remove_ak_column(pion_zero_neg, c)
-#     pion_zero_neg = set_ak_column(pion_zero_neg, "pdgId", 111)
-#     pion_zero_neg = attach_behavior(pion_zero_neg, "GenParticle")
-    
-
-
-#     tau_neg_2c = tau_children_neg[ak.num(tau_children_neg, axis=2) == 2]
-#     pion_neg = ak.flatten(tau_neg_2c[tau_neg_2c.pdgId == -211], axis=2)
-#     # from IPython import embed
-#     # embed()
-#     kaon_neg = ak.flatten(tau_neg_2c[tau_neg_2c.pdgId == -321], axis=2)
-
-#     tau_pos_2c = tau_children_pos[ak.num(tau_children_pos, axis=2) == 2]
-#     pion_pos = ak.flatten(tau_pos_2c[tau_pos_2c.pdgId == 211], axis=2)
-#     kaon_pos = ak.flatten(tau_pos_2c[tau_pos_2c.pdgId == 321], axis=2)
-
+                           
     return events

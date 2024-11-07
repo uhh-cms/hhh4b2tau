@@ -15,8 +15,8 @@ from columnflow.util import maybe_import
 
 from hhh4b2tau.production.example import cutflow_features
 from hhh4b2tau.production.gen_higgs_decay_products import gen_higgs_decay_products
-
-
+from hhh4b2tau.production.gen_higgs_decay_products import gen_tth_decay_products
+from hhh4b2tau.production.gen_higgs_decay_products import gen_Hadron_products
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
@@ -34,12 +34,14 @@ ak = maybe_import("awkward")
 @selector(
     uses={
         # selectors / producers called within _this_ selector
-        mc_weight, cutflow_features, process_ids, gen_higgs_decay_products,
-        increment_stats,
+        mc_weight, cutflow_features, process_ids, increment_stats,
+        gen_higgs_decay_products, gen_tth_decay_products, gen_Hadron_products,
+        
     },
     produces={
         # selectors / producers whose newly created columns should be kept
-        mc_weight, cutflow_features, process_ids, gen_higgs_decay_products,
+        mc_weight, cutflow_features, process_ids, 
+        gen_higgs_decay_products, gen_tth_decay_products, gen_Hadron_products,
     },
     exposed=True,
 )
@@ -54,17 +56,39 @@ def gen_studies(
 
     # get higgs decay products
 
-    if self.dataset_inst.is_mc and self.dataset_inst.name.startswith("h"):
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("hhh",))
+    ):
         events = self[gen_higgs_decay_products](events, **kwargs)
     
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("tth_hbb_powheg",))
+    ):
+        events = self[gen_tth_decay_products](events, **kwargs)
+
+    events = self[gen_Hadron_products](events, **kwargs)
+
+    # select events with at least 4 gen b jets
+    n_gen_b_jet = ak.num(events.gen_b_jet)
+
+    results.steps["one_b_jets"] = n_gen_b_jet >= 1
+    results.steps["two_b_jets"] = n_gen_b_jet >= 2
+    results.steps["three_b_jets"] = n_gen_b_jet >= 3
+    results.steps["four_b_jets"] = n_gen_b_jet >= 4
+
+    # select events with at least 2 GenVisTau
+    n_GenVisTau =ak.num(events.GenVisTau)
+    
+    results.steps["one_tau"] = n_GenVisTau >= 1
+    results.steps["two_tau"] = n_GenVisTau >= 2
+        
     # # get tau decay products
 
     # if self.dataset_inst.is_mc and self.dataset_inst.name.startswith("tau"):
     #     events = self[gen_higgs_decay_products](events, **kwargs)
     
-
-
-
     results.event = ak.ones_like(events.event, dtype=bool)
 
     # create process ids
@@ -110,6 +134,8 @@ def gen_studies(
         group_map=group_map,
         **kwargs,
     )
+
+    # from IPython import embed; embed(header="end selector")
 
     return events, results
 

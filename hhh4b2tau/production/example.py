@@ -18,9 +18,9 @@ from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
 
 # my own variables
 from hhh4b2tau.production.newvariables import jet_angle_difference
-from hhh4b2tau.production.newvariables import h_decay_invariant_mass
-
-
+from hhh4b2tau.production.newvariables import hhh_decay_invariant_mass
+from hhh4b2tau.production.newvariables import tth_variables
+from hhh4b2tau.production.newvariables import genHadron_variables
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
@@ -111,10 +111,14 @@ def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @producer(
     uses={
-        features, category_ids, normalization_weights, deterministic_seeds, jet_angle_difference, h_decay_invariant_mass,
+        features, category_ids, normalization_weights, deterministic_seeds, 
+        jet_angle_difference, hhh_decay_invariant_mass, tth_variables,
+        genHadron_variables,
     },
     produces={
-        features, category_ids, normalization_weights, deterministic_seeds, jet_angle_difference, h_decay_invariant_mass,
+        features, category_ids, normalization_weights, deterministic_seeds, 
+        jet_angle_difference, hhh_decay_invariant_mass, tth_variables,
+        genHadron_variables,
     },
 )
 def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -129,10 +133,20 @@ def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # deterministic seeds
     events = self[deterministic_seeds](events, **kwargs)
 
-    
-
     # adding new variables
     events = self[jet_angle_difference](events, **kwargs)
-    events = self[h_decay_invariant_mass](events, **kwargs)
+    events = self[genHadron_variables](events, **kwargs)
+    
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("hhh",))
+    ):
+        events = self[hhh_decay_invariant_mass](events, **kwargs)
+        
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("tth_hbb_powheg",))
+    ):
+        events = self[tth_variables](events, **kwargs)
 
     return events

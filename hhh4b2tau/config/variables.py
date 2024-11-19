@@ -473,3 +473,43 @@ def add_variables(
         binning=(24, -1, +1),
         x_title=r"$\tau\tau$ $cos(\delta)$",
     )
+
+    cfg.add_variable(
+        name="h1_mass",
+        binning=(40, 0.0, 400.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{H1}$",
+    )
+
+    cfg.add_variable(
+        name="h2_mass",
+        binning=(40, 0.0, 400.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{H2}$",
+    )
+
+    cfg.add_variable(
+        name="h3_mass",
+        binning=(40, 0.0, 400.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{H3}$",
+    )
+
+    cfg.add_variable(
+        name="n_b_jet",
+        expression="n_b_jet",
+        binning=(11, 0, 10),
+        x_title="Number of b jets",
+        discrete_x=True,
+    )
+
+    cfg.add_variable(
+        name="n_fatjet",
+        expression="n_fatjet",
+        binning=(11, 0, 10),
+        x_title="Number of fat jets",
+        discrete_x=True,
+    )

@@ -698,7 +698,8 @@ def add_config(
             # general event info, mandatory for reading files with coffea
             ColumnCollection.MANDATORY_COFFEA,  # additional columns can be added as strings, similar to object info
             # object info
-            "Jet.*",           
+            "Jet.*", 
+            "FatJet.*",          
             "MET.pt", "MET.phi", "MET.significance", "MET.covXX", "MET.covXY", "MET.covYY",
             "Muon.*",
             "Electron.*",

@@ -215,7 +215,7 @@ def add_config(
             "tt_sl",
             "tt_dl",
             "tt_fh",
-            "dy",
+            # "dy",
             # "qcd",
             # "st",
             # "v",
@@ -235,6 +235,11 @@ def add_config(
         "hhh_compare_2": [
             f"hhh_4b2tau_c3{x}_d4{y}" for x,y in ((0, 0), (19, 19), (4, 9), ("m1p5", "m0p5"), ("m1", "m1"), (1, 2))
         ],
+
+        "hhh_compare_3": [
+            f"hhh_4b2tau_c3{x}_d4{y}" for x,y in ((1, 0), (4, 9))
+        ],
+
         "sm_higgs": (sm_higgs := [
             "tth",
             "hhh_4b2tau_c30_d40",
@@ -336,6 +341,7 @@ def add_config(
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
         "default": ["muon", "jet"],
+        "4b2tau": ["one_bjet", "two_bjet", "three_bjet", "four_bjet", "one_tau", "two_tau"],
     }
 
     # calibrator groups for conveniently looping over certain calibrators

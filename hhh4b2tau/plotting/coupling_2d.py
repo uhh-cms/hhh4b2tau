@@ -46,7 +46,7 @@ plt.xlabel("c3")
 plt.ylabel("d4")
 plt.title("Cross-section scaling (theoretical values for 27 TeV)")
 plt.show()
-from IPython import embed; embed()
+
 plt.pcolormesh(coupling_combinations_xsec[:,0], 
                coupling_combinations_xsec[:,1], 
                coupling_combinations_xsec[:,2]/3.705e-05)

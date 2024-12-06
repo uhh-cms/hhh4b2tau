@@ -32,7 +32,7 @@ def jet_selection(
     **kwargs,
 ) -> tuple[ak.Array, SelectionResult]:
 
-    from IPython import embed; embed()
+    # from IPython import embed; embed()
 
     # local jet index
     # li = ak.local_index(events.Jet)
@@ -84,19 +84,24 @@ def jet_selection(
     subjets_btagged = ak.all(events.SubJet[ak.firsts(subjet_indices)].btagDeepB > wp, axis=1)
 
     # final event selection
+    jet_sel1 = (
+        (ak.sum(default_mask, axis=1) >= 1) &
+         ak.fill_none(subjets_btagged, True) # was none for events with no matched fatjet
+    )
+
     jet_sel2 = (
         (ak.sum(default_mask, axis=1) >= 2) &
-        ak.fill_none(subjets_btagged, True) # was none for events with no matched fatjet
+         ak.fill_none(subjets_btagged, True)
     )
 
     jet_sel3 = (
         (ak.sum(default_mask, axis=1) >= 3) &
-        ak.fill_none(subjets_btagged, True)
+         ak.fill_none(subjets_btagged, True)
     )
-
+    # from IPython import embed; embed(header="jet selection")
     jet_sel4 = (
-        (ak.sum(default_mask, axis=1) >= 3) &
-        ak.fill_none(subjets_btagged, True)
+        (ak.sum(default_mask, axis=1) >= 4) &
+         ak.fill_none(subjets_btagged, True)
     )
 
     # pt sorted indices to convert mask
@@ -105,7 +110,7 @@ def jet_selection(
     # some final type conversions
     jet_indices = ak.values_astype(ak.fill_none(jet_indices, 0), np.int32)
     fatjet_indices = ak.values_astype(fatjet_indices, np.int32)
-
+    # from IPython import embed; embed(header="in jet selection")
     # additional jet veto map, vetoing entire events
     # if self.has_dep(jet_veto_map):
     #     events, veto_result = self[jet_veto_map](events, **kwargs)
@@ -116,6 +121,7 @@ def jet_selection(
     # to create them, e.g. {"Jet": {"MyCustomJetCollection": indices_applied_to_Jet}}
     return events, SelectionResult(
         steps={
+            "one_bjet": jet_sel1,
             "two_bjet" : jet_sel2,
             "three_bjet" : jet_sel3,
             "four_bjet": jet_sel4,

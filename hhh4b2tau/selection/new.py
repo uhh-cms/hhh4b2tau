@@ -22,6 +22,8 @@ from columnflow.production.cms.scale import murmuf_weights
 from columnflow.production.cms.btag import btag_weights
 from columnflow.production.util import attach_coffea_behavior
 from columnflow.util import maybe_import, dev_sandbox
+from columnflow.production.categories import category_ids
+from columnflow.columnar_util import set_ak_column
 
 # from hhh4b2tau.selection.trigger import trigger_selection
 from hhh4b2tau.production.features import cutflow_features
@@ -29,6 +31,7 @@ from hhh4b2tau.production.processes import process_ids_dy
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS
 
 from hhh4b2tau.selection.jet import jet_selection
+from hhh4b2tau.selection.lepton import tau_selection
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -40,12 +43,12 @@ ak = maybe_import("awkward")
         pu_weight, btag_weights, process_ids, cutflow_features, increment_stats,
         attach_coffea_behavior,
         IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
-        jet_selection,
+        jet_selection, tau_selection, category_ids,
     },
     produces={
         mc_weight, pu_weight, btag_weights,
         process_ids, cutflow_features, increment_stats,
-        IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
+        IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), category_ids,
     },
     exposed=True,
     # sandbox = dev_sandbox("bash::${HBT_BASE}/sandboxes/venv_columnar_tf.sh"),
@@ -73,9 +76,17 @@ def new(
     events, met_filter_results = self[met_filters](events, **kwargs)
     results += met_filter_results
 
+    # category ids
+    events = self[category_ids](events, **kwargs)
+
+
     # # trigger selection
     # events, trigger_results = self[trigger_selection](events, **kwargs)
     # results += trigger_results
+
+    # tau selection
+    events, tau_results = self[tau_selection](events, **kwargs)
+    results += tau_results
 
     # jet selection
     events, jet_results = self[jet_selection](events, **kwargs)
@@ -167,7 +178,7 @@ def new(
         # combinations
         # group_combinations.append(("process", "njet"))
         group_combinations.append(("process",))
-
+    # from IPython import embed; embed(header="in new selector")
     events, results = self[increment_stats](
         events,
         results,

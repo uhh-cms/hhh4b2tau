@@ -734,7 +734,7 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     b_jet = events.Jet
 
     tau = events.Tau
-    # from IPython import embed; embed(header="inside detector variables")
+    from IPython import embed; embed(header="inside detector variables")
     # now copy-paste from hadron analysis 
     # final result will automatically filter all cases < 4 b-jets and < 2 tau out
 

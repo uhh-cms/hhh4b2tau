@@ -241,7 +241,7 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{HHH}$",
+        x_title=r"$m_{4b2\tau}$",
     )
 
     cfg.add_variable(

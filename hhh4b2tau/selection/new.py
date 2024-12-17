@@ -31,7 +31,8 @@ from hhh4b2tau.production.processes import process_ids_dy
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS
 
 from hhh4b2tau.selection.jet import jet_selection
-from hhh4b2tau.selection.lepton import tau_selection
+from hhh4b2tau.selection.lepton import lepton_selection
+from hhh4b2tau.selection.trigger import trigger_selection
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -41,17 +42,19 @@ ak = maybe_import("awkward")
     uses={
         json_filter, met_filters, mc_weight,
         pu_weight, btag_weights, process_ids, cutflow_features, increment_stats,
+        trigger_selection, lepton_selection, jet_selection,
         attach_coffea_behavior,
         IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
-        jet_selection, tau_selection, category_ids,
+        category_ids,
     },
     produces={
         mc_weight, pu_weight, btag_weights,
         process_ids, cutflow_features, increment_stats,
         IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), category_ids,
+        jet_selection, lepton_selection, trigger_selection,
     },
     exposed=True,
-    # sandbox = dev_sandbox("bash::${HBT_BASE}/sandboxes/venv_columnar_tf.sh"),
+    sandbox = dev_sandbox("bash::$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh"),
 )
 def new(
     self: Selector,
@@ -79,19 +82,18 @@ def new(
     # category ids
     events = self[category_ids](events, **kwargs)
 
-
     # # trigger selection
-    # events, trigger_results = self[trigger_selection](events, **kwargs)
-    # results += trigger_results
+    events, trigger_results = self[trigger_selection](events, **kwargs)
+    results += trigger_results
 
-    # tau selection
-    events, tau_results = self[tau_selection](events, **kwargs)
-    results += tau_results
+    # lepton selection
+    events, lepton_results = self[lepton_selection](events, trigger_results, **kwargs)
+    results += lepton_results
 
     # jet selection
-    events, jet_results = self[jet_selection](events, **kwargs)
+    events, jet_results = self[jet_selection](events, trigger_results, lepton_results, **kwargs)
     results += jet_results
-
+    # from IPython import embed; embed(header="in new selector after jet selection") 
     # mc-only functions
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)
@@ -153,7 +155,7 @@ def new(
                 weight_map[f"sum_pdf_weight{v}_selected"] = (events[f"pdf_weight{v}"], event_sel)
                 weight_map[f"sum_murmuf_weight{v}"] = events[f"murmuf_weight{v}"]
                 weight_map[f"sum_murmuf_weight{v}_selected"] = (events[f"murmuf_weight{v}"], event_sel)
-        # btag weights
+        # # btag weights
         # for name in sorted(self[btag_weights].produces):
         #     if not name.startswith("btag_weight"):
         #         continue
@@ -178,7 +180,7 @@ def new(
         # combinations
         # group_combinations.append(("process", "njet"))
         group_combinations.append(("process",))
-    # from IPython import embed; embed(header="in new selector")
+        
     events, results = self[increment_stats](
         events,
         results,

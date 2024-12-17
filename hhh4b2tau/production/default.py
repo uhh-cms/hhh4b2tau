@@ -63,19 +63,20 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = self[normalized_pu_weight](events, **kwargs)
 
         # btag weights
-        # events = self[normalized_btag_weights](events, **kwargs)
+        events = self[normalized_btag_weights](events, **kwargs)
 
         # tau weights
-        # events = self[tau_weights](events, **kwargs)
+        events = self[tau_weights](events, **kwargs)
 
         # electron weights
-        # events = self[electron_weights](events, **kwargs)
+        events = self[electron_weights](events, **kwargs)
 
         # muon weights
-        # events = self[muon_weights](events, **kwargs)
+        events = self[muon_weights](events, **kwargs)
 
         # trigger weights
-        # events = self[trigger_weights](events, **kwargs)
+        events = self[trigger_weights](events, **kwargs)
+        
     events = self[jet_angle_difference](events, **kwargs)
     events = self[dectector_variables](events, **kwargs)
 

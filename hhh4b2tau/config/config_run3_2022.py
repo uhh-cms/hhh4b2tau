@@ -166,6 +166,13 @@ def add_config(
         if dataset_name.startswith(("graviton_hh_", "radion_hh_")):
             dataset.add_tag("signal")
             dataset.add_tag("resonant_signal")
+        if dataset.name.startswith("data_e_"):
+            dataset.add_tag({"etau", "emu_from_e"})
+        if dataset.name.startswith("data_mu_"):
+            dataset.add_tag({"mutau", "emu_from_mu", "mumu"})
+        if dataset.name.startswith("data_tau_"):
+            dataset.add_tag({"tautau"})
+        
 
         # apply an optional limit on the number of files
         if limit_dataset_files:
@@ -177,8 +184,8 @@ def add_config(
 
     # default objects, such as calibrator, selector, producer, ml model, inference model, etc
     cfg.x.default_calibrator = "example"
-    cfg.x.default_selector = "example"
-    cfg.x.default_producer = "example"
+    cfg.x.default_selector = "default"
+    cfg.x.default_producer = "default"
     cfg.x.default_ml_model = None
     cfg.x.default_inference_model = "example"
     cfg.x.default_categories = ("incl",)
@@ -341,7 +348,7 @@ def add_config(
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
         "default": ["muon", "jet"],
-        "4b2tau": ["one_bjet", "two_bjet", "three_bjet", "four_bjet", "one_tau", "two_tau"],
+        "4b2tau": ["one_bjet", "two_bjet", "three_bjet", "one_tau", "two_tau", "four_bjet"],
     }
 
     # calibrator groups for conveniently looping over certain calibrators
@@ -760,8 +767,11 @@ def add_config(
     }
 
     # channels
-    # (just one for now)
     cfg.add_channel(name="mutau", id=1)
+    cfg.add_channel(name="etau", id=2)
+    cfg.add_channel(name="tautau", id=3)
+    cfg.add_channel(name="mumu", id=4)
+    cfg.add_channel(name="emu", id=5)
 
     # add categories using the "add_category" tool which adds auto-generated ids
     # the "selection" entries refer to names of categorizers, e.g. in categorization/example.py
@@ -776,6 +786,25 @@ def add_config(
 
     from hhh4b2tau.config.met_filters import add_met_filters
     add_met_filters(cfg)
+
+        # add triggers
+    if year == 2016:
+        from hhh4b2tau.config.triggers import add_triggers_2016
+        add_triggers_2016(cfg)
+    elif year == 2017:
+        from hhh4b2tau.config.triggers import add_triggers_2017
+        add_triggers_2017(cfg)
+    elif year == 2018:
+        from hhh4b2tau.config.triggers import add_triggers_2018
+        add_triggers_2018(cfg)
+    elif year == 2022:
+        from hhh4b2tau.config.triggers import add_triggers_2022
+        add_triggers_2022(cfg)
+    elif year == 2023:
+        from hhh4b2tau.config.triggers import add_triggers_2023
+        add_triggers_2023(cfg)
+    else:
+        raise False
 
     ################################################################################################
     # LFN settings

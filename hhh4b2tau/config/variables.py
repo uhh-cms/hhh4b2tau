@@ -355,15 +355,15 @@ def add_variables(
     cfg.add_variable(
         name="n_b_jet",
         expression="n_b_jet",
-        binning=(10, 0, 10),
-        x_title="Number of b jets",
+        binning=(7, 3, 10),
+        x_title="Number of jets",
         discrete_x=True,
     )
 
     cfg.add_variable(
         name="n_fatjet",
         expression="n_fatjet",
-        binning=(10, 0, 10),
+        binning=(5, 0, 5),
         x_title="Number of fat jets",
         discrete_x=True,
     )

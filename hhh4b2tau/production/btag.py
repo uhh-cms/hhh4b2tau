@@ -20,6 +20,7 @@ ak = maybe_import("awkward")
 # helper
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
+
 # custom btag weight producer for deepjet and pnet configs
 btag_weights_deepjet = btag_weights.derive("btag_weights_deepjet", cls_dict={
     "weight_name": "btag_weight_deepjet",
@@ -32,6 +33,7 @@ btag_weights_pnet = btag_weights.derive("btag_weights_pnet", cls_dict={
     "get_btag_config": (lambda self: self.config_inst.x.btag_sf_pnet),
 })
 
+
 @producer(
     uses={"process_id", "Jet.pt"},
     # only run on mc
@@ -39,29 +41,35 @@ btag_weights_pnet = btag_weights.derive("btag_weights_pnet", cls_dict={
     # configurable weight producer class
     btag_weights_cls=None,
 )
-def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def _normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     for route in self[self.btag_weights_cls].produced_columns:
         weight_name = str(route)
         if not weight_name.startswith(self.weight_name):
             continue
 
-        # create a weight vectors starting with ones for both weight variations, i.e.,
-        # nomalization per pid and normalization per pid and jet multiplicity
-        norm_weight_per_pid = np.ones(len(events), dtype=np.float32)
-        norm_weight_per_pid_njet = np.ones(len(events), dtype=np.float32)
+        # BUG in prod3: some stats fields were missing so skip them for now
+        # # create a weight vectors starting with ones for both weight variations, i.e.,
+        # # nomalization per pid and normalization per pid and jet multiplicity
+        # norm_weight_per_pid = np.ones(len(events), dtype=np.float32)
+        # norm_weight_per_pid_njet = np.ones(len(events), dtype=np.float32)
 
-        # fill weights with a new mask per unique process id (mostly just one)
-        for pid in self.unique_process_ids:
-            pid_mask = events.process_id == pid
-            # single value
-            norm_weight_per_pid[pid_mask] = self.ratio_per_pid[weight_name][pid]
-            # lookup table
-            n_jets = ak.to_numpy(ak.num(events[pid_mask].Jet.pt, axis=1))
-            norm_weight_per_pid_njet[pid_mask] = self.ratio_per_pid_njet[weight_name][pid][n_jets]
+        # # fill weights with a new mask per unique process id (mostly just one)
+        # for pid in self.unique_process_ids:
+        #     pid_mask = events.process_id == pid
+        #     # single value
+        #     norm_weight_per_pid[pid_mask] = self.ratio_per_pid[weight_name][pid]
+        #     # lookup table
+        #     n_jets = ak.to_numpy(ak.num(events[pid_mask].Jet.pt, axis=1))
+        #     norm_weight_per_pid_njet[pid_mask] = self.ratio_per_pid_njet[weight_name][pid][n_jets]
 
-        # multiply with actual weight
-        norm_weight_per_pid = norm_weight_per_pid * events[weight_name]
-        norm_weight_per_pid_njet = norm_weight_per_pid_njet * events[weight_name]
+        # # multiply with actual weight
+        # norm_weight_per_pid = norm_weight_per_pid * events[weight_name]
+        # norm_weight_per_pid_njet = norm_weight_per_pid_njet * events[weight_name]
+
+        # fake values
+        from columnflow.columnar_util import full_like
+        norm_weight_per_pid = full_like(events.event, 1.0, dtype=np.float32)
+        norm_weight_per_pid_njet = norm_weight_per_pid
 
         # store them
         events = set_ak_column_f32(events, f"normalized_{weight_name}", norm_weight_per_pid)
@@ -70,8 +78,8 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     return events
 
 
-@normalized_btag_weights.init
-def normalized_btag_weights_init(self: Producer) -> None:
+@_normalized_btag_weights.init
+def _normalized_btag_weights_init(self: Producer) -> None:
     assert self.btag_weights_cls, "btag_weights_cls must be set"
 
     if not getattr(self, "dataset_inst", None):
@@ -88,27 +96,28 @@ def normalized_btag_weights_init(self: Producer) -> None:
             self.produces.add(f"normalized_{{,njet_}}{name}")
 
 
-@normalized_btag_weights.requires
-def normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
+@_normalized_btag_weights.requires
+def _normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
     from columnflow.tasks.selection import MergeSelectionStats
-    reqs["selection_stats"] = MergeSelectionStats.req(
+    reqs["selection_stats"] = MergeSelectionStats.req_different_branching(
         self.task,
-        tree_index=0,
-        branch=-1,
-        _exclude=MergeSelectionStats.exclude_params_forest_merge,
+        branch=-1 if self.task.is_workflow() else 0,
     )
 
 
-@normalized_btag_weights.setup
-def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+@_normalized_btag_weights.setup
+def _normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+    # BUG in prod3: some stats fields were missing so skip them for now
+    return
+
     # load the selection stats
     selection_stats = self.task.cached_value(
         key="selection_stats",
-        func=lambda: inputs["selection_stats"]["collection"][0]["stats"].load(formatter="json"),
+        func=lambda: inputs["selection_stats"]["stats"].load(formatter="json"),
     )
 
     # get the unique process ids in that dataset
-    key = f"sum_mc_weight_selected_nob_{self.tagger_name}_per_process_and_njet"
+    key = f"sum_btag_weight_{self.tagger_name}_selected_nob_{self.tagger_name}_per_process_and_njet"
     self.unique_process_ids = list(map(int, selection_stats[key].keys()))
 
     # get the maximum numbers of jets
@@ -151,11 +160,11 @@ def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict, read
 
 
 # derive for btaggers
-normalized_btag_weights_deepjet = normalized_btag_weights.derive("normalized_btag_weights_deepjet", cls_dict={
+normalized_btag_weights_deepjet = _normalized_btag_weights.derive("normalized_btag_weights_deepjet", cls_dict={
     "btag_weights_cls": btag_weights_deepjet,
-    "uses": normalized_btag_weights.uses | {btag_weights_deepjet.PRODUCES},
+    "uses": _normalized_btag_weights.uses | {btag_weights_deepjet.PRODUCES},
 })
-normalized_btag_weights_pnet = normalized_btag_weights.derive("normalized_btag_weights_pnet", cls_dict={
+normalized_btag_weights_pnet = _normalized_btag_weights.derive("normalized_btag_weights_pnet", cls_dict={
     "btag_weights_cls": btag_weights_pnet,
-    "uses": normalized_btag_weights.uses | {btag_weights_pnet.PRODUCES},
+    "uses": _normalized_btag_weights.uses | {btag_weights_pnet.PRODUCES},
 })

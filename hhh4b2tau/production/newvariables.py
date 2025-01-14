@@ -791,8 +791,13 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     final_b_jet_mask = (b_min_diff_mask1 | b_min_diff_mask2)
     final_b_jet_table = ak.mask(b_table_combo,final_b_jet_mask)
     final_b_jet_table = ak.flatten(ak.drop_none(final_b_jet_table, axis=-1),axis=-1)
-    # sort bb pairs by pt
-    sorted_b_jet_idx = ak.argsort(final_b_jet_table.pair_sum.pt, axis=-1, ascending=False)
+
+
+    # # sort bb pairs by pt # for now remove pt sorting
+    # sorted_b_jet_idx = ak.argsort(final_b_jet_table.pair_sum.pt, axis=-1, ascending=False)
+    # for now use ascending in mass_diff
+    sorted_b_jet_idx = ak.argsort(final_b_jet_table.mass_diff, axis=-1, ascending=True)
+
     final_b_jet_table = final_b_jet_table[sorted_b_jet_idx]
 
     tau_massdiff_table = tau.metric_table(tau, 

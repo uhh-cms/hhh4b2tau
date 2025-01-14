@@ -383,6 +383,22 @@ def add_variables(
         unit="GeV",
         x_title=r"$m_{H2}^{unsorted}$",
     )
+
+    cfg.add_variable(
+        name="m_3b2tau",
+        binning=(60, 150.0, 1300.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{3b2\tau}$",
+    )
+
+    cfg.add_variable(
+        name="m_3b2tau_pt",
+        binning=(60, 150.0, 1300.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{3b2\tau} (pt)$",
+    )
     # remove gen level studies for now due to coffea incompatibality
     # cfg.add_variable(
     #     name="mtautau_gen",

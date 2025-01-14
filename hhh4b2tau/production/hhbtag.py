@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Producers for the HHHBtag score.
+Producers for the HHBtag score.
 See https://github.com/hh-italian-group/HHbtag.
 """
 
@@ -31,7 +31,7 @@ logger = law.logger.get_logger(__name__)
     },
     sandbox=dev_sandbox("bash::$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh"),
 )
-def hhhbtag(
+def hhbtag(
     self: Producer,
     events: ak.Array,
     jet_mask: ak.Array,
@@ -39,7 +39,7 @@ def hhhbtag(
     **kwargs,
 ) -> ak.Array:
     """
-    Returns the HHHBtag score per passed jet.
+    Returns the HHBtag score per passed jet.
     """
     # get a mask of events where there are at least two tau candidates and at least two jets
     # and only get the scores for jets in these events
@@ -98,16 +98,15 @@ def hhhbtag(
 
     # reserve an output score array
     scores = np.ones((ak.sum(event_mask), n_jets_max), dtype=np.float32) * EMPTY_FLOAT
-
     # fill even and odd events if there are any
     even_mask = ak.to_numpy((events[event_mask].event % 2) == 0)
     if ak.sum(even_mask):
         input_features_even = split(even_mask)
-        scores_even = self.hhhbtag_model_even(input_features_even)[0].numpy()
+        scores_even = self.hhbtag_model_even(input_features_even).numpy()
         scores[even_mask] = scores_even
     if ak.sum(~even_mask):
         input_features_odd = split(~even_mask)
-        scores_odd = self.hhhbtag_model_odd(input_features_odd)[0].numpy()
+        scores_odd = self.hhbtag_model_odd(input_features_odd).numpy()
         scores[~even_mask] = scores_odd
 
     # remove the scores of padded jets
@@ -115,7 +114,7 @@ def hhhbtag(
     scores = ak.from_regular(scores, axis=1)[where]
 
     # add scores to events that had more than n_jets_max selected jets
-    # (use zero here as this is also what the hhhbtag model does for missing jets)
+    # (use zero here as this is also what the hhbtag model does for missing jets)
     layout_ext = events.Jet.pt[jet_mask][event_mask][..., n_jets_max:]
     # when there are no selected events, we can reuse layout_ext and consider it to be scores_ext
     if len(layout_ext) == 0:
@@ -134,8 +133,8 @@ def hhhbtag(
     return all_scores
 
 
-@hhhbtag.requires
-def hhhbtag_requires(self: Producer, reqs: dict) -> None:
+@hhbtag.requires
+def hhbtag_requires(self: Producer, reqs: dict) -> None:
     """
     Add the external files bundle to requirements.
     """
@@ -146,10 +145,10 @@ def hhhbtag_requires(self: Producer, reqs: dict) -> None:
     reqs["external_files"] = BundleExternalFiles.req(self.task)
 
 
-@hhhbtag.setup
-def hhhbtag_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+@hhbtag.setup
+def hhbtag_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
     """
-    Sets up the two HHHBtag TF models.
+    Sets up the two HHBtag TF models.
     """
     tf = maybe_import("tensorflow")
 
@@ -161,12 +160,12 @@ def hhhbtag_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: Inse
     repo_dir = repo_dir.child(repo_dir.listdir(pattern="HHbtag-*")[0])
 
     # get the version of the external file
-    self.hhhbtag_version = self.config_inst.x.external_files["hh_btag_repo"][1]
+    self.hhbtag_version = self.config_inst.x.external_files["hh_btag_repo"][1]
 
     # define the model path
-    model_path = f"models/HHbtag_{self.hhhbtag_version}_par"
+    model_path = f"models/HHbtag_{self.hhbtag_version}_par"
 
     # save both models (even and odd event numbers)
-    with self.task.publish_step("loading hhhbtag models ..."):
-        self.hhhbtag_model_even = tf.saved_model.load(repo_dir.child(f"{model_path}_0").path)
-        self.hhhbtag_model_odd = tf.saved_model.load(repo_dir.child(f"{model_path}_1").path)
+    with self.task.publish_step("loading hhbtag models ..."):
+        self.hhbtag_model_even = tf.saved_model.load(repo_dir.child(f"{model_path}_0").path)
+        self.hhbtag_model_odd = tf.saved_model.load(repo_dir.child(f"{model_path}_1").path)

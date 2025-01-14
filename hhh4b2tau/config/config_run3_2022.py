@@ -307,7 +307,16 @@ def add_config(
 
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
-    cfg.x.variable_groups = {}
+    cfg.x.variable_groups = {
+        "all": ["delta_r_bb1", "delta_r_bb2", "delta_r_tautau", 
+                "delta_r_h12", "delta_r_h13", "delta_r_h23",
+                "cos_bb1", "cos_bb2", "cos_tautau",
+                "cos_h12", "cos_h13", "cos_h23",
+                "mhhh", "h1_mass", "h2_mass", "h3_mass",
+                "n_b_jet", "n_fatjet",
+                "h1_unsort_mass", "h2_unsort_mass",
+                "m_3b2tau", "m_3b2tau_pt",],
+    }
 
     # shift groups for conveniently looping over certain shifts
     # (used during plotting)
@@ -348,7 +357,7 @@ def add_config(
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
         "default": ["muon", "jet"],
-        "4b2tau": ["one_bjet", "two_bjet", "three_bjet", "one_tau", "two_tau", "four_bjet"],
+        "3b2tau": ["one_jet", "two_jet", "three_jet", "one_tau", "two_tau",],
     }
 
     # calibrator groups for conveniently looping over certain calibrators
@@ -696,11 +705,17 @@ def add_config(
     ]
 
     from columnflow.production.cms.btag import BTagSFConfig
-    cfg.x.btag_sf = BTagSFConfig(
-        correction_set="particleNet_shape",
+    cfg.x.btag_sf_deepjet = BTagSFConfig(
+        correction_set="deepJet_shape",
         jec_sources=cfg.x.btag_sf_jec_sources,
-        discriminator="btagPNetB",
+        discriminator="btagDeepFlavB",
     )
+    if run == 3:
+        cfg.x.btag_sf_pnet = BTagSFConfig(
+            correction_set="particleNet_shape",
+            jec_sources=cfg.x.btag_sf_jec_sources,
+            discriminator="btagPNetB",
+        )
 
     # target file size after MergeReducedEvents in MB
     cfg.x.reduced_file_size = 512.0

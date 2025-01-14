@@ -6,7 +6,7 @@ from functools import reduce
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.cms.jets import jet_veto_map
 from columnflow.selection.stats import increment_stats
-from columnflow.selection.util import sorted_indices_from_mask
+from columnflow.columnar_util import sorted_indices_from_mask
 from columnflow.production.processes import process_ids
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.util import maybe_import
@@ -14,14 +14,14 @@ from columnflow.columnar_util import set_ak_column
 
 from hhh4b2tau.util import IF_RUN_2, IF_RUN_3
 from hhh4b2tau.production.example import cutflow_features
-from hhh4b2tau.production.hhhbtag import hhhbtag
+from hhh4b2tau.production.hhbtag import hhbtag
 from hhh4b2tau.selection.lepton import trigger_object_matching
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 @selector(
-    uses={ hhhbtag, IF_RUN_3(jet_veto_map), 
+    uses={ hhbtag, IF_RUN_3(jet_veto_map), 
         # custom columns created upstream, probably by a selector
         "trigger_ids",
         # nano columns
@@ -33,7 +33,7 @@ ak = maybe_import("awkward")
     },
     produces={
         # new columns
-        "Jet.hhhbtag",
+        "Jet.hhbtag",
     },
     # shifts are declared dynamically below in jet_selection_init
 )
@@ -73,13 +73,13 @@ def jet_selection(
         (abs(events.Jet.eta) < 2.4)
     )
 
-    # hhhb-jets
+    # hhb-jets
     # --------------------------------------------------------------------------------------------
-    # get the hhhbtag values per jet per event
-    hhhbtag_scores = self[hhhbtag](events, default_mask, lepton_results.x.lepton_pair, **kwargs)
-
-    # get the score indices of each hhhbtag value
-    score_indices = ak.argsort(hhhbtag_scores, axis=1, ascending=False)
+    # get the hhbtag values per jet per event
+    hhbtag_scores = self[hhbtag](events, default_mask, lepton_results.x.lepton_pair, **kwargs)
+    # from IPython import embed; embed(header="jet selection")
+    # get the score indices of each hhbtag value
+    score_indices = ak.argsort(hhbtag_scores, axis=1, ascending=False)
 
     # only consider tautau events for which the tau_tau_jet trigger fired and no other tau tau trigger
     trigger_mask = (
@@ -87,8 +87,8 @@ def jet_selection(
         ~ak.any((events.trigger_ids == 505) | (events.trigger_ids == 603), axis=1) &
         ak.any(events.trigger_ids == 701, axis=1)
     )
-
-    # score (and local index) of the hhhbtag for each jet coming from events which passed the trigger mask
+    # from IPython import embed; embed(header="jet selection")
+    # score (and local index) of the hhbtag for each jet coming from events which passed the trigger mask
     sel_score_indices = score_indices[trigger_mask]
     sel_score_indices_li = ak.local_index(sel_score_indices, axis=1)
 
@@ -103,53 +103,53 @@ def jet_selection(
     # trigger objects corresponding to the above ids
     sel_trig_objs = events.TrigObj[trigger_mask][obj_ids]
 
-    # mask that checks wheather or not the selected hhhbjets *matches* the trigger object with delta R < 0.5
+    # mask that checks wheather or not the selected hhbjets *matches* the trigger object with delta R < 0.5
     matching_mask = trigger_object_matching(events[trigger_mask].Jet[sel_score_indices], sel_trig_objs)
     # from IPython import embed; embed(header="in jet selector")
-    # index of the highest scored hhhbjet *matching* the trigger object
-    sel_hhhbjet_idx = ak.argmax(matching_mask, axis=1)
+    # index of the highest scored hhbjet *matching* the trigger object
+    sel_hhbjet_idx = ak.argmax(matching_mask, axis=1)
 
-    # create mask to remove all jets except the highest scored hhhbjet *matching* the trigger object
-    unselected_hhhbjet_idx = sel_score_indices_li != sel_hhhbjet_idx
+    # create mask to remove all jets except the highest scored hhbjet *matching* the trigger object
+    unselected_hhbjet_idx = sel_score_indices_li != sel_hhbjet_idx
 
-    # hhhbtag score of the highest scored hhhbjet *matching* the trigger object
-    first_hhhbjet_idx = sel_score_indices[~unselected_hhhbjet_idx]
+    # hhbtag score of the highest scored hhbjet *matching* the trigger object
+    first_hhbjet_idx = sel_score_indices[~unselected_hhbjet_idx]
 
-    # select the highest scored hhhbjet of the remaining *matched and unmatched* hhhbjets
-    remaining_hhhbjets_score_indices = sel_score_indices[unselected_hhhbjet_idx]
-    second_hhhbjet_idx = ak.firsts(remaining_hhhbjets_score_indices)
+    # select the highest scored hhbjet of the remaining *matched and unmatched* hhbjets
+    remaining_hhbjets_score_indices = sel_score_indices[unselected_hhbjet_idx]
+    second_hhbjet_idx = ak.firsts(remaining_hhbjets_score_indices)
 
-    # update mask to remove all jets except the 2 highest scored hhhbjets *matching* the trigger object
-    unselected_hhhbjet_idx = unselected_hhhbjet_idx & (sel_score_indices != second_hhhbjet_idx)
+    # update mask to remove all jets except the 2 highest scored hhbjets *matching* the trigger object
+    unselected_hhbjet_idx = unselected_hhbjet_idx & (sel_score_indices != second_hhbjet_idx)
 
-    # select the highest scored hhhbjet of the remaining *matched and unmatched* hhhbjets
-    remaining_hhhbjets_score_indices = sel_score_indices[unselected_hhhbjet_idx]
-    third_hhhbjet_idx = ak.firsts(remaining_hhhbjets_score_indices)
+    # select the highest scored hhbjet of the remaining *matched and unmatched* hhbjets
+    remaining_hhbjets_score_indices = sel_score_indices[unselected_hhbjet_idx]
+    third_hhbjet_idx = ak.firsts(remaining_hhbjets_score_indices)
 
-    # update mask to remove all jets except the 3 highest scored hhhbjets *matching* the trigger object
-    unselected_hhhbjet_idx = unselected_hhhbjet_idx & (sel_score_indices != third_hhhbjet_idx)
+    # update mask to remove all jets except the 3 highest scored hhbjets *matching* the trigger object
+    unselected_hhbjet_idx = unselected_hhbjet_idx & (sel_score_indices != third_hhbjet_idx)
 
-    # select the highest scored hhhbjet of the remaining *matched and unmatched* hhhbjets
-    remaining_hhhbjets_score_indices = sel_score_indices[unselected_hhhbjet_idx]
-    fourth_hhhbjet_idx = ak.firsts(remaining_hhhbjets_score_indices)
+    # select the highest scored hhbjet of the remaining *matched and unmatched* hhbjets
+    remaining_hhbjets_score_indices = sel_score_indices[unselected_hhbjet_idx]
+    fourth_hhbjet_idx = ak.firsts(remaining_hhbjets_score_indices)
 
     # type conversion to enable concatenating
-    second_hhhbjet_idx = ak.singletons(second_hhhbjet_idx)
-    third_hhhbjet_idx = ak.singletons(third_hhhbjet_idx)
-    fourth_hhhbjet_idx = ak.singletons(fourth_hhhbjet_idx)
+    second_hhbjet_idx = ak.singletons(second_hhbjet_idx)
+    third_hhbjet_idx = ak.singletons(third_hhbjet_idx)
+    fourth_hhbjet_idx = ak.singletons(fourth_hhbjet_idx)
 
-    # concatenate all selected hhhbjet indices; 1st index is *matched*; others can be *matched* or *unmatched*
-    sel_hhhbjets_score_indices = ak.concatenate([first_hhhbjet_idx, 
-                                                second_hhhbjet_idx, 
-                                                third_hhhbjet_idx, 
-                                                fourth_hhhbjet_idx], 
+    # concatenate all selected hhbjet indices; 1st index is *matched*; others can be *matched* or *unmatched*
+    sel_hhbjets_score_indices = ak.concatenate([first_hhbjet_idx, 
+                                                second_hhbjet_idx, 
+                                                third_hhbjet_idx, 
+                                                fourth_hhbjet_idx], 
                                                 axis=1)
-    # sort the selected score indices (now the *matched* hhhbjet can be in either position)
-    sorted_sel_hhhbjets_score_indices = ak.sort(sel_hhhbjets_score_indices, axis=1)
+    # sort the selected score indices (now the *matched* hhbjet can be in either position)
+    sorted_sel_hhbjets_score_indices = ak.sort(sel_hhbjets_score_indices, axis=1)
 
-    # when less than 4 hhhbjet were found fill the remaining indices with None
-    sel_hhhbjets_score_indices = ak.pad_none(sel_hhhbjets_score_indices, 4, axis=1)
-    sorted_sel_hhhbjets_score_indices = ak.pad_none(sorted_sel_hhhbjets_score_indices, 4, axis=1)
+    # when less than 4 hhbjet were found fill the remaining indices with None
+    sel_hhbjets_score_indices = ak.pad_none(sel_hhbjets_score_indices, 4, axis=1)
+    sorted_sel_hhbjets_score_indices = ak.pad_none(sorted_sel_hhbjets_score_indices, 4, axis=1)
 
     # all event indices
     event_idx = ak.local_index(score_indices, axis=0)
@@ -165,12 +165,12 @@ def jet_selection(
     none = ak.Array([[None, None, None, None]])
     none_expanded = ak.broadcast_arrays(none, event_idx)[0]
 
-    # save selected hhhbjet scores for the selected events and save [None, None, None, None] to the remaining events
-    padded_hhhbjet_indices = ak.where(pos_mask, sel_hhhbjets_score_indices[match_index], none_expanded)
-    hhhbjet_mask = ((li == padded_hhhbjet_indices[..., [0]]) | 
-                    (li == padded_hhhbjet_indices[..., [1]]) |
-                    (li == padded_hhhbjet_indices[..., [2]]) |
-                    (li == padded_hhhbjet_indices[..., [3]])
+    # save selected hhbjet scores for the selected events and save [None, None, None, None] to the remaining events
+    padded_hhbjet_indices = ak.where(pos_mask, sel_hhbjets_score_indices[match_index], none_expanded)
+    hhbjet_mask = ((li == padded_hhbjet_indices[..., [0]]) | 
+                    (li == padded_hhbjet_indices[..., [1]]) |
+                    (li == padded_hhbjet_indices[..., [2]]) |
+                    (li == padded_hhbjet_indices[..., [3]])
                     )
     # --------------------------------------------------------------------------------------------
 
@@ -181,7 +181,7 @@ def jet_selection(
         (ak.sum(default_mask, axis=1) >= 2) &
         (ak.num(lepton_results.x.lepton_pair, axis=1) == 2)
     )
-    hhhbjet_indices = score_indices[valid_score_mask[score_indices]][..., :4]
+    hhbjet_indices = score_indices[valid_score_mask[score_indices]][..., :4]
 
     # check whether the four bjets were matched by fatjet subjets to mark it as boosted
     fatjet_mask = (
@@ -195,10 +195,10 @@ def jet_selection(
     )
 
     # unique subjet matching
-    metrics = events.FatJet.subjets.metric_table(events.Jet[hhhbjet_indices])
+    metrics = events.FatJet.subjets.metric_table(events.Jet[hhbjet_indices])
     subjets_match = (
         ak.all(ak.sum(metrics < 0.4, axis=3) == 1, axis=2) &
-        (ak.num(hhhbjet_indices, axis=1) == 2)
+        (ak.num(hhbjet_indices, axis=1) == 2)
     )
     fatjet_mask = fatjet_mask & subjets_match
 
@@ -225,7 +225,7 @@ def jet_selection(
         ak4_mask &
         (events.Jet.pt > 20.0) &
         (abs(events.Jet.eta) < 4.7) &
-        (~hhhbjet_mask) &
+        (~hhbjet_mask) &
         ak.all(events.Jet.metric_table(events.SubJet[subjet_indices[..., 0]]) > 0.4, axis=2) &
         ak.all(events.Jet.metric_table(events.SubJet[subjet_indices[..., 1]]) > 0.4, axis=2)
     )
@@ -277,8 +277,8 @@ def jet_selection(
     jet_indices = sorted_indices_from_mask(default_mask, events.Jet.pt, ascending=False)
 
     # keep indices of default jets that are explicitly not selected as hhbjets for easier handling
-    non_hhhbjet_indices = sorted_indices_from_mask(
-        default_mask & (~hhhbjet_mask),
+    non_hhbjet_indices = sorted_indices_from_mask(
+        default_mask & (~hhbjet_mask),
         events.Jet.pt,
         ascending=False,
     )
@@ -307,29 +307,29 @@ def jet_selection(
 
     # some final type conversions
     jet_indices = ak.values_astype(ak.fill_none(jet_indices, 0), np.int32)
-    hhhbjet_indices = ak.values_astype(hhhbjet_indices, np.int32)
-    non_hhhbjet_indices = ak.values_astype(ak.fill_none(non_hhhbjet_indices, 0), np.int32)
+    hhbjet_indices = ak.values_astype(hhbjet_indices, np.int32)
+    non_hhbjet_indices = ak.values_astype(ak.fill_none(non_hhbjet_indices, 0), np.int32)
     fatjet_indices = ak.values_astype(fatjet_indices, np.int32)
     vbfjet_indices = ak.values_astype(ak.fill_none(vbfjet_indices, 0), np.int32)
 
     # store some columns
-    events = set_ak_column(events, "Jet.hhhbtag", hhhbtag_scores)
+    events = set_ak_column(events, "Jet.hhbtag", hhbtag_scores)
 
     # build and return selection results
     # "objects" maps source columns to new columns and selections to be applied on the old columns
     # to create them, e.g. {"Jet": {"MyCustomJetCollection": indices_applied_to_Jet}}
     result = SelectionResult(
         steps={
-            "one_bjet": jet_sel1,
-            "two_bjet" : jet_sel2,
-            "three_bjet" : jet_sel3,
-            "four_bjet": jet_sel4,
+            "one_jet": jet_sel1,
+            "two_jet" : jet_sel2,
+            "three_jet" : jet_sel3,
+            # "four_jet": jet_sel4,
         },
         objects={
             "Jet": {
                 "Jet": jet_indices,
-                "HHHBJet": hhhbjet_indices,
-                "NonHHHBJet": non_hhhbjet_indices,
+                "HHBJet": hhbjet_indices,
+                "NonHHBJet": non_hhbjet_indices,
                 "VBFJet": vbfjet_indices,
             },
             "FatJet": {

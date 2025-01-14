@@ -517,11 +517,13 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     #     **kwargs,
     # )
 
-    b_jet_mask = ak.num(events.gen_b_jet, axis=-1) >= 4
-    b_jet = ak.mask(events.gen_b_jet, b_jet_mask)
+    # b_jet_mask = ak.num(events.gen_b_jet, axis=-1) >= 4
+    # b_jet = ak.mask(events.gen_b_jet, b_jet_mask)
+    # tau_mask = ak.num(events.GenVisTau, axis=-1) >= 2
+    # tau = ak.mask(events.GenVisTau, tau_mask)
 
-    tau_mask = ak.num(events.GenVisTau, axis=-1) >= 2
-    tau = ak.mask(events.GenVisTau, tau_mask)
+    b_jet = events.gen_b_jet
+    tau = events.GenVisTau
 
     # taunu_mask = ak.num(events.gen_taunu, axis=-2) == 2 # this is always true for signal samples
     # taunu = ak.mask(events.gen_taunu, taunu_mask)
@@ -538,16 +540,16 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
                             metric=lambda a, b: abs((a+b).mass-125))
     # metric_table for delta_r and cos(delta)
     b_jet_delta_r_table = b_jet.metric_table(b_jet)
-    b_jet_cos_table = b_jet.unit.metric_table(b_jet.unit, metric=lambda a, b: a.dot(b))
+    b_jet_cos_table = b_jet.metric_table(b_jet, metric=lambda a, b: a.pvec.dot(b.pvec)/(a.pvec.absolute()*b.pvec.absolute()))
 
     # create dictionary for b jets with indicies
     b_idx1 = ak.local_index(b_jet_table, axis=-2)
     b_idx2 = ak.local_index(b_jet_table, axis=-1)
     b_table_combo = ak.zip({"pair_sum": b_jet_table, 
-                    "mass_diff": b_jet_massdiff_table1,
-                    "delta_r": b_jet_delta_r_table,
-                    "cos": b_jet_cos_table, 
-                    "idx1": b_idx1, "idx2": b_idx2})
+                            "mass_diff": b_jet_massdiff_table1,
+                            "delta_r": b_jet_delta_r_table,
+                            "cos": b_jet_cos_table, 
+                            "idx1": b_idx1, "idx2": b_idx2})
     # remove duplicates and self sums
     b_table_combo = ak.mask(b_table_combo,b_table_combo.idx1<b_table_combo.idx2)
     # get indicies of jet pair mass closest to 125 
@@ -577,7 +579,6 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # sort bb pairs by pt
     sorted_b_jet_idx = ak.argsort(final_b_jet_table.pair_sum.pt, axis=-1, ascending=False)
     final_b_jet_table = final_b_jet_table[sorted_b_jet_idx]
-    all_b_jet_sum = final_b_jet_table.pair_sum.sum(axis=-1)
 
     # now do the same for taus but simpler since only two are required
 
@@ -587,103 +588,111 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
                          metric=lambda a, b: abs((a+b).mass -125))
     tau_table = tau.metric_table((tau), metric=lambda a, b: (a+b))
     tau_delta_r_table = tau.metric_table(tau)
-    tau_cos_table = tau.unit.metric_table(tau.unit, metric=lambda a, b: a.dot(b))
+    tau_cos_table = tau.metric_table(tau, metric=lambda a, b: a.pvec.dot(b.pvec)/(a.pvec.absolute()*b.pvec.absolute()))
     tau_idx1 = ak.local_index(tau_table, axis=-2)
     tau_idx2 = ak.local_index(tau_table, axis=-1)
     tau_table_combo = ak.zip({"pair_sum": tau_table, 
-                    "mass_diff": tau_massdiff_table, 
-                    "delta_r": tau_delta_r_table,
-                    "cos": tau_cos_table,
-                    "idx1": tau_idx1, "idx2": tau_idx2})
+                              "mass_diff": tau_massdiff_table, 
+                              "delta_r": tau_delta_r_table,
+                              "cos": tau_cos_table,
+                              "idx1": tau_idx1, "idx2": tau_idx2})
 
     tau_table_combo = ak.mask(tau_table_combo,tau_table_combo.idx1<tau_table_combo.idx2)
     tau_optimal_mass_diff = ak.min(ak.min(tau_table_combo.mass_diff, axis=-1),axis=-1)
     tau_min_diff_mask = tau_optimal_mass_diff == tau_table_combo.mass_diff
     final_tau_table = ak.drop_none(ak.mask(tau_table_combo, tau_min_diff_mask),axis=-1)
-    final_tau_table = ak.flatten(final_tau_table,axis=-1)[:,0]
 
-    mhhh_hadron = (final_tau_table.pair_sum + all_b_jet_sum).mass
-    # mhhh_hadron = (final_tau_table.pair_sum + taunu_sum + all_b_jet_sum).mass
 
-    # from IPython import embed; embed(header="inside genHadron_variables")
+
+    # final tautau pairing
+    tautau = ak.flatten(final_tau_table,axis=-1)[:,0]
+
+    # final bb pairings
+    bb1 = final_b_jet_table[:,0]
+    bb2 = final_b_jet_table[:,1]
+
+    # reconstructed higgs h1 and h2 are pt sorted from b-jets and h3 from taus
+    h1 = bb1.pair_sum * 1
+    h2 = bb2.pair_sum * 1
+    h3 = tautau.pair_sum * 1
 
 
     events = set_ak_column_f32(
         events,
         "mhhh_hadron",
-        mhhh_hadron,
+        (h1 + h2 + h3).mass,
     )
 
     events = set_ak_column_f32(
         events,
         "delta_r_bb1_hadron",
-        final_b_jet_table.delta_r[:,0],
+        bb1.delta_r,
     )
 
     events = set_ak_column_f32(
         events,
         "cos_bb1_hadron",
-        final_b_jet_table.cos[:,0],
+        bb1.cos,
     )
 
     events = set_ak_column_f32(
         events,
         "delta_r_bb2_hadron",
-        final_b_jet_table.delta_r[:,1],
+        bb2.delta_r,
     )
 
     events = set_ak_column_f32(
         events,
         "cos_bb2_hadron",
-        final_b_jet_table.cos[:,1],
+        bb2.cos,
     )
 
     events = set_ak_column_f32(
         events,
         "delta_r_tautau_hadron",
-        final_tau_table.delta_r,
+        tautau.delta_r,
     )
 
     events = set_ak_column_f32(
         events,
         "cos_tautau_hadron",
-        final_tau_table.cos,
+        tautau.cos,
     )
 
     events = set_ak_column_f32(
         events,
         "delta_r_h12_hadron",
-        final_b_jet_table.pair_sum[:,0].delta_r(final_b_jet_table.pair_sum[:,1]),
+        h1.delta_r(h2),
     )
 
     events = set_ak_column_f32(
         events,
         "delta_r_h13_hadron",
-        final_b_jet_table.pair_sum[:,0].delta_r(final_tau_table.pair_sum),
+        h1.delta_r(h3),
     )
 
     events = set_ak_column_f32(
         events,
         "delta_r_h23_hadron",
-        final_b_jet_table.pair_sum[:,1].delta_r(final_tau_table.pair_sum),
+        h2.delta_r(h3),
     )
 
     events = set_ak_column_f32(
         events,
         "cos_h12_hadron",
-        final_b_jet_table.pair_sum.unit[:,0].dot(final_b_jet_table.pair_sum.unit[:,1]),
+        h1.pvec.dot(h2.pvec)/(h1.pvec.absolute()*h2.pvec.absolute()),
     )
 
     events = set_ak_column_f32(
         events,
         "cos_h13_hadron",
-        final_b_jet_table.pair_sum.unit[:,0].dot(final_tau_table.pair_sum.unit),
+        h1.pvec.dot(h3.pvec)/(h1.pvec.absolute()*h3.pvec.absolute()),
     )
 
     events = set_ak_column_f32(
         events,
         "cos_h23_hadron",
-        final_b_jet_table.pair_sum.unit[:,1].dot(final_tau_table.pair_sum.unit),
+        h2.pvec.dot(h3.pvec)/(h2.pvec.absolute()*h3.pvec.absolute()),
     )
 
     return events
@@ -696,8 +705,8 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     uses=(
     {   
         optional(f"{field}.{var}")
-        for field in ["Jet", "Tau", "Electron", "Muon"]
-        for var in ["pt", "eta", "phi", "mass", "hadronFlavour", "charge",  ]
+        for field in ["Jet", "Tau", "Electron", "Muon", "FatJet"]
+        for var in ["pt", "eta", "phi", "mass", "hadronFlavour", "charge", "hhbtag"]
         } | 
         {
             attach_coffea_behavior,
@@ -708,7 +717,10 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "delta_r_h12", "delta_r_h13", "delta_r_h23",
         "cos_bb1", "cos_bb2", "cos_tautau",
         "cos_h12", "cos_h13", "cos_h23",
-        "mhhh",
+        "mhhh", "h1_mass", "h2_mass", "h3_mass",
+        "n_b_jet", "n_fatjet",
+        "h1_unsort_mass", "h2_unsort_mass",
+        "m_3b2tau", "m_3b2tau_pt",
     },
 )
 def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -718,8 +730,9 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         **kwargs,
     )
 
-    b_jet_mask = events.Jet.hadronFlavour==5
-    b_jet = ak.drop_none(ak.mask(events.Jet,b_jet_mask))
+
+
+    b_jet = events.Jet
 
     tau = events.Tau
 
@@ -732,18 +745,28 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
                             metric=lambda a, b: abs((a+b).mass-125))
     # metric_table for delta_r and cos(delta)
     b_jet_delta_r_table = b_jet.metric_table(b_jet)
-    b_jet_cos_table = b_jet.unit.metric_table(b_jet.unit, metric=lambda a, b: a.dot(b))
-
+    b_jet_cos_table = b_jet.metric_table(b_jet, metric=lambda a, b: a.pvec.dot(b.pvec)/(a.pvec.absolute()*b.pvec.absolute()))
     # create dictionary for b jets with indicies
     b_idx1 = ak.local_index(b_jet_table, axis=-2)
     b_idx2 = ak.local_index(b_jet_table, axis=-1)
     b_table_combo = ak.zip({"pair_sum": b_jet_table, 
-                    "mass_diff": b_jet_massdiff_table1,
-                    "delta_r": b_jet_delta_r_table,
-                    "cos": b_jet_cos_table, 
-                    "idx1": b_idx1, "idx2": b_idx2})
+                            "mass_diff": b_jet_massdiff_table1,
+                            "delta_r": b_jet_delta_r_table,
+                            "cos": b_jet_cos_table, 
+                            "idx1": b_idx1, "idx2": b_idx2})
     # remove duplicates and self sums
     b_table_combo = ak.mask(b_table_combo,b_table_combo.idx1<b_table_combo.idx2)
+
+    # from IPython import embed; embed(header="inside detector variables")
+    # # create all unique pair permutaions ## on hold for now
+    # pairs = ak.combinations(b_idx1,2,fields=["idx1","idx2"],axis=1)
+    # permu = ak.combinations(pairs, 2,fields=["h1","h2"],axis=1)
+    # permu_mask = ((permu.h1.idx1 != permu.h2.idx1) & 
+    #               (permu.h1.idx1 != permu.h2.idx2) & 
+    #               (permu.h1.idx2 != permu.h2.idx1) & 
+    #               (permu.h1.idx2 != permu.h2.idx2))
+    # permu = permu[permu_mask]
+
     # get indicies of jet pair mass closest to 125 
     b_optimal_mass_diff1 = ak.min(ak.min(b_table_combo.mass_diff, axis=-1),axis=-1)
     b_min_diff_mask1 = b_optimal_mass_diff1 == b_table_combo.mass_diff
@@ -776,14 +799,14 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
                          metric=lambda a, b: abs((a+b).mass -125))
     tau_table = tau.metric_table((tau), metric=lambda a, b: (a+b))
     tau_delta_r_table = tau.metric_table(tau)
-    tau_cos_table = tau.unit.metric_table(tau.unit, metric=lambda a, b: a.dot(b))
+    tau_cos_table = tau.metric_table(tau, metric=lambda a, b: a.pvec.dot(b.pvec)/(a.pvec.absolute()*b.pvec.absolute()))
     tau_idx1 = ak.local_index(tau_table, axis=-2)
     tau_idx2 = ak.local_index(tau_table, axis=-1)
     tau_table_combo = ak.zip({"pair_sum": tau_table, 
-                    "mass_diff": tau_massdiff_table, 
-                    "delta_r": tau_delta_r_table,
-                    "cos": tau_cos_table,
-                    "idx1": tau_idx1, "idx2": tau_idx2})
+                              "mass_diff": tau_massdiff_table, 
+                              "delta_r": tau_delta_r_table,
+                              "cos": tau_cos_table,
+                              "idx1": tau_idx1, "idx2": tau_idx2})
 
     tau_table_combo = ak.mask(tau_table_combo,tau_table_combo.idx1<tau_table_combo.idx2)
     # ensure particle anti-particle pair (charge=0)
@@ -800,9 +823,24 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     bb2 = final_b_jet_table[:,1]
 
     # reconstructed higgs h1 and h2 are pt sorted from b-jets and h3 from taus
-    h1 = final_b_jet_table.pair_sum[:,0]
-    h2 = final_b_jet_table.pair_sum[:,1]
-    h3 = tautau.pair_sum
+    h1 = bb1.pair_sum *1
+    h2 = bb2.pair_sum *1
+    h3 = tautau.pair_sum *1
+
+    # unsorted h into bb, with h1_unsort with closest mass to 125
+    h1_unsort = final_b_jet_table[final_b_jet_table.mass_diff == b_optimal_mass_diff1].pair_sum
+    h2_unsort = final_b_jet_table[final_b_jet_table.mass_diff == b_optimal_mass_diff2].pair_sum
+    
+    # from IPython import embed; embed()
+    # task for now: create m_b1b2b3tauhadrontaumu
+    b3_mask = (ak.local_index(b_jet) != b_min_diff_idx1) & (ak.local_index(b_jet) != b_min_diff_idx2)
+    b3 = b_jet[b3_mask]
+    b3 = b3[ak.argsort(b3.hhbtag,ascending=False)][:,0] *1
+
+    m_3b2tau = (b3 + h1 + h3).mass
+
+    b3_pt = b_jet[b3_mask][:,0]*1 # remaining jet with highest pt
+    m_3b2tau_pt = (b3_pt + h1 + h3).mass
 
     events = set_ak_column_f32(
         events,
@@ -867,22 +905,75 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(
         events,
         "cos_h12",
-        h1.unit.dot(h2.unit),
+        h1.pvec.dot(h2.pvec)/(h1.pvec.absolute()*h2.pvec.absolute()),
     )
 
     events = set_ak_column_f32(
         events,
         "cos_h13",
-        h1.unit.dot(h3.unit),
+        h1.pvec.dot(h3.pvec)/(h1.pvec.absolute()*h3.pvec.absolute()),
     )
 
     events = set_ak_column_f32(
         events,
         "cos_h23",
-        h2.unit.dot(h3.unit),
+        h2.pvec.dot(h3.pvec)/(h2.pvec.absolute()*h3.pvec.absolute()),
     )
 
+    events = set_ak_column_f32(
+        events,
+        "h1_mass",
+        h1.mass,
+    )
 
-    # from IPython import embed; embed()
+    events = set_ak_column_f32(
+        events,
+        "h2_mass",
+        h2.mass,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "h3_mass",
+        h3.mass,
+    )
+
+    events = set_ak_column(
+        events,
+        "n_b_jet",
+        ak.num(b_jet,axis=-1),
+        value_type=np.int32
+    )
+
+    events = set_ak_column(
+        events, 
+        "n_fatjet",
+        ak.num(events.FatJet.pt,axis=-1),
+        value_type=np.int32
+        )
+    
+    events = set_ak_column_f32(
+        events,
+        "h1_unsort_mass",
+        h1_unsort.mass,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "h2_unsort_mass",
+        h2_unsort.mass,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "m_3b2tau",
+        m_3b2tau,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "m_3b2tau_pt",
+        m_3b2tau_pt,
+    )
 
     return events

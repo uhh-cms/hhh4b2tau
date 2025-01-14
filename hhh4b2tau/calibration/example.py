@@ -16,7 +16,7 @@ ak = maybe_import("awkward")
 @calibrator(
     uses={
         deterministic_seeds,
-        "Jet.pt", "Jet.mass",
+        "Jet.pt", "Jet.mass", "Jet.phi", "Jet.eta",
     },
     produces={
         deterministic_seeds,
@@ -33,6 +33,7 @@ def example(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     events = self[deterministic_seeds](events, **kwargs)
 
     # a)
+    # from IPython import embed; embed(header="in example callibrator")
     pt_mask = ak.flatten(events.Jet.pt < 30)
     n_jet_pt = np.asarray(ak.flatten(events.Jet.pt))
     n_jet_mass = np.asarray(ak.flatten(events.Jet.mass))

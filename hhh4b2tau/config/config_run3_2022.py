@@ -166,6 +166,13 @@ def add_config(
         if dataset_name.startswith(("graviton_hh_", "radion_hh_")):
             dataset.add_tag("signal")
             dataset.add_tag("resonant_signal")
+        if dataset.name.startswith("data_e_"):
+            dataset.add_tag({"etau", "emu_from_e"})
+        if dataset.name.startswith("data_mu_"):
+            dataset.add_tag({"mutau", "emu_from_mu", "mumu"})
+        if dataset.name.startswith("data_tau_"):
+            dataset.add_tag({"tautau"})
+        
 
         # apply an optional limit on the number of files
         if limit_dataset_files:
@@ -177,8 +184,8 @@ def add_config(
 
     # default objects, such as calibrator, selector, producer, ml model, inference model, etc
     cfg.x.default_calibrator = "example"
-    cfg.x.default_selector = "example"
-    cfg.x.default_producer = "example"
+    cfg.x.default_selector = "default"
+    cfg.x.default_producer = "default"
     cfg.x.default_ml_model = None
     cfg.x.default_inference_model = "example"
     cfg.x.default_categories = ("incl",)
@@ -215,7 +222,7 @@ def add_config(
             "tt_sl",
             "tt_dl",
             "tt_fh",
-            "dy",
+            # "dy",
             # "qcd",
             # "st",
             # "v",
@@ -235,6 +242,11 @@ def add_config(
         "hhh_compare_2": [
             f"hhh_4b2tau_c3{x}_d4{y}" for x,y in ((0, 0), (19, 19), (4, 9), ("m1p5", "m0p5"), ("m1", "m1"), (1, 2))
         ],
+
+        "hhh_compare_3": [
+            f"hhh_4b2tau_c3{x}_d4{y}" for x,y in ((1, 0), (4, 9))
+        ],
+
         "sm_higgs": (sm_higgs := [
             "tth",
             "hhh_4b2tau_c30_d40",
@@ -295,7 +307,16 @@ def add_config(
 
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
-    cfg.x.variable_groups = {}
+    cfg.x.variable_groups = {
+        "all": ["delta_r_bb1", "delta_r_bb2", "delta_r_tautau", 
+                "delta_r_h12", "delta_r_h13", "delta_r_h23",
+                "cos_bb1", "cos_bb2", "cos_tautau",
+                "cos_h12", "cos_h13", "cos_h23",
+                "mhhh", "h1_mass", "h2_mass", "h3_mass",
+                "n_b_jet", "n_fatjet",
+                "h1_unsort_mass", "h2_unsort_mass",
+                "m_3b2tau", "m_3b2tau_pt",],
+    }
 
     # shift groups for conveniently looping over certain shifts
     # (used during plotting)
@@ -336,6 +357,7 @@ def add_config(
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
         "default": ["muon", "jet"],
+        "3b2tau": ["one_jet", "two_jet", "three_jet", "one_tau", "two_tau",],
     }
 
     # calibrator groups for conveniently looping over certain calibrators
@@ -683,11 +705,17 @@ def add_config(
     ]
 
     from columnflow.production.cms.btag import BTagSFConfig
-    cfg.x.btag_sf = BTagSFConfig(
-        correction_set="particleNet_shape",
+    cfg.x.btag_sf_deepjet = BTagSFConfig(
+        correction_set="deepJet_shape",
         jec_sources=cfg.x.btag_sf_jec_sources,
-        discriminator="btagPNetB",
+        discriminator="btagDeepFlavB",
     )
+    if run == 3:
+        cfg.x.btag_sf_pnet = BTagSFConfig(
+            correction_set="particleNet_shape",
+            jec_sources=cfg.x.btag_sf_jec_sources,
+            discriminator="btagPNetB",
+        )
 
     # target file size after MergeReducedEvents in MB
     cfg.x.reduced_file_size = 512.0
@@ -698,7 +726,8 @@ def add_config(
             # general event info, mandatory for reading files with coffea
             ColumnCollection.MANDATORY_COFFEA,  # additional columns can be added as strings, similar to object info
             # object info
-            "Jet.*",           
+            "Jet.*", 
+            "FatJet.*",          
             "MET.pt", "MET.phi", "MET.significance", "MET.covXX", "MET.covXY", "MET.covYY",
             "Muon.*",
             "Electron.*",
@@ -753,8 +782,11 @@ def add_config(
     }
 
     # channels
-    # (just one for now)
     cfg.add_channel(name="mutau", id=1)
+    cfg.add_channel(name="etau", id=2)
+    cfg.add_channel(name="tautau", id=3)
+    cfg.add_channel(name="mumu", id=4)
+    cfg.add_channel(name="emu", id=5)
 
     # add categories using the "add_category" tool which adds auto-generated ids
     # the "selection" entries refer to names of categorizers, e.g. in categorization/example.py
@@ -769,6 +801,25 @@ def add_config(
 
     from hhh4b2tau.config.met_filters import add_met_filters
     add_met_filters(cfg)
+
+        # add triggers
+    if year == 2016:
+        from hhh4b2tau.config.triggers import add_triggers_2016
+        add_triggers_2016(cfg)
+    elif year == 2017:
+        from hhh4b2tau.config.triggers import add_triggers_2017
+        add_triggers_2017(cfg)
+    elif year == 2018:
+        from hhh4b2tau.config.triggers import add_triggers_2018
+        add_triggers_2018(cfg)
+    elif year == 2022:
+        from hhh4b2tau.config.triggers import add_triggers_2022
+        add_triggers_2022(cfg)
+    elif year == 2023:
+        from hhh4b2tau.config.triggers import add_triggers_2023
+        add_triggers_2023(cfg)
+    else:
+        raise False
 
     ################################################################################################
     # LFN settings

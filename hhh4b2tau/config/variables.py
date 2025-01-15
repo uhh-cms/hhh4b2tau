@@ -355,7 +355,7 @@ def add_variables(
     cfg.add_variable(
         name="n_b_jet",
         expression="n_b_jet",
-        binning=(7, 3, 10),
+        binning=(10, 0, 10),
         x_title="Number of jets",
         discrete_x=True,
     )
@@ -389,7 +389,7 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3b2\tau}$",
+        x_title=r"$m_{3b2\tau}, (b_3,hhbtag>>$",
     )
 
     cfg.add_variable(
@@ -397,7 +397,7 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3b2\tau} (pt)$",
+        x_title=r"$m_{3b2\tau}, (b_3,pt>>)$",
     )
     # remove gen level studies for now due to coffea incompatibality
     # cfg.add_variable(

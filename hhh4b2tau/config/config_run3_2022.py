@@ -444,10 +444,10 @@ def add_config(
         if year == 2016:
             json_postfix = f"{'pre' if campaign.has_tag('preVFP') else 'post'}VFP"
         json_pog_era = f"{year}{json_postfix}_UL"
-        json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-6ce37404"
+        json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-7439b936"
     elif run == 3:
         json_pog_era = f"{year}_Summer{year2}{campaign.x.postfix}"
-        json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-6ce37404"
+        json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-7439b936"
     else:
         assert False
 

@@ -399,151 +399,151 @@ def add_variables(
         unit="GeV",
         x_title=r"$m_{3b2\tau}, (b_3,pt>>)$",
     )
-    # remove gen level studies for now due to coffea incompatibality
-    # cfg.add_variable(
-    #     name="mtautau_gen",
-    #     binning=(40, 0.0, 400.0),
-    #     null_value=EMPTY_FLOAT,
-    #     unit="GeV",
-    #     x_title=r"$m_{\tau\tau}^{gen}$",
-    # )
+    # gen-level variables
+    cfg.add_variable(
+        name="mtautau_gen",
+        binning=(40, 0.0, 400.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{\tau\tau}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="mbb_gen",
-    #     binning=(40, 0.0, 400.0),
-    #     null_value=EMPTY_FLOAT,
-    #     unit="GeV",
-    #     x_title=r"$m_{bb}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="mbb_gen",
+        binning=(40, 0.0, 400.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{bb}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="mhhh_gen",
-    #     binning=(60, 150.0, 1300.0),
-    #     null_value=EMPTY_FLOAT,
-    #     unit="GeV",
-    #     x_title=r"$m_{HHH}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="mhhh_gen",
+        binning=(60, 150.0, 1300.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{HHH}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="mlnu_gen",
-    #     binning=(40, 0.0, 200.0),
-    #     null_value=EMPTY_FLOAT,
-    #     unit="GeV",
-    #     x_title=r"$m_{l\nu}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="mlnu_gen",
+        binning=(40, 0.0, 200.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{l\nu}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="hpt_gen",
-    #     binning=(60, 0.0, 800.0),
-    #     null_value=EMPTY_FLOAT,
-    #     unit="GeV",
-    #     x_title=r"$p_T_H^{gen}$",
-    # )
+    cfg.add_variable(
+        name="hpt_gen",
+        binning=(60, 0.0, 800.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$p_T_H^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="h1bpt_gen",
-    #     binning=(60, 0.0, 800.0),
-    #     null_value=EMPTY_FLOAT,
-    #     unit="GeV",
-    #     x_title=r"$p_T_{H_1\rightarrow bb}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="h1bpt_gen",
+        binning=(60, 0.0, 800.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$p_T_{H_1\rightarrow bb}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="h2bpt_gen",
-    #     binning=(60, 0.0, 800.0),
-    #     null_value=EMPTY_FLOAT,
-    #     unit="GeV",
-    #     x_title=r"$p_T_{H_2\rightarrow bb}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="h2bpt_gen",
+        binning=(60, 0.0, 800.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$p_T_{H_2\rightarrow bb}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="htaupt_gen",
-    #     binning=(60, 0.0, 800.0),
-    #     null_value=EMPTY_FLOAT,
-    #     unit="GeV",
-    #     x_title=r"$p_T_{H\rightarrow\tau\tau}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="htaupt_gen",
+        binning=(60, 0.0, 800.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$p_T_{H\rightarrow\tau\tau}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="delta_r_h12_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(35, 0, 7),
-    #     x_title=r"H $\Delta R_{1,2}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="delta_r_h12_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(35, 0, 7),
+        x_title=r"H $\Delta R_{1,2}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="delta_r_h13_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(35, 0, 7),
-    #     x_title=r"H $\Delta R_{1,3}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="delta_r_h13_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(35, 0, 7),
+        x_title=r"H $\Delta R_{1,3}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="delta_r_h23_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(35, 0, 7),
-    #     x_title=r"H $\Delta R_{2,3}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="delta_r_h23_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(35, 0, 7),
+        x_title=r"H $\Delta R_{2,3}^{gen}$",
+    )
     
-    # cfg.add_variable(
-    #     name="delta_r_bb1_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(35, 0, 7),
-    #     x_title=r"$bb_1$ $\Delta R^{gen}$",
-    # )
+    cfg.add_variable(
+        name="delta_r_bb1_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(35, 0, 7),
+        x_title=r"$bb_1$ $\Delta R^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="delta_r_bb2_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(35, 0, 7),
-    #     x_title=r"$bb_2$ $\Delta R^{gen}$",
-    # )
+    cfg.add_variable(
+        name="delta_r_bb2_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(35, 0, 7),
+        x_title=r"$bb_2$ $\Delta R^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="delta_r_tautau_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(35, 0, 7),
-    #     x_title=r"$\tau\tau$ $\Delta R^{gen}$",
-    # )
+    cfg.add_variable(
+        name="delta_r_tautau_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(35, 0, 7),
+        x_title=r"$\tau\tau$ $\Delta R^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="cos_h12_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(24, -1, +1),
-    #     x_title=r"H $cos(\delta)_{1,2}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="cos_h12_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(24, -1, +1),
+        x_title=r"H $cos(\delta)_{1,2}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="cos_h13_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(24, -1, +1),
-    #     x_title=r"H $cos(\delta)_{1,3}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="cos_h13_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(24, -1, +1),
+        x_title=r"H $cos(\delta)_{1,3}^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="cos_h23_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(24, -1, +1),
-    #     x_title=r"H $cos(\delta)_{2,3}^{gen}$",
-    # )
+    cfg.add_variable(
+        name="cos_h23_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(24, -1, +1),
+        x_title=r"H $cos(\delta)_{2,3}^{gen}$",
+    )
     
-    # cfg.add_variable(
-    #     name="cos_bb1_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(24, -1, +1),
-    #     x_title=r"$bb_1$ $cos(\delta)^{gen}$",
-    # )
+    cfg.add_variable(
+        name="cos_bb1_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(24, -1, +1),
+        x_title=r"$bb_1$ $cos(\delta)^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="cos_bb2_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(24, -1, +1),
-    #     x_title=r"$bb_2$ $cos(\delta)^{gen}$",
-    # )
+    cfg.add_variable(
+        name="cos_bb2_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(24, -1, +1),
+        x_title=r"$bb_2$ $cos(\delta)^{gen}$",
+    )
 
-    # cfg.add_variable(
-    #     name="cos_tautau_gen",
-    #     null_value=EMPTY_FLOAT,
-    #     binning=(24, -1, +1),
-    #     x_title=r"$\tau\tau$ $cos(\delta)^{gen}$",
-    # )
+    cfg.add_variable(
+        name="cos_tautau_gen",
+        null_value=EMPTY_FLOAT,
+        binning=(24, -1, +1),
+        x_title=r"$\tau\tau$ $cos(\delta)^{gen}$",
+    )

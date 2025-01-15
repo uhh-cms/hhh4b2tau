@@ -186,31 +186,45 @@ def hhh_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.A
     # nu_sum = ditaunu + dienu + dimunu
     lep_nu_sum = ditaunu + dienu + dimunu + dielectron + dimuon
 
+    h1 = events.gen_h_to_b[:,0]
+    h2 = events.gen_h_to_b[:,1]
+    h3 = events.gen_h_to_tau
+
+    b11 = events.gen_b[:,0,0]
+    b12 = events.gen_b[:,0,1]
+
+    b21 = events.gen_b[:,1,0]
+    b22 = events.gen_b[:,1,1]
+
+    tau1 = events.gen_tau[:,0,0]
+    tau2 = events.gen_tau[:,0,1]
+
+
     # pt of all Higgs
     h_pt = ak.concatenate(
         (events.gen_h_to_b.pt, events.gen_h_to_tau.pt), axis=1)
-    h1b_pt = events.gen_h_to_b.pt[:,0]
-    h2b_pt = events.gen_h_to_b.pt[:,1]
-    htau_pt = events.gen_h_to_tau.pt
+    h1b_pt = h1.pt
+    h2b_pt = h2.pt
+    htau_pt = h3.pt
 
     # delta_r between all Higgs
-    delta_r_h12 = events.gen_h_to_b[:,0].delta_r(events.gen_h_to_b[:,1])
-    delta_r_h13 = events.gen_h_to_b[:,0].delta_r(events.gen_h_to_tau)
-    delta_r_h23 = events.gen_h_to_b[:,1].delta_r(events.gen_h_to_tau)
+    delta_r_h12 = h1.delta_r(h2)
+    delta_r_h13 = h1.delta_r(h3)
+    delta_r_h23 = h2.delta_r(h3)
 
     # delta_r between H decay products
-    delta_r_bb1 = events.gen_b[:,0,0].delta_r(events.gen_b[:,0,1])
-    delta_r_bb2 = events.gen_b[:,1,0].delta_r(events.gen_b[:,1,1])
-    delta_r_tautau = events.gen_tau[:,0,0].delta_r(events.gen_tau[:,0,1])
+    delta_r_bb1 = b11.delta_r(b12)
+    delta_r_bb2 = b21.delta_r(b22)
+    delta_r_tautau = tau1.delta_r(tau2)
     # from IPython import embed; embed()
 
     # cosine of opening angle little delta between h and between their decay products 
-    cos_h12 = events.gen_h_to_b[:,0].unit.dot(events.gen_h_to_b[:,1].unit)
-    cos_h13 = events.gen_h_to_b[:,0].unit.dot(events.gen_h_to_tau.unit)
-    cos_h23 = events.gen_h_to_b[:,1].unit.dot(events.gen_h_to_tau.unit)
-    cos_bb1 = events.gen_b[:,0,0].unit.dot(events.gen_b[:,0,1].unit)
-    cos_bb2 = events.gen_b[:,1,0].unit.dot(events.gen_b[:,1,1].unit)
-    cos_tautau = events.gen_tau[:,0,0].unit.dot(events.gen_tau[:,0,1].unit)
+    cos_h12 = h1.pvec.dot(h2.pvec)/(h1.pvec.absolute()*h2.pvec.absolute())
+    cos_h13 = h1.pvec.dot(h3.pvec)/(h1.pvec.absolute()*h3.pvec.absolute())
+    cos_h23 = h2.pvec.dot(h3.pvec)/(h2.pvec.absolute()*h3.pvec.absolute())
+    cos_bb1 = b11.pvec.dot(b12.pvec)/(b11.pvec.absolute()*b12.pvec.absolute())
+    cos_bb2 = b21.pvec.dot(b22.pvec)/(b21.pvec.absolute()*b22.pvec.absolute())
+    cos_tautau = tau1.pvec.dot(tau2.pvec)/(tau1.pvec.absolute()*tau2.pvec.absolute())
 
     # four-lepton mass, taking into account only events with at least four leptons,
     # and otherwise substituting a predefined EMPTY_FLOAT value
@@ -414,23 +428,30 @@ def tth_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # (optionally) apply masks beforehand to avoid errors
     # for b1,b2 not necessary since the columns are always full 
-    b1 = ak.flatten(events.gen_tth_b1)
-    b2 = events.gen_tth_b2
-    tau = ak.mask(events.gen_tth_tau, tau_mask)
+    bb1 = ak.flatten(events.gen_tth_b1)
+    bb2 = events.gen_tth_b2
+    tautau = ak.mask(events.gen_tth_tau, tau_mask)
 
+    b11 = bb1[:,0]
+    b12 = bb1[:,1]
+    b21 = bb2[:,0]
+    b22 = bb2[:,1]
+
+    tau1 = tautau[:,0]
+    tau2 = tautau[:,1]
 
     # delta_r between bb tautau
-    delta_r_bb1 = b1[:,0].delta_r(b1[:,1])
-    delta_r_bb2 = b2[:,0].delta_r(b2[:,1])
-    delta_r_tautau = tau[:,0].delta_r(tau[:,1])
+    delta_r_bb1 = b11.delta_r(b12)
+    delta_r_bb2 = b21.delta_r(b22)
+    delta_r_tautau = tau1.delta_r(tau2)
 
     # work still in progress since array dimensions differ from hhh
-    cos_bb1 = b1[:,0].unit.dot(b1[:,1].unit)
-    cos_bb2 = b2[:,0].unit.dot(b2[:,1].unit)
-    cos_tautau = tau[:,0].unit.dot(tau[:,1].unit)
+    cos_bb1 = b11.pvec.dot(b12.pvec)/(b11.pvec.absolute()*b12.pvec.absolute())
+    cos_bb2 = b21.pvec.dot(b22.pvec)/(b21.pvec.absolute()*b22.pvec.absolute())
+    cos_tautau = tau1.pvec.dot(tau2.pvec)/(tau1.pvec.absolute()*tau2.pvec.absolute())
 
     # invariant mass of all 4b2tau but still call it mhhh for comparison
-    mhhh = (b1.sum(axis=-1) + b2.sum(axis=-2) + tau.sum(axis=-2)).mass
+    mhhh = (bb1.sum(axis=-1) + bb2.sum(axis=-2) + tautau.sum(axis=-2)).mass
 
     events = set_ak_column_f32(
         events,
@@ -836,7 +857,7 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     h1_unsort = final_b_jet_table[final_b_jet_table.mass_diff == b_optimal_mass_diff1].pair_sum
     h2_unsort = final_b_jet_table[final_b_jet_table.mass_diff == b_optimal_mass_diff2].pair_sum
     
-    # from IPython import embed; embed()
+    # from IPython import embed; embed(header="detector_variables")
     # task for now: create m_b1b2b3tauhadrontaumu
     b3_mask = (ak.local_index(b_jet) != b_min_diff_idx1) & (ak.local_index(b_jet) != b_min_diff_idx2)
     b3 = b_jet[b3_mask]

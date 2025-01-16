@@ -38,6 +38,7 @@ from hhh4b2tau.selection.lepton import lepton_selection
 from hhh4b2tau.selection.trigger import trigger_selection
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 from hhh4b2tau.production.patches import patch_ecalBadCalibFilter
+from hhh4b2tau.production.newvariables import dectector_variables
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -64,13 +65,13 @@ hhh_met_filters = met_filters.derive("hhh_met_filters", cls_dict={"get_met_filte
         trigger_selection, lepton_selection, jet_selection,
         attach_coffea_behavior,
         IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
-        category_ids,
+        category_ids, dectector_variables,
     },
     produces={
         mc_weight, pu_weight, btag_weights_deepjet, IF_RUN_3(btag_weights_pnet),
         process_ids, cutflow_features, increment_stats,
         IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), category_ids,
-        jet_selection, lepton_selection, trigger_selection,
+        jet_selection, lepton_selection, trigger_selection, dectector_variables,
     },
     exposed=True,
     sandbox = dev_sandbox("bash::$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh"),
@@ -113,7 +114,10 @@ def new(
     events, jet_results = self[jet_selection](events, trigger_results, lepton_results, **kwargs)
     results += jet_results
 
-    # from IPython import embed; embed(header="in new selector after jet selection") 
+    from IPython import embed; embed(header="in new selector after jet selection") 
+
+    events = self[dectector_variables](events, **kwargs)
+    
     # mc-only functions
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)

@@ -114,10 +114,10 @@ def new(
     events, jet_results = self[jet_selection](events, trigger_results, lepton_results, **kwargs)
     results += jet_results
 
-    from IPython import embed; embed(header="in new selector after jet selection") 
+    # from IPython import embed; embed(header="in new selector after jet selection") 
 
     events = self[dectector_variables](events, **kwargs)
-    
+
     # mc-only functions
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)

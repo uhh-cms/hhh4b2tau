@@ -314,7 +314,7 @@ def add_config(
                 "cos_h12", "cos_h13", "cos_h23",
                 "mhhh", "h1_mass", "h2_mass", "h3_mass",
                 "n_b_jet", "n_fatjet",
-                "h1_unsort_mass", "h2_unsort_mass",
+                # "h1_unsort_mass", "h2_unsort_mass",
                 "m_3b2tau", "m_3b2tau_pt",],
     }
 
@@ -782,11 +782,12 @@ def add_config(
     }
 
     # channels
-    cfg.add_channel(name="mutau", id=1)
-    cfg.add_channel(name="etau", id=2)
-    cfg.add_channel(name="tautau", id=3)
-    cfg.add_channel(name="mumu", id=4)
-    cfg.add_channel(name="emu", id=5)
+    cfg.add_channel(name="etau", id=1, label=r"$e\tau_{h}$")
+    cfg.add_channel(name="mutau", id=2, label=r"$\mu\tau_{h}$")
+    cfg.add_channel(name="tautau", id=3, label=r"$\tau_{h}\tau_{h}$")
+    cfg.add_channel(name="ee", id=4, label=r"$ee$")
+    cfg.add_channel(name="mumu", id=5, label=r"$\mu\mu$")
+    cfg.add_channel(name="emu", id=6, label=r"$e\mu$")
 
     # add categories using the "add_category" tool which adds auto-generated ids
     # the "selection" entries refer to names of categorizers, e.g. in categorization/example.py

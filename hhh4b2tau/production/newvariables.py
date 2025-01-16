@@ -856,7 +856,7 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     h1_unsort = final_b_jet_table[final_b_jet_table.mass_diff == b_optimal_mass_diff1].pair_sum
     h2_unsort = final_b_jet_table[final_b_jet_table.mass_diff == b_optimal_mass_diff2].pair_sum
     
-    from IPython import embed; embed(header="detector_variables")
+    # from IPython import embed; embed(header="detector_variables")
     # task for now: create m_b1b2b3tauhadrontaumu
     b3_mask = (ak.local_index(b_jet) != b_min_diff_idx1) & (ak.local_index(b_jet) != b_min_diff_idx2)
     b3 = b_jet[b3_mask]

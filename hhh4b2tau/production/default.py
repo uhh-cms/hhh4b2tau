@@ -95,7 +95,7 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             events = self[trigger_weights](events, **kwargs)
         
     events = self[jet_angle_difference](events, **kwargs)
-    events = self[dectector_variables](events, **kwargs)
+    # events = self[dectector_variables](events, **kwargs)
 
     if (self.dataset_inst.is_mc and
         any(self.dataset_inst.name.lower().startswith(x)

@@ -76,7 +76,7 @@ def jet_selection(
         (events.Jet.pt > 20.0) &
         (abs(events.Jet.eta) < 2.5)
     )
-
+    # from IPython import embed; embed(header="jet selection")
     # hhb-jets
     # --------------------------------------------------------------------------------------------
     # get the hhbtag values per jet per event

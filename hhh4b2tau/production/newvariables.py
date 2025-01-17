@@ -750,7 +750,7 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         **kwargs,
     )
 
-
+    # from IPython import embed; embed(header="detector variables")
 
     b_jet = events.Jet
 
@@ -853,18 +853,19 @@ def dectector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     h3 = tautau.pair_sum *1
 
     # unsorted h into bb, with h1_unsort with closest mass to 125
-    h1_unsort = final_b_jet_table[final_b_jet_table.mass_diff == b_optimal_mass_diff1].pair_sum
-    h2_unsort = final_b_jet_table[final_b_jet_table.mass_diff == b_optimal_mass_diff2].pair_sum
+    md_sorted_b_jet_idx = ak.argsort(final_b_jet_table.mass_diff, axis=-1, ascending=True)
+    h1_unsort = final_b_jet_table[md_sorted_b_jet_idx].pair_sum[:,0] *1
+    h2_unsort = final_b_jet_table[md_sorted_b_jet_idx].pair_sum[:,1] *1
     
     # from IPython import embed; embed(header="detector_variables")
     # task for now: create m_b1b2b3tauhadrontaumu
     b3_mask = (ak.local_index(b_jet) != b_min_diff_idx1) & (ak.local_index(b_jet) != b_min_diff_idx2)
-    b3 = b_jet[b3_mask]
+    b3 = ak.pad_none(b_jet[b3_mask], 1)
     b3 = b3[ak.argsort(b3.hhbtag,ascending=False)][:,0] *1
 
     m_3b2tau = (b3 + h1 + h3).mass
 
-    b3_pt = b_jet[b3_mask][:,0]*1 # remaining jet with highest pt
+    b3_pt = ak.pad_none(b_jet[b3_mask], 1)[:,0]*1 # remaining jet with highest pt
     m_3b2tau_pt = (b3_pt + h1 + h3).mass
 
     events = set_ak_column_f32(

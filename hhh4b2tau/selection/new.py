@@ -34,7 +34,7 @@ from hhh4b2tau.production.features import cutflow_features
 from hhh4b2tau.production.patches import patch_ecalBadCalibFilter
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
-from hhh4b2tau.production.newvariables import dectector_variables
+# from hhh4b2tau.production.newvariables import dectector_variables
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -64,13 +64,15 @@ hhh_met_filters = met_filters.derive("hhh_met_filters", cls_dict={"get_met_filte
         mc_weight, pu_weight, btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), 
         process_ids, cutflow_features, increment_stats, attach_coffea_behavior,
         patch_ecalBadCalibFilter, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
-        category_ids, dectector_variables,
+        category_ids, 
+        # dectector_variables,
     },
     produces={
         trigger_selection, lepton_selection, jet_selection, mc_weight, pu_weight, 
         btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, cutflow_features, 
         increment_stats, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), 
-        category_ids, dectector_variables,
+        category_ids, 
+        # dectector_variables,
         
     },
     exposed=True,
@@ -127,7 +129,7 @@ def new(
     # category ids
     events = self[category_ids](events, **kwargs)
 
-    events = self[dectector_variables](events, **kwargs)
+    # events = self[dectector_variables](events, **kwargs)
 
     # from IPython import embed; embed(header="new selector")
 

@@ -34,7 +34,7 @@ from hhh4b2tau.production.features import cutflow_features
 from hhh4b2tau.production.patches import patch_ecalBadCalibFilter
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
-# from hhh4b2tau.production.newvariables import dectector_variables
+from hhh4b2tau.production.newvariables import dectector_variables
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -65,15 +65,13 @@ hhh_met_filters = met_filters.derive("hhh_met_filters", cls_dict={"get_met_filte
         process_ids, cutflow_features, increment_stats, attach_coffea_behavior,
         patch_ecalBadCalibFilter, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
         category_ids, 
-        # dectector_variables,
+        dectector_variables,
     },
     produces={
         trigger_selection, lepton_selection, jet_selection, mc_weight, pu_weight, 
         btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, cutflow_features, 
         increment_stats, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), 
         category_ids, 
-        # dectector_variables,
-        
     },
     exposed=True,
     sandbox = dev_sandbox("bash::$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh"),
@@ -128,10 +126,50 @@ def new(
 
     # category ids
     events = self[category_ids](events, **kwargs)
-
-    # events = self[dectector_variables](events, **kwargs)
-
     # from IPython import embed; embed(header="new selector")
+    # using variables to make cuts but not saving them to events yet to avoid issues down stream
+    var = self[dectector_variables](events, **kwargs)
+    cos_bb1_mask = ak.fill_none(var.cos_bb1 > -0.25, False)
+    cos_bb2_mask = ak.fill_none(var.cos_bb2 > 0.5, False)
+    cos_tautau_mask = ak.fill_none(var.cos_tautau > 0.0, False)
+    cos_h12_mask = ak.fill_none(var.cos_h12 > -0.6, False)
+    cos_h13_mask = ak.fill_none(var.cos_h13 < 0.75, False)
+    cos_h23_mask = ak.fill_none(var.cos_h23 < 0.6, False)
+    delta_r_bb1_mask = ak.fill_none(var.delta_r_bb1 < 1.8, False)
+    delta_r_bb2_mask = ak.fill_none(var.delta_r_bb2 < 2.0, False)
+    delta_r_tautau_mask = ak.fill_none(var.delta_r_tautau < 2.6, False)
+    delta_r_h12_mask = ak.fill_none((var.delta_r_h12 < 3.6), False)
+    delta_r_h13_mask = ak.fill_none((var.delta_r_h13 < 3.6) & (var.delta_r_h13 > 2.0), False)
+    delta_r_h23_mask = ak.fill_none((var.delta_r_h23 < 3.4) & (var.delta_r_h23 > 2.0), False)
+    h3_mass_mask = ak.fill_none((var.h3_mass < 125.0) & (var.h3_mass > 50.0), False)
+    m_3b2tau_mask = ak.fill_none(var.m_3b2tau > 300.0, False)
+    m_3b2tau_pt_mask = ak.fill_none(var.m_3b2tau_pt > 300.0, False)
+    mhhh_mask = ak.fill_none(var.mhhh > 400.0, False)
+
+    results += SelectionResult(
+        steps={
+        "delta_r_bb1" : delta_r_bb1_mask,
+        "delta_r_bb2" : delta_r_bb2_mask,
+        "delta_r_tautau" : delta_r_tautau_mask,
+        "delta_r_h12" : delta_r_h12_mask,
+        "delta_r_h13" : delta_r_h13_mask,
+        "delta_r_h23" : delta_r_h23_mask,
+        "cos_bb1" : cos_bb1_mask,
+        "cos_bb2" : cos_bb2_mask,
+        "cos_tautau" : cos_tautau_mask,
+        "cos_h12" : cos_h12_mask,
+        "cos_h13" : cos_h13_mask,
+        "cos_h23" : cos_h23_mask,
+        "h3_mass" : h3_mass_mask,
+        "mhhh" : mhhh_mask,
+        "m_3b2tau" : m_3b2tau_mask,
+        "m_3b2tau_pt" : m_3b2tau_pt_mask,
+        },
+        objects={
+        },
+        aux={
+        },
+    )
 
     # mc-only functions
     if self.dataset_inst.is_mc:
@@ -180,6 +218,8 @@ def new(
 
     # some cutflow features
     events = self[cutflow_features](events, results.objects, **kwargs)
+
+
 
     # combined event selection after all steps
     event_sel = reduce(and_, results.steps.values())

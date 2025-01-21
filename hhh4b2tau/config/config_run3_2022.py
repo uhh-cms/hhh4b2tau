@@ -399,6 +399,11 @@ def add_config(
     cfg.x.selector_step_groups = {
         "default": ["json", "trigger", "met_filter", "jet_veto_map", "lepton", "jet2", "bjet"],
         "3b2tau": ["one_jet", "two_jet", "three_jet", "one_tau", "two_tau",],
+        "var": ["delta_r_bb1", "delta_r_bb2", "delta_r_tautau", 
+                "delta_r_h12", "delta_r_h13", "delta_r_h23",
+                "cos_bb1", "cos_bb2", "cos_tautau",
+                "cos_h12", "cos_h13", "cos_h23",
+                "mhhh", "h3_mass", "m_3b2tau", "m_3b2tau_pt",],
     }
 
     # calibrator groups for conveniently looping over certain calibrators

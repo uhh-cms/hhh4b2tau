@@ -82,12 +82,12 @@ def jet_selection(
     # get the hhbtag values per jet per event
     hhbtag_scores = self[hhbtag](events, default_mask, lepton_results.x.lepton_pair, **kwargs)
 
-    # create a mask where only the four highest scoring hhbjets are selected
+    # create a mask where only the three highest scoring hhbjets are selected
     score_indices = ak.argsort(hhbtag_scores, axis=1, ascending=False)
-    hhbjet_mask = mask_from_indices(score_indices[:, :4], hhbtag_scores)
+    hhbjet_mask = mask_from_indices(score_indices[:, :3], hhbtag_scores)
 
-    # deselect jets in events with less than two valid scores
-    hhbjet_mask = hhbjet_mask & (ak.sum(hhbtag_scores != EMPTY_FLOAT, axis=1) >= 4)
+    # deselect jets in events with less than three valid scores
+    hhbjet_mask = hhbjet_mask & (ak.sum(hhbtag_scores != EMPTY_FLOAT, axis=1) >= 3)
 
     # create a mask to select mutau events that were only triggered by a tau-tau-jet cross trigger
     false_mask = full_like(events.event, False, dtype=bool)

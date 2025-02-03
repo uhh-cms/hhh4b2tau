@@ -76,7 +76,7 @@ def gen_studies(
     results.steps["one_b_jets"] = n_gen_b_jet >= 1
     results.steps["two_b_jets"] = n_gen_b_jet >= 2
     results.steps["three_b_jets"] = n_gen_b_jet >= 3
-    results.steps["four_b_jets"] = n_gen_b_jet >= 4
+    # results.steps["four_b_jets"] = n_gen_b_jet >= 4
 
     # select events with at least 2 GenVisTau
     n_GenVisTau =ak.num(events.GenVisTau)
@@ -121,10 +121,10 @@ def gen_studies(
                 "mask_fn": (lambda v: events.process_id == v),
             },
             # per jet multiplicity
-            # "njet": {
-            #     "values": results.x.n_jets,
-            #     "mask_fn": (lambda v: results.x.n_jets == v),
-            # },
+            "njet": {
+                "values": results.x.n_jets,
+                "mask_fn": (lambda v: results.x.n_jets == v),
+            },
         }
     events, results = self[increment_stats](
         events,

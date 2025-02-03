@@ -349,14 +349,21 @@ def add_config(
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     cfg.x.variable_groups = {
-        "all": ["delta_r_bb1", "delta_r_bb2", "delta_r_tautau", 
+        "all": ["delta_r_bb1", "delta_r_bb2", "delta_r_taulep", 
                 "delta_r_h12", "delta_r_h13", "delta_r_h23",
-                "cos_bb1", "cos_bb2", "cos_tautau",
+                "cos_bb1", "cos_bb2", "cos_taulep",
                 "cos_h12", "cos_h13", "cos_h23",
                 "mhhh", "h1_mass", "h2_mass", "h3_mass",
                 "n_b_jet", "n_fatjet",
+                "m_3btaulep", "m_3btaulep_pt",
                 # "h1_unsort_mass", "h2_unsort_mass",
-                "m_3b2tau", "m_3b2tau_pt",],
+                "delta_r_bb1_chi", "delta_r_bb2_chi",
+                "delta_r_h12_chi", "delta_r_h13_chi", "delta_r_h23_chi",
+                "cos_bb1_chi", "cos_bb2_chi",
+                "cos_h12_chi", "cos_h13_chi", "cos_h23_chi",
+                "h1_mass_chi", "h2_mass_chi",
+                "m_3btaulep_chi", "m_3btaulep_pt_chi",
+                ],
     }
 
     # shift groups for conveniently looping over certain shifts
@@ -620,6 +627,12 @@ def add_config(
     from columnflow.calibration.cms.tau import TECConfig
     corrector_kwargs = {"wp": "Medium", "wp_VSe": "VVLoose"} if run == 3 else {}
     cfg.x.tec = TECConfig(tagger=cfg.x.tau_tagger, corrector_kwargs=corrector_kwargs)
+
+    # pec config
+    from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
+
+    cfg.x.eec = EGammaCorrectionConfig(correction_set="Scale")
+    cfg.x.eer = EGammaCorrectionConfig(correction_set="Smearing")
 
     # tau ID working points
     if campaign.x.version < 10:
@@ -932,6 +945,30 @@ def add_config(
     cfg.add_shift(name="e_down", id=91, type="shape")
     add_shift_aliases(cfg, "e", {"electron_weight": "electron_weight_{direction}"})
 
+    # electron shifts
+    # TODO: energy corrections are currently only available for 2022 (Jan 2025)
+    #       include them when available
+    if run == 3 and year == 2022:
+        cfg.add_shift(name="eec_up", id=92, type="shape", tags={"eec"})
+        cfg.add_shift(name="eec_down", id=93, type="shape", tags={"eec"})
+        add_shift_aliases(
+            cfg,
+            "eec",
+            {
+                "Electron.pt": "Electron.pt_scale_{direction}",
+            },
+        )
+
+        cfg.add_shift(name="eer_up", id=94, type="shape", tags={"eer"})
+        cfg.add_shift(name="eer_down", id=95, type="shape", tags={"eer"})
+        add_shift_aliases(
+            cfg,
+            "eer",
+            {
+                "Electron.pt": "Electron.pt_res_{direction}",
+            },
+        )
+
     cfg.add_shift(name="mu_up", id=100, type="shape")
     cfg.add_shift(name="mu_down", id=101, type="shape")
     add_shift_aliases(cfg, "mu", {"muon_weight": "muon_weight_{direction}"})
@@ -1081,6 +1118,13 @@ def add_config(
             add_external("muon_sf", (f"{json_mirror}/POG/MUO/{json_pog_era}/muon_Z.json.gz", "v1"))
             # electron scale factors
             add_external("electron_sf", (f"{json_mirror}/POG/EGM/{json_pog_era}/electron.json.gz", "v1"))
+
+                    # TODO: electron (and photon) energy corrections and smearing are only available for 2022
+        #       include them when available
+        if year == 2022:
+            # electron energy correction and smearing
+            add_external("electron_ss", (f"{json_mirror}/POG/EGM/{json_pog_era}/electronSS.json.gz", "v1"))
+            
             # tau energy correction and scale factors
             # TODO: remove tag pog mirror once integrated centrally
             json_mirror_tau_pog = "/afs/cern.ch/work/m/mrieger/public/mirrors/jsonpog-integration-taupog"
@@ -1088,6 +1132,8 @@ def add_config(
             add_external("tau_sf", (f"{json_mirror_tau_pog}/POG/TAU/{tau_pog_era}/tau_DeepTau2018v2p5_{tau_pog_era}.json.gz", "v1"))  # noqa
     else:
         assert False
+
+    
 
 
 

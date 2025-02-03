@@ -747,7 +747,7 @@ def pair_permutations(array: ak.Array) -> ak.Array:
     return permu
 
 # picks out the two pairs where chi**2 is minimized
-def min_chi_sqr_pair(array: ak.Array) -> ak.Array
+def min_chi_sqr_pair(array: ak.Array) -> ak.Array:
     # minimise chi**2 for pairings
     table = table_combo(array)
     permu = pair_permutations(array)

@@ -44,6 +44,7 @@ if default_sandbox.sandbox_type == "bash" and default_sandbox.name not in ana.x.
 ana.x.bash_sandboxes = [
     "$CF_BASE/sandboxes/cf.sh",
     "$CF_BASE/sandboxes/venv_columnar.sh",
+    "$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh",
 ]
 
 # files of cmssw sandboxes that might be required by remote tasks

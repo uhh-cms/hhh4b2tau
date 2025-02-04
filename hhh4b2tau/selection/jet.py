@@ -12,7 +12,8 @@ from columnflow.util import maybe_import, InsertableDict
 
 from hhh4b2tau.util import IF_RUN_2
 from hhh4b2tau.production.hhbtag import hhbtag
-from hhh4b2tau.selection.lepton import trigger_object_matching
+# from hhh4b2tau.selection.lepton import trigger_object_matching
+from hbt.selection.lepton import trigger_object_matching
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -122,7 +123,7 @@ def jet_selection(
         leading_matched = ak.fill_none(ak.firsts(matching_mask[sel_hhbjet_mask][pt_sorting_indices], axis=1), False)
         sel_hhbjet_mask = sel_hhbjet_mask & leading_matched
 
-    
+
         # insert back into the full hhbjet_mask
         flat_hhbjet_mask = flat_np_view(hhbjet_mask)
         flat_jet_mask = ak.flatten(full_like(events.Jet.pt, False, dtype=bool) | ttj_mask)

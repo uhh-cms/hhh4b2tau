@@ -25,13 +25,17 @@ from columnflow.util import maybe_import, dev_sandbox
 from columnflow.production.categories import category_ids
 from columnflow.types import Iterable
 
-from hhh4b2tau.selection.trigger import trigger_selection
-from hhh4b2tau.selection.lepton import lepton_selection
+# from hhh4b2tau.selection.trigger import trigger_selection
+# from hhh4b2tau.selection.lepton import lepton_selection
+from hbt.selection.trigger import trigger_selection
+from hbt.selection.lepton import lepton_selection
 from hhh4b2tau.selection.jet import jet_selection
 import hhh4b2tau.production.processes as process_producers
-from hhh4b2tau.production.btag import btag_weights_deepjet, btag_weights_pnet
+# from hhh4b2tau.production.btag import btag_weights_deepjet, btag_weights_pnet
+from hbt.production.btag import btag_weights_deepjet, btag_weights_pnet
 from hhh4b2tau.production.features import cutflow_features
-from hhh4b2tau.production.patches import patch_ecalBadCalibFilter
+# from hhh4b2tau.production.patches import patch_ecalBadCalibFilter
+from hbt.production.patches import patch_ecalBadCalibFilter
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
 from hhh4b2tau.production.newvariables import dectector_variables

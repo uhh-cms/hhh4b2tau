@@ -38,7 +38,7 @@ from hhh4b2tau.production.features import cutflow_features
 from hbt.production.patches import patch_ecalBadCalibFilter
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
-from hhh4b2tau.production.newvariables import dectector_variables
+from hhh4b2tau.production.newvariables import detector_variables
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -69,14 +69,14 @@ hhh_met_filters = met_filters.derive("hhh_met_filters", cls_dict={"get_met_filte
         process_ids, cutflow_features, increment_stats, attach_coffea_behavior,
         patch_ecalBadCalibFilter, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
         category_ids, 
-        dectector_variables,
+        detector_variables,
     },
     produces={
         trigger_selection, lepton_selection, jet_selection, mc_weight, pu_weight, 
         btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, cutflow_features, 
         increment_stats, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), 
         category_ids, 
-        dectector_variables,
+        detector_variables,
     },
     exposed=True,
     sandbox = dev_sandbox("bash::$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh"),
@@ -133,7 +133,7 @@ def new(
     events = self[category_ids](events, **kwargs)
 
     # using variables to make cuts but not saving them to events yet to avoid issues down stream
-    events = self[dectector_variables](events, lepton_results, **kwargs)
+    events = self[detector_variables](events, lepton_results, **kwargs)
     # cos_bb1_mask = ak.fill_none(events.cos_bb1 > -0.25, False)
     # cos_bb2_mask = ak.fill_none(events.cos_bb2 > 0.5, False)
     # cos_tautau_mask = ak.fill_none(events.cos_tautau > 0.0, False)

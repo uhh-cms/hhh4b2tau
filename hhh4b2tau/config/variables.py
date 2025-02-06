@@ -241,21 +241,21 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{4bl\tau}$",
+        x_title=r"$m_{4b2l}$",
     )
 
     cfg.add_variable(
         name="cos_taulep",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
-        x_title=r"$l\tau$ $cos(\delta)$",
+        x_title=r"$ll$ $cos(\delta)$",
     )
 
     cfg.add_variable(
         name="delta_r_taulep",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
-        x_title=r"$l\tau$ $\Delta R$",
+        x_title=r"$ll$ $\Delta R$",
     )
 
     cfg.add_variable(
@@ -269,7 +269,7 @@ def add_variables(
     cfg.add_variable(
         name="n_b_jet",
         expression="n_b_jet",
-        binning=(7, 3, 10),
+        binning=(10, 0, 10),
         x_title="Number of jets",
         discrete_x=True,
     )
@@ -389,7 +389,7 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3bl\tau}, (b_3,hhbtag>>)$",
+        x_title=r"$m_{3b2l}, (b_3,hhbtag)$",
     )
 
     cfg.add_variable(
@@ -397,7 +397,7 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3bl\tau}, (b_3,pt>>)$",
+        x_title=r"$m_{3b2l}, (b_3,pt)$",
     )
 
 
@@ -564,6 +564,29 @@ def add_variables(
     ### detector level but with experimental chi**2 minimization to H mass for jet pairing
 
     cfg.add_variable(
+        name="min_chi",
+        null_value=EMPTY_FLOAT,
+        binning=(50, 0, 1),
+        x_title=r"minimal $\chi^2$",
+    )
+
+    cfg.add_variable(
+        name="mds_h1_mass_chi",
+        binning=(40, 0.0, 400.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{H1}$ $(\chi^2)$ (mds)",
+    )
+
+    cfg.add_variable(
+        name="mds_h2_mass_chi",
+        binning=(40, 0.0, 400.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{H2}$ $(\chi^2)$ (mds)",
+    )
+
+    cfg.add_variable(
         name="delta_r_h12_chi",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
@@ -654,7 +677,7 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3bl\tau} $(\chi^2)$, (b_3,hhbtag>>)$",
+        x_title=r"$m_{3bl\tau} \chi^2, (b_3,hhbtag>>)$",
     )
 
     cfg.add_variable(
@@ -662,5 +685,5 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3bl\tau} $(\chi^2)$, (b_3,pt>>)$",
+        x_title=r"$m_{3bl\tau} \chi^2, (b_3,pt>>)$",
     )

@@ -746,14 +746,12 @@ def pair_permutations(array: ak.Array) -> ak.Array:
     permu = ak.pad_none(permu,1)
     return permu
 
-# picks out the two pairs where chi**2 is minimized
-def min_chi_sqr_pair(array: ak.Array) -> ak.Array:
+# picks out the two pairs where chi**2 is minimized and also the value of chi**2
+def min_chi_sqr_pair(array: ak.Array, table: ak.Array) -> ak.Array:
     # minimise chi**2 for pairings
-    table = table_combo(array)
     permu = pair_permutations(array)
     chisq = ((((array[permu.pair1.idx1] + array[permu.pair1.idx2]).mass -125)/125)**2 + 
              (((array[permu.pair2.idx1] + array[permu.pair2.idx2]).mass - 125)/125)**2)
-    
     sorted_chi_idx = ak.argsort(chisq, axis=1, ascending=True)
     bestpairs = permu[sorted_chi_idx][:,0]
     pairs_mask = (((table.idx1 == bestpairs.pair1.idx1) & (table.idx2 == bestpairs.pair1.idx2)) | 
@@ -762,7 +760,8 @@ def min_chi_sqr_pair(array: ak.Array) -> ak.Array:
     chi_table = ak.flatten(ak.drop_none(chi_table,axis=1),axis=2)
     chi_ptsorted_idx = ak.argsort(chi_table.pair_sum.pt, axis=1, ascending=False)
     chi_table = chi_table[chi_ptsorted_idx]
-    return chi_table
+    min_chisq = chisq[sorted_chi_idx][:,0]
+    return chi_table, min_chisq
 
 
 # producer for analysis on detector level
@@ -795,9 +794,10 @@ def min_chi_sqr_pair(array: ak.Array) -> ak.Array:
         "cos_h12_chi", "cos_h13_chi", "cos_h23_chi",
         "h1_mass_chi", "h2_mass_chi",
         "m_3btaulep_chi", "m_3btaulep_pt_chi",
+        "min_chi", "mds_h1_mass_chi", "mds_h2_mass_chi", "min_chi"
     },
 )
-def dectector_variables(self: Producer, events: ak.Array, lepton_results: SelectionResult, **kwargs) -> ak.Array:
+def detector_variables(self: Producer, events: ak.Array, lepton_results: SelectionResult, **kwargs) -> ak.Array:
 
     events = self[attach_coffea_behavior](
         events,
@@ -809,136 +809,86 @@ def dectector_variables(self: Producer, events: ak.Array, lepton_results: Select
         **kwargs,
     )
 
+    jet = events.Jet
+
+    # get lepton pair out of lepton selection
+    lepton_pair = lepton_results.x.lepton_pair
+
     # from IPython import embed; embed(header="detector variables")
 
-    b_jet = events.Jet
-
-    # get tau lepton pair out of lepton selection
-    taulep = lepton_results.x.lepton_pair
-
-    # metric table of all possible lorentz vector sums of two jets
-    b_jet_table = b_jet.metric_table(b_jet, metric=lambda a, b: (a+b))
-    b_jet_massdiff_table1 = b_jet.metric_table(b_jet, 
-                            metric=lambda a, b: abs((a+b).mass-125))
-    # metric_table for delta_r and cos(delta)
-    b_jet_delta_r_table = b_jet.metric_table(b_jet)
-    b_jet_cos_table = b_jet.metric_table(b_jet, metric=lambda a, b: a.pvec.dot(b.pvec)/(a.pvec.absolute()*b.pvec.absolute()))
-    # create dictionary for b jets with indicies
-    b_idx1 = ak.local_index(b_jet_table, axis=-2)
-    b_idx2 = ak.local_index(b_jet_table, axis=-1)
-    b_table_combo = ak.zip({"pair_sum": b_jet_table, 
-                            "mass_diff": b_jet_massdiff_table1,
-                            "delta_r": b_jet_delta_r_table,
-                            "cos": b_jet_cos_table, 
-                            "idx1": b_idx1, "idx2": b_idx2})
-    # remove duplicates and self sums
-    b_table_combo = ak.mask(b_table_combo,b_table_combo.idx1<b_table_combo.idx2)
-    # from IPython import embed; embed(header="inside detector variables")
     # get indicies of jet pair mass closest to 125 
-    b_optimal_mass_diff1 = ak.min(ak.min(b_table_combo.mass_diff, axis=-1),axis=-1)
-    b_min_diff_mask1 = b_optimal_mass_diff1 == b_table_combo.mass_diff
-    b_min_diff_idx1 = ak.mask(b_table_combo,b_table_combo.mass_diff==b_optimal_mass_diff1).idx1
-    b_min_diff_idx2 = ak.mask(b_table_combo,b_table_combo.mass_diff==b_optimal_mass_diff1).idx2
+    jet_table_combo = table_combo(jet)
+    jet_optimal_mass_diff1 = ak.min(ak.min(jet_table_combo.mass_diff, axis=-1),axis=-1)
+    jet_min_diff_mask1 = jet_optimal_mass_diff1 == jet_table_combo.mass_diff
+    jet_min_diff_idx1 = ak.mask(jet_table_combo, jet_table_combo.mass_diff==jet_optimal_mass_diff1).idx1
+    jet_min_diff_idx2 = ak.mask(jet_table_combo, jet_table_combo.mass_diff==jet_optimal_mass_diff1).idx2
     #reshape into single entry arrays
-    b_min_diff_idx1 = ak.sum(ak.sum(ak.sum(
-        ak.singletons(b_min_diff_idx1,axis=-1),axis=-1),axis=-1),axis=-1)
-    b_min_diff_idx2 = ak.sum(ak.sum(ak.sum(
-        ak.singletons(b_min_diff_idx2,axis=-1),axis=-1),axis=-1),axis=-1)
+    jet_min_diff_idx1 = ak.sum(ak.sum(ak.sum(
+        ak.singletons(jet_min_diff_idx1,axis=-1),axis=-1),axis=-1),axis=-1)
+    jet_min_diff_idx2 = ak.sum(ak.sum(ak.sum(
+        ak.singletons(jet_min_diff_idx2,axis=-1),axis=-1),axis=-1),axis=-1)
     # create mask to remove already used jets
-    b_idx_mask = ((b_table_combo.idx1 != b_min_diff_idx1) &
-                  (b_table_combo.idx2 != b_min_diff_idx2) &
-                  (b_table_combo.idx1 != b_min_diff_idx2) &
-                  (b_table_combo.idx2 != b_min_diff_idx1) )
+    jet_idx_mask = ((jet_table_combo.idx1 != jet_min_diff_idx1) &
+                    (jet_table_combo.idx2 != jet_min_diff_idx2) &
+                    (jet_table_combo.idx1 != jet_min_diff_idx2) &
+                    (jet_table_combo.idx2 != jet_min_diff_idx1) )
     
-    b_jet_massdiff_table2 = ak.mask(b_jet_massdiff_table1, b_idx_mask)
-    b_optimal_mass_diff2 = ak.min(ak.min(b_jet_massdiff_table2, axis=-1),axis=-1)
-    b_min_diff_mask2 = b_optimal_mass_diff2 == b_jet_massdiff_table2
-    b_min_diff_mask2 = ak.fill_none(b_min_diff_mask2, False, axis=-1)
+    jet_massdiff_table2 = ak.mask(jet_table_combo.mass_diff, jet_idx_mask)
+    jet_optimal_mass_diff2 = ak.min(ak.min(jet_massdiff_table2, axis=-1),axis=-1)
+    jet_min_diff_mask2 = jet_optimal_mass_diff2 == jet_massdiff_table2
+    jet_min_diff_mask2 = ak.fill_none(jet_min_diff_mask2, False, axis=-1)
     # mask that only contains "optimal" combinations 
-    final_b_jet_mask = (b_min_diff_mask1 | b_min_diff_mask2)
-    final_b_jet_table = ak.mask(b_table_combo,final_b_jet_mask)
-    final_b_jet_table = ak.flatten(ak.drop_none(final_b_jet_table, axis=-1),axis=-1)
+    final_jet_mask = (jet_min_diff_mask1 | jet_min_diff_mask2)
+    final_jet_table = ak.mask(jet_table_combo,final_jet_mask)
+    final_jet_table = ak.flatten(ak.drop_none(final_jet_table, axis=-1),axis=-1)
 
     # # sort bb pairs by pt # for now remove pt sorting
-    # sorted_b_jet_idx = ak.argsort(final_b_jet_table.pair_sum.pt, axis=-1, ascending=False)
+    # sorted_jet_idx = ak.argsort(final_jet_table.pair_sum.pt, axis=-1, ascending=False)
 
     # for now use ascending in mass_diff
-    sorted_b_jet_idx = ak.argsort(final_b_jet_table.mass_diff, axis=-1, ascending=True)
+    sorted_jet_idx = ak.argsort(final_jet_table.mass_diff, axis=-1, ascending=True)
 
-    final_b_jet_table = final_b_jet_table[sorted_b_jet_idx]
+    final_jet_table = final_jet_table[sorted_jet_idx]
 
-    taulep_massdiff_table = taulep.metric_table(taulep, 
-                         metric=lambda a, b: abs((a+b).mass -125))
-    taulep_table = taulep.metric_table((taulep), metric=lambda a, b: (a+b))
-    taulep_delta_r_table = taulep.metric_table(taulep)
-    taulep_cos_table = taulep.metric_table(taulep, metric=lambda a, b: a.pvec.dot(b.pvec)/(a.pvec.absolute()*b.pvec.absolute()))
-    taulep_idx1 = ak.local_index(taulep_table, axis=-2)
-    taulep_idx2 = ak.local_index(taulep_table, axis=-1)
-    taulep_table_combo = ak.zip({"pair_sum": taulep_table, 
-                              "mass_diff": taulep_massdiff_table, 
-                              "delta_r": taulep_delta_r_table,
-                              "cos": taulep_cos_table,
-                              "idx1": taulep_idx1, "idx2": taulep_idx2
-                              })
-
-    taulep_table_combo = ak.mask(taulep_table_combo,taulep_table_combo.idx1<taulep_table_combo.idx2)
-
-    # final taulep pairing
-    taulep = ak.flatten(ak.drop_none(taulep_table_combo),axis=-1)
+    # lepton pairing
+    lepton_table_combo = table_combo(lepton_pair)
+    lepton_pair = ak.flatten(ak.drop_none(lepton_table_combo),axis=-1)
 
     # final bb pairings
-    bb1 = final_b_jet_table[:,0]
-    bb2 = final_b_jet_table[:,1]
+    bb1 = final_jet_table[:,0]
+    bb2 = final_jet_table[:,1]
     # for <4 jets insert only jet pair afterwards
-    lone_pair = ak.firsts(ak.flatten(ak.drop_none(ak.mask(b_table_combo,b_min_diff_mask1),axis=1),axis=2))
-    jet_num_mask = (ak.num(b_jet)<4)&(ak.num(b_jet)>1)
+    lone_pair = ak.firsts(ak.flatten(ak.drop_none(ak.mask(jet_table_combo,jet_min_diff_mask1),axis=1),axis=2))
+    jet_num_mask = (ak.num(jet)<4)&(ak.num(jet)>1)
     bb1 = ak.where(jet_num_mask, lone_pair, bb1)
 
     # reconstructed higgs h1 and h2 are pt sorted from b-jets and h3 from taus
     h1 = bb1.pair_sum *1
     h2 = bb2.pair_sum *1
-    h3 = ak.pad_none(taulep.pair_sum, 1) *1
+    h3 = ak.pad_none(lepton_pair.pair_sum, 1) *1
     
-    # unsorted h into bb, with h1_unsort with closest mass to 125
-    md_sorted_b_jet_idx = ak.argsort(final_b_jet_table.mass_diff, axis=-1, ascending=True)
-    h1_unsort = final_b_jet_table[md_sorted_b_jet_idx].pair_sum[:,0] *1
-    h2_unsort = final_b_jet_table[md_sorted_b_jet_idx].pair_sum[:,1] *1
+    # # unsorted h into bb, with h1_unsort with closest mass to 125
+    md_sorted_jet_idx = ak.argsort(final_jet_table.mass_diff, axis=-1, ascending=True)
+    h1_unsort = final_jet_table[md_sorted_jet_idx].pair_sum[:,0] *1
+    h2_unsort = final_jet_table[md_sorted_jet_idx].pair_sum[:,1] *1
     
     # from IPython import embed; embed(header="detector_variables")
     # task for now: create m_b1b2b3tauhadrontaumu
-    b3_mask = (ak.local_index(b_jet) != b_min_diff_idx1) & (ak.local_index(b_jet) != b_min_diff_idx2)
-    b3 = ak.pad_none(b_jet[b3_mask], 1)
+    b3_mask = (ak.local_index(jet) != jet_min_diff_idx1) & (ak.local_index(jet) != jet_min_diff_idx2)
+    b3 = ak.pad_none(jet[b3_mask], 1)
     b3 = b3[ak.argsort(b3.hhbtag,ascending=False)][:,0] *1
 
     m_3btaulep = (b3 + h1 + h3).mass
 
-    b3_pt = ak.pad_none(b_jet[b3_mask], 1)[:,0]*1 # remaining jet with highest pt
+    b3_pt = ak.pad_none(jet[b3_mask], 1)[:,0]*1 # remaining jet with highest pt
     m_3btaulep_pt = (b3_pt + h1 + h3).mass
 
 
 ################################################################################
 
     # # create all unique pair permutaions
-    pairs = ak.combinations(b_idx1,2,fields=["idx1","idx2"],axis=1)
-    permu = ak.combinations(pairs, 2,fields=["h1","h2"],axis=1)
-    permu_mask = ((permu.h1.idx1 != permu.h2.idx1) & 
-                  (permu.h1.idx1 != permu.h2.idx2) & 
-                  (permu.h1.idx2 != permu.h2.idx1) & 
-                  (permu.h1.idx2 != permu.h2.idx2))
-    permu = permu[permu_mask]
-    permu = ak.pad_none(permu,1)
-    # minimise chi**2 for jet pairings
-    chisq = ((((b_jet[permu.h1.idx1] + b_jet[permu.h1.idx2]).mass -125)/125)**2 + 
-             (((b_jet[permu.h2.idx1] + b_jet[permu.h2.idx2]).mass - 125)/125)**2)
-    
-    sorted_chi_idx = ak.argsort(chisq, axis=1, ascending=True)
-    bestpairs = permu[sorted_chi_idx][:,0]
-    pairs_mask = (((b_table_combo.idx1 == bestpairs.h1.idx1) & (b_table_combo.idx2 == bestpairs.h1.idx2)) | 
-                  ((b_table_combo.idx1 == bestpairs.h2.idx1) & (b_table_combo.idx2 == bestpairs.h2.idx2)))
-    jet_chi_table = ak.mask(b_table_combo, pairs_mask)
-    jet_chi_table = ak.flatten(ak.drop_none(jet_chi_table,axis=1),axis=2)
-    jet_chi_ptsorted_idx = ak.argsort(jet_chi_table.pair_sum.pt, axis=1, ascending=False)
-    jet_chi_table = jet_chi_table[jet_chi_ptsorted_idx]
+
+    jet_chi_table, min_chi = min_chi_sqr_pair(jet, jet_table_combo)
     bb1_chi = jet_chi_table[:,0]
     bb2_chi = jet_chi_table[:,1]
     # insert pairs for case < 4 jets
@@ -949,6 +899,29 @@ def dectector_variables(self: Producer, events: ak.Array, lepton_results: Select
 
     m_3btaulep_chi = (b3 + h1_chi + h3).mass
     m_3btaulep_pt_chi = (b3_pt + h1_chi + h3).mass
+    # mds (mass different sorted)
+    mds_jet_idx = ak.argsort(jet_chi_table.mass_diff, axis=-1, ascending=True)
+    mds_jet_chi = jet_chi_table[mds_jet_idx]
+    mds_h1 = mds_jet_chi[:,0].pair_sum *1
+    mds_h2 = mds_jet_chi[:,1].pair_sum *1
+
+    events = set_ak_column_f32(
+        events,
+        "mds_h1_mass_chi",
+        mds_h1.mass,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "mds_h2_mass_chi",
+        mds_h2.mass,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "min_chi",
+        min_chi,
+    )
 
     events = set_ak_column_f32(
         events,
@@ -1007,19 +980,19 @@ def dectector_variables(self: Producer, events: ak.Array, lepton_results: Select
     events = set_ak_column_f32(
         events,
         "cos_h12_chi",
-        h1_chi.pvec.dot(h2_chi.pvec)/(h1_chi.pvec.absolute()*h2_chi.pvec.absolute()),
+        cos(h1_chi,h2_chi),
     )
 
     events = set_ak_column_f32(
         events,
         "cos_h13_chi",
-        h1_chi.pvec.dot(h3.pvec)/(h1_chi.pvec.absolute()*h3.pvec.absolute()),
+        cos(h1_chi, h3),
     )
 
     events = set_ak_column_f32(
         events,
         "cos_h23_chi",
-        h2_chi.pvec.dot(h3.pvec)/(h2_chi.pvec.absolute()*h3.pvec.absolute()),
+        cos(h2_chi, h3),
     )
 
     events = set_ak_column_f32(
@@ -1067,13 +1040,13 @@ def dectector_variables(self: Producer, events: ak.Array, lepton_results: Select
     events = set_ak_column_f32(
         events,
         "delta_r_taulep",
-        taulep.delta_r,
+        lepton_pair.delta_r,
     )
 
     events = set_ak_column_f32(
         events,
         "cos_taulep",
-        taulep.cos,
+        lepton_pair.cos,
     )
 
     events = set_ak_column_f32(
@@ -1097,19 +1070,19 @@ def dectector_variables(self: Producer, events: ak.Array, lepton_results: Select
     events = set_ak_column_f32(
         events,
         "cos_h12",
-        h1.pvec.dot(h2.pvec)/(h1.pvec.absolute()*h2.pvec.absolute()),
+        cos(h1, h2),
     )
 
     events = set_ak_column_f32(
         events,
         "cos_h13",
-        h1.pvec.dot(h3.pvec)/(h1.pvec.absolute()*h3.pvec.absolute()),
+        cos(h1, h3),
     )
 
     events = set_ak_column_f32(
         events,
         "cos_h23",
-        h2.pvec.dot(h3.pvec)/(h2.pvec.absolute()*h3.pvec.absolute()),
+        cos(h2, h3),
     )
 
     events = set_ak_column_f32(
@@ -1133,7 +1106,7 @@ def dectector_variables(self: Producer, events: ak.Array, lepton_results: Select
     events = set_ak_column(
         events,
         "n_b_jet",
-        ak.num(b_jet,axis=-1),
+        ak.num(jet,axis=-1),
         value_type=np.int32
     )
 

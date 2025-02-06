@@ -12,7 +12,7 @@ from columnflow.util import maybe_import, dev_sandbox, InsertableDict
 from columnflow.columnar_util import EMPTY_FLOAT, layout_ak_array
 
 from hhh4b2tau.util import IF_RUN_2
-from hbt.production.hhbtag import hhbtag
+from hbt.production.hhbtag import hhbtag as hbt_hhbtag
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -20,7 +20,7 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
-@hhbtag.producer(
+@hbt_hhbtag.producer(
     uses={
         # custom columns created upstream, probably by a selector
         "channel_id",

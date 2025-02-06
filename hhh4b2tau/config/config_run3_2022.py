@@ -233,7 +233,7 @@ def add_config(
     cfg.x.default_variables = ("n_jet", "jet1_pt")
 
     # set default weight_producer
-    cfg.x.default_weight_producer = "all_weights"
+    cfg.x.default_weight_producer = "default"
 
     # add a hist hook to work with histograms of data samples
     # i.e. morph data for hypothetical coupling that has not been generated yet
@@ -363,6 +363,7 @@ def add_config(
                 "cos_h12_chi", "cos_h13_chi", "cos_h23_chi",
                 "h1_mass_chi", "h2_mass_chi",
                 "m_3btaulep_chi", "m_3btaulep_pt_chi",
+                "mds_h1_mass_chi", "mds_h2_mass_chi", "min_chi"
                 ],
     }
 

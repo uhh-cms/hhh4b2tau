@@ -267,14 +267,6 @@ def add_variables(
     )
 
     cfg.add_variable(
-        name="n_b_jet",
-        expression="n_b_jet",
-        binning=(10, 0, 10),
-        x_title="Number of jets",
-        discrete_x=True,
-    )
-
-    cfg.add_variable(
         name="n_fatjet",
         expression="n_fatjet",
         binning=(5, 0, 5),
@@ -566,7 +558,7 @@ def add_variables(
     cfg.add_variable(
         name="min_chi",
         null_value=EMPTY_FLOAT,
-        binning=(50, 0, 1),
+        binning=(50, 0, 0.2),
         x_title=r"minimal $\chi^2$",
     )
 

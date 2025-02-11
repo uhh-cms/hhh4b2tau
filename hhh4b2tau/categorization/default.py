@@ -87,3 +87,24 @@ def cat_incl(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
 def cat_2j(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     # two or more jets
     return events, ak.num(events.Jet.pt, axis=1) >= 2
+
+
+    # using variables to make cuts but not saving them to events yet to avoid issues down stream
+    # events = self[detector_variables](events, lepton_results, **kwargs)
+    # events = self[detector_variables](events, **kwargs)
+    # cos_bb1_mask = ak.fill_none(events.cos_bb1 > -0.25, False)
+    # cos_bb2_mask = ak.fill_none(events.cos_bb2 > 0.5, False)
+    # cos_tautau_mask = ak.fill_none(events.cos_tautau > 0.0, False)
+    # cos_h12_mask = ak.fill_none(events.cos_h12 > -0.6, False)
+    # cos_h13_mask = ak.fill_none(events.cos_h13 < 0.75, False)
+    # cos_h23_mask = ak.fill_none(events.cos_h23 < 0.6, False)
+    # delta_r_bb1_mask = ak.fill_none(events.delta_r_bb1 < 1.8, False)
+    # delta_r_bb2_mask = ak.fill_none(events.delta_r_bb2 < 2.0, False)
+    # delta_r_tautau_mask = ak.fill_none(events.delta_r_tautau < 2.6, False)
+    # delta_r_h12_mask = ak.fill_none((events.delta_r_h12 < 3.6), False)
+    # delta_r_h13_mask = ak.fill_none((events.delta_r_h13 < 3.6) & (events.delta_r_h13 > 2.0), False)
+    # delta_r_h23_mask = ak.fill_none((events.delta_r_h23 < 3.4) & (events.delta_r_h23 > 2.0), False)
+    # h3_mass_mask = ak.fill_none((events.h3_mass < 125.0) & (events.h3_mass > 50.0), False)
+    # m_3b2tau_mask = ak.fill_none(events.m_3b2tau > 300.0, False)
+    # m_3b2tau_pt_mask = ak.fill_none(events.m_3b2tau_pt > 300.0, False)
+    # mhhh_mask = ak.fill_none(events.mhhh > 400.0, False)

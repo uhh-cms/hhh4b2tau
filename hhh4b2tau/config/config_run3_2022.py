@@ -354,7 +354,7 @@ def add_config(
                 "cos_bb1", "cos_bb2", "cos_taulep",
                 "cos_h12", "cos_h13", "cos_h23",
                 "mhhh", "h1_mass", "h2_mass", "h3_mass",
-                "n_b_jet", "n_fatjet",
+                "n_fatjet", "n_jet",
                 "m_3btaulep", "m_3btaulep_pt",
                 # "h1_unsort_mass", "h2_unsort_mass",
                 "delta_r_bb1_chi", "delta_r_bb2_chi",

@@ -90,7 +90,7 @@ def jet_selection(
     # deselect jets in events with less than three valid scores
     hhbjet_mask = hhbjet_mask & (ak.sum(hhbtag_scores != EMPTY_FLOAT, axis=1) >= 3)
 
-    # create a mask to select mutau events that were only triggered by a tau-tau-jet cross trigger
+    # create a mask to select tautau events that were only triggered by a tau-tau-jet cross trigger
     false_mask = full_like(events.event, False, dtype=bool)
     ttj_mask = (
         (events.channel_id == ch_tautau.id) &

@@ -771,8 +771,8 @@ def min_chi_sqr_pair(array: ak.Array, table: ak.Array) -> ak.Array:
     uses=(
     {   
         optional(f"{field}.{var}")
-        for field in ["Jet", "Tau", "Electron", "Muon", "FatJet"]
-        for var in ["pt", "eta", "phi", "mass", "hadronFlavour", "charge", "hhbtag"]
+        for field in ["Jet", "Tau", "Electron", "Muon", "FatJet",]
+        for var in ["pt", "eta", "phi", "mass", "charge", "hhbtag"]
         } | 
         {
             attach_coffea_behavior,
@@ -784,7 +784,7 @@ def min_chi_sqr_pair(array: ak.Array, table: ak.Array) -> ak.Array:
         "cos_bb1", "cos_bb2", "cos_taulep",
         "cos_h12", "cos_h13", "cos_h23",
         "mhhh", "h1_mass", "h2_mass", "h3_mass",
-        "n_b_jet", "n_fatjet",
+        "n_fatjet",
         "h1_unsort_mass", "h2_unsort_mass",
         "m_3btaulep", "m_3btaulep_pt",
         # variables with minimized chi**2 for jet pairing
@@ -797,22 +797,18 @@ def min_chi_sqr_pair(array: ak.Array, table: ak.Array) -> ak.Array:
         "min_chi", "mds_h1_mass_chi", "mds_h2_mass_chi", "min_chi"
     },
 )
-def detector_variables(self: Producer, events: ak.Array, lepton_results: SelectionResult, **kwargs) -> ak.Array:
+# def detector_variables(self: Producer, events: ak.Array, lepton_results: SelectionResult, **kwargs) -> ak.Array:
+def detector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = self[attach_coffea_behavior](
         events,
         **kwargs,
     )
 
-    lepton_results.x.lepton_pair = self[attach_coffea_behavior](
-        lepton_results.x.lepton_pair,
-        **kwargs,
-    )
-
     jet = events.Jet
 
     # get lepton pair out of lepton selection
-    lepton_pair = lepton_results.x.lepton_pair
+    lepton_pair = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
 
     # from IPython import embed; embed(header="detector variables")
 
@@ -852,7 +848,7 @@ def detector_variables(self: Producer, events: ak.Array, lepton_results: Selecti
 
     # lepton pairing
     lepton_table_combo = table_combo(lepton_pair)
-    lepton_pair = ak.flatten(ak.drop_none(lepton_table_combo),axis=-1)
+    leps = ak.flatten(ak.drop_none(lepton_table_combo),axis=-1)
 
     # final bb pairings
     bb1 = final_jet_table[:,0]
@@ -865,7 +861,7 @@ def detector_variables(self: Producer, events: ak.Array, lepton_results: Selecti
     # reconstructed higgs h1 and h2 are pt sorted from b-jets and h3 from taus
     h1 = bb1.pair_sum *1
     h2 = bb2.pair_sum *1
-    h3 = ak.pad_none(lepton_pair.pair_sum, 1) *1
+    h3 = ak.pad_none(leps.pair_sum, 1) *1
     
     # # unsorted h into bb, with h1_unsort with closest mass to 125
     md_sorted_jet_idx = ak.argsort(final_jet_table.mass_diff, axis=-1, ascending=True)
@@ -1040,13 +1036,13 @@ def detector_variables(self: Producer, events: ak.Array, lepton_results: Selecti
     events = set_ak_column_f32(
         events,
         "delta_r_taulep",
-        lepton_pair.delta_r,
+        leps.delta_r,
     )
 
     events = set_ak_column_f32(
         events,
         "cos_taulep",
-        lepton_pair.cos,
+        leps.cos,
     )
 
     events = set_ak_column_f32(
@@ -1104,16 +1100,9 @@ def detector_variables(self: Producer, events: ak.Array, lepton_results: Selecti
     )
 
     events = set_ak_column(
-        events,
-        "n_b_jet",
-        ak.num(jet,axis=-1),
-        value_type=np.int32
-    )
-
-    events = set_ak_column(
         events, 
         "n_fatjet",
-        ak.num(events.FatJet.pt,axis=-1),
+        ak.num(events.FatJet.pt, axis=1),
         value_type=np.int32
         )
     

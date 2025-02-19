@@ -61,6 +61,7 @@ setup_hhh4b2tau() {
 
     # start exporting variables
     export HHH4B2TAU_BASE="${this_dir}"
+    export HBT_BASE="${HHH4B2TAU_BASE}/modules/hh2bbtautau"
     export CF_BASE="${this_dir}/modules/columnflow"
     export CF_REPO_BASE="${HHH4B2TAU_BASE}"
     export CF_REPO_BASE_ALIAS="HHH4B2TAU_BASE"
@@ -104,8 +105,8 @@ setup_hhh4b2tau() {
     cf_setup_software_stack "${CF_SETUP_NAME}" || return "$?"
 
     # ammend paths that are not covered by the central cf setup
-    export PATH="${HHH4B2TAU_BASE}/bin:${PATH}"
-    export PYTHONPATH="${HHH4B2TAU_BASE}:${HHH4B2TAU_BASE}/modules/cmsdb:${PYTHONPATH}"
+    export PATH="${HHH4B2TAU_BASE}/bin:${PATH}:${HBT_BASE}/bin"
+    export PYTHONPATH="${HHH4B2TAU_BASE}:${HHH4B2TAU_BASE}/modules/cmsdb:${HBT_BASE}:${PYTHONPATH}"
 
     # initialze submodules
     if [ -e "${HHH4B2TAU_BASE}/.git" ]; then

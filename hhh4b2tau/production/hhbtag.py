@@ -12,6 +12,7 @@ from columnflow.util import maybe_import, dev_sandbox, InsertableDict
 from columnflow.columnar_util import EMPTY_FLOAT, layout_ak_array
 
 from hhh4b2tau.util import IF_RUN_2
+from hbt.production.hhbtag import hhbtag as hbt_hhbtag
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -19,7 +20,7 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
-@producer(
+@hbt_hhbtag.producer(
     uses={
         # custom columns created upstream, probably by a selector
         "channel_id",
@@ -41,11 +42,11 @@ def hhbtag(
     """
     Returns the HHBtag score per passed jet.
     """
-    # get a mask of events where there are at least two tau candidates and at least two jets
+    # get a mask of events where there are at least two tau candidates and at least three jets
     # and only get the scores for jets in these events
     event_mask = (
-        (ak.num(lepton_pair, axis=1) >= 2) &
-        (ak.sum(jet_mask, axis=1) >= 2)
+        (ak.num(lepton_pair, axis=1) >= 3) &
+        (ak.sum(jet_mask, axis=1) >= 3)
     )
 
     # prepare objects
@@ -133,39 +134,39 @@ def hhbtag(
     return all_scores
 
 
-@hhbtag.requires
-def hhbtag_requires(self: Producer, reqs: dict) -> None:
-    """
-    Add the external files bundle to requirements.
-    """
-    if "external_files" in reqs:
-        return
+# @hhbtag.requires
+# def hhbtag_requires(self: Producer, reqs: dict) -> None:
+#     """
+#     Add the external files bundle to requirements.
+#     """
+#     if "external_files" in reqs:
+#         return
 
-    from columnflow.tasks.external import BundleExternalFiles
-    reqs["external_files"] = BundleExternalFiles.req(self.task)
+#     from columnflow.tasks.external import BundleExternalFiles
+#     reqs["external_files"] = BundleExternalFiles.req(self.task)
 
 
-@hhbtag.setup
-def hhbtag_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
-    """
-    Sets up the two HHBtag TF models.
-    """
-    tf = maybe_import("tensorflow")
+# @hhbtag.setup
+# def hhbtag_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+#     """
+#     Sets up the two HHBtag TF models.
+#     """
+#     tf = maybe_import("tensorflow")
 
-    # unpack the external files bundle, create a subdiretory and unpack the hhbtag repo in it
-    bundle = reqs["external_files"]
-    arc = bundle.files.hh_btag_repo
-    repo_dir = bundle.files_dir.child("hh_btag_repo", type="d")
-    arc.load(repo_dir, formatter="tar")
-    repo_dir = repo_dir.child(repo_dir.listdir(pattern="HHbtag-*")[0])
+#     # unpack the external files bundle, create a subdiretory and unpack the hhbtag repo in it
+#     bundle = reqs["external_files"]
+#     arc = bundle.files.hh_btag_repo
+#     repo_dir = bundle.files_dir.child("hh_btag_repo", type="d")
+#     arc.load(repo_dir, formatter="tar")
+#     repo_dir = repo_dir.child(repo_dir.listdir(pattern="HHbtag-*")[0])
 
-    # get the version of the external file
-    self.hhbtag_version = self.config_inst.x.external_files["hh_btag_repo"][1]
+#     # get the version of the external file
+#     self.hhbtag_version = self.config_inst.x.external_files["hh_btag_repo"][1]
 
-    # define the model path
-    model_path = f"models/HHbtag_{self.hhbtag_version}_par"
+#     # define the model path
+#     model_path = f"models/HHbtag_{self.hhbtag_version}_par"
 
-    # save both models (even and odd event numbers)
-    with self.task.publish_step("loading hhbtag models ..."):
-        self.hhbtag_model_even = tf.saved_model.load(repo_dir.child(f"{model_path}_0").path)
-        self.hhbtag_model_odd = tf.saved_model.load(repo_dir.child(f"{model_path}_1").path)
+#     # save both models (even and odd event numbers)
+#     with self.task.publish_step("loading hhbtag models ..."):
+#         self.hhbtag_model_even = tf.saved_model.load(repo_dir.child(f"{model_path}_0").path)
+#         self.hhbtag_model_odd = tf.saved_model.load(repo_dir.child(f"{model_path}_1").path)

@@ -25,22 +25,21 @@ from columnflow.util import maybe_import, dev_sandbox
 from columnflow.production.categories import category_ids
 from columnflow.types import Iterable
 
-from hhh4b2tau.selection.trigger import trigger_selection
-from hhh4b2tau.selection.lepton import lepton_selection
+from hbt.selection.trigger import trigger_selection
+from hbt.selection.lepton import lepton_selection
 from hhh4b2tau.selection.jet import jet_selection
 import hhh4b2tau.production.processes as process_producers
-from hhh4b2tau.production.btag import btag_weights_deepjet, btag_weights_pnet
+from hbt.production.btag import btag_weights_deepjet, btag_weights_pnet
 from hhh4b2tau.production.features import cutflow_features
-from hhh4b2tau.production.patches import patch_ecalBadCalibFilter
+from hbt.production.patches import patch_ecalBadCalibFilter
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
-# from hhh4b2tau.production.newvariables import dectector_variables
+from hhh4b2tau.production.gen_higgs_decay_products import gen_producer
+
+
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-
-
-
 
 
 # updated met_filters selector to define dataset dependent filters
@@ -57,6 +56,30 @@ def get_met_filters(self: Selector) -> Iterable[str]:
 
 hhh_met_filters = met_filters.derive("hhh_met_filters", cls_dict={"get_met_filters": get_met_filters})
 
+
+# helper to identify bad events that should be considered missing altogether
+def get_bad_events(self: Selector, events: ak.Array) -> ak.Array:
+    bad_mask = full_like(events.event, False, dtype=bool)
+
+    # drop events for which we expect lhe infos but that lack them
+    # see https://cms-talk.web.cern.ch/t/lhe-weight-vector-empty-for-certain-events/97636/3
+    if (
+        self.dataset_inst.is_mc and
+        self.dataset_inst.has_tag("partial_lhe_weights") and
+        self.has_dep(pdf_weights)
+    ):
+        n_weights = ak.num(events.LHEPdfWeight, axis=1)
+        bad_lhe_mask = (n_weights != 101) & (n_weights != 103)
+        if ak.any(bad_lhe_mask):
+            bad_mask = bad_mask & bad_lhe_mask
+            frac = ak.mean(bad_lhe_mask)
+            logger.warning(
+                f"found {ak.sum(bad_lhe_mask)} events ({frac * 100:.1f}%) with bad LHEPdfWeights",
+            )
+
+    return bad_mask
+
+
 @selector(
     uses={
         json_filter, hhh_met_filters, IF_RUN_3(jet_veto_map), 
@@ -64,16 +87,15 @@ hhh_met_filters = met_filters.derive("hhh_met_filters", cls_dict={"get_met_filte
         mc_weight, pu_weight, btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), 
         process_ids, cutflow_features, increment_stats, attach_coffea_behavior,
         patch_ecalBadCalibFilter, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
-        category_ids, 
-        # dectector_variables,
+        category_ids, gen_producer,
+
     },
     produces={
         trigger_selection, lepton_selection, jet_selection, mc_weight, pu_weight, 
         btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, cutflow_features, 
         increment_stats, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), 
-        category_ids, 
-        # dectector_variables,
-        
+        category_ids, gen_producer,
+
     },
     exposed=True,
     sandbox = dev_sandbox("bash::$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh"),
@@ -84,6 +106,11 @@ def new(
     stats: defaultdict,
     **kwargs,
 ) -> tuple[ak.Array, SelectionResult]:
+    
+    # add gen level objects and variables
+    events = self[gen_producer](events, **kwargs)
+
+    # from IPython import embed; embed(header="new selector")
     # ensure coffea behavior
     events = self[attach_coffea_behavior](events, **kwargs)
 
@@ -129,9 +156,9 @@ def new(
     # category ids
     events = self[category_ids](events, **kwargs)
 
-    # events = self[dectector_variables](events, **kwargs)
-
     # from IPython import embed; embed(header="new selector")
+    # saving lepton_pair from aux for detector_variables to run in the producer
+    # events = set_ak_column(events, "lepton_pair", lepton_results.x.lepton_pair)
 
     # mc-only functions
     if self.dataset_inst.is_mc:
@@ -181,6 +208,10 @@ def new(
     # some cutflow features
     events = self[cutflow_features](events, results.objects, **kwargs)
 
+    # # require two tau
+    # results.steps["one_tau"] = ak.num(lepton_results.x.lepton_pair, axis=1) >= 1
+    # results.steps["two_tau"] = ak.num(lepton_results.x.lepton_pair, axis=1) >= 2
+
     # combined event selection after all steps
     event_sel = reduce(and_, results.steps.values())
     results.event = event_sel
@@ -213,7 +244,7 @@ def new(
 
 
 @new.init
-def default_init(self: Selector) -> None:
+def new_init(self: Selector) -> None:
     if getattr(self, "dataset_inst", None) is None:
         return
 

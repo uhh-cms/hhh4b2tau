@@ -15,13 +15,13 @@ from hhh4b2tau.production.features import features
 from hhh4b2tau.production.weights import (
     normalized_pu_weight, normalized_pdf_weight, normalized_murmuf_weight,
 )
-# from hhh4b2tau.production.btag import normalized_btag_weights
 from hhh4b2tau.production.btag import normalized_btag_weights_deepjet, normalized_btag_weights_pnet
 from hhh4b2tau.production.tau import tau_weights, trigger_weights
 from hhh4b2tau.production.newvariables import jet_angle_difference
-from hhh4b2tau.production.newvariables import dectector_variables
 from hhh4b2tau.production.newvariables import hhh_decay_invariant_mass
 from hhh4b2tau.production.newvariables import tth_variables
+from hhh4b2tau.production.newvariables import detector_variables
+
 
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
@@ -32,21 +32,23 @@ ak = maybe_import("awkward")
 @producer(
     uses={
         category_ids, features, stitched_normalization_weights, normalized_pu_weight,
-        # tau_weights, trigger_weights,
+        tau_weights, trigger_weights,
         normalized_btag_weights_deepjet, IF_RUN_3(normalized_btag_weights_pnet),
         electron_weights, muon_weights, 
         IF_DATASET_HAS_LHE_WEIGHTS(normalized_pdf_weight, normalized_murmuf_weight),
         hhh_decay_invariant_mass, tth_variables,
-        jet_angle_difference, dectector_variables, 
+        jet_angle_difference, 
+        detector_variables, 
     },
     produces={
         category_ids, features, stitched_normalization_weights, normalized_pu_weight,
-        # tau_weights, trigger_weights,
+        tau_weights, trigger_weights,
         normalized_btag_weights_deepjet, IF_RUN_3(normalized_btag_weights_pnet),
         electron_weights, muon_weights, 
         IF_DATASET_HAS_LHE_WEIGHTS(normalized_pdf_weight, normalized_murmuf_weight),
         hhh_decay_invariant_mass, tth_variables,
-        jet_angle_difference, dectector_variables, 
+        jet_angle_difference, 
+        detector_variables, 
     },
     produce_weights=True,
 )
@@ -97,19 +99,19 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             events = self[trigger_weights](events, **kwargs)
         
     events = self[jet_angle_difference](events, **kwargs)
-    events = self[dectector_variables](events, **kwargs)
+    events = self[detector_variables](events, **kwargs)
 
-    # if (self.dataset_inst.is_mc and
-    #     any(self.dataset_inst.name.lower().startswith(x)
-    #         for x in ("hhh",))
-    # ):
-    #     events = self[hhh_decay_invariant_mass](events, **kwargs)
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("hhh",))
+    ):
+        events = self[hhh_decay_invariant_mass](events, **kwargs)
         
-    # if (self.dataset_inst.is_mc and
-    #     any(self.dataset_inst.name.lower().startswith(x)
-    #         for x in ("tth_hbb_powheg",))
-    # ):
-    #     events = self[tth_variables](events, **kwargs)
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("tth_hbb_powheg",))
+    ):
+        events = self[tth_variables](events, **kwargs)
 
     return events
 

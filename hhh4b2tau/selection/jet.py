@@ -12,7 +12,8 @@ from columnflow.util import maybe_import, InsertableDict
 
 from hhh4b2tau.util import IF_RUN_2
 from hhh4b2tau.production.hhbtag import hhbtag
-from hhh4b2tau.selection.lepton import trigger_object_matching
+# from hhh4b2tau.selection.lepton import trigger_object_matching
+from hbt.selection.lepton import trigger_object_matching
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -82,14 +83,14 @@ def jet_selection(
     # get the hhbtag values per jet per event
     hhbtag_scores = self[hhbtag](events, default_mask, lepton_results.x.lepton_pair, **kwargs)
 
-    # create a mask where only the four highest scoring hhbjets are selected
+    # create a mask where only the three highest scoring hhbjets are selected
     score_indices = ak.argsort(hhbtag_scores, axis=1, ascending=False)
-    hhbjet_mask = mask_from_indices(score_indices[:, :4], hhbtag_scores)
+    hhbjet_mask = mask_from_indices(score_indices[:, :3], hhbtag_scores)
 
-    # deselect jets in events with less than two valid scores
-    hhbjet_mask = hhbjet_mask & (ak.sum(hhbtag_scores != EMPTY_FLOAT, axis=1) >= 4)
+    # deselect jets in events with less than three valid scores
+    hhbjet_mask = hhbjet_mask & (ak.sum(hhbtag_scores != EMPTY_FLOAT, axis=1) >= 3)
 
-    # create a mask to select mutau events that were only triggered by a tau-tau-jet cross trigger
+    # create a mask to select tautau events that were only triggered by a tau-tau-jet cross trigger
     false_mask = full_like(events.event, False, dtype=bool)
     ttj_mask = (
         (events.channel_id == ch_tautau.id) &
@@ -122,7 +123,7 @@ def jet_selection(
         leading_matched = ak.fill_none(ak.firsts(matching_mask[sel_hhbjet_mask][pt_sorting_indices], axis=1), False)
         sel_hhbjet_mask = sel_hhbjet_mask & leading_matched
 
-    
+
         # insert back into the full hhbjet_mask
         flat_hhbjet_mask = flat_np_view(hhbjet_mask)
         flat_jet_mask = ak.flatten(full_like(events.Jet.pt, False, dtype=bool) | ttj_mask)

@@ -6,3 +6,6 @@
 	path = modules/cmsdb
 	url = git@github.com:uhh-cms/cmsdb.git
 	branch = master
+[submodule "modules/hh2bbtautau"]
+	path = modules/hh2bbtautau
+	url = git@github.com:uhh-cms/hh2bbtautau.git

@@ -14,6 +14,10 @@ from columnflow.columnar_util import (
 from columnflow.types import Sequence
 import numpy as np
 
+from hhh4b2tau.production.newvariables import hhh_decay_invariant_mass
+from hhh4b2tau.production.newvariables import tth_variables
+from hhh4b2tau.production.newvariables import genHadron_variables
+
 ak = maybe_import("awkward")
 
 class _GenPartMatchBase(Producer):
@@ -268,12 +272,43 @@ def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
 )
 def gen_Hadron_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
-    # from IPython import embed; embed(header="inside gen_Hadron_products")
-
     b_jet_mask = events.GenJet.hadronFlavour == 5
     gen_b_jet = ak.drop_none(ak.mask(events.GenJet, b_jet_mask))
 
     events = set_ak_column(events, "gen_b_jet", gen_b_jet)
 
                            
+    return events
+
+
+
+
+@producer(
+    uses={gen_higgs_decay_products, gen_tth_decay_products, gen_Hadron_products,
+          hhh_decay_invariant_mass, tth_variables, genHadron_variables,
+           },
+    produces={gen_higgs_decay_products, gen_tth_decay_products, gen_Hadron_products,
+              hhh_decay_invariant_mass, tth_variables, genHadron_variables,
+              },
+        
+)
+def gen_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("hhh",))
+    ):
+        events = self[gen_higgs_decay_products](events, **kwargs)
+        events = self[hhh_decay_invariant_mass](events, **kwargs)
+    
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("tth_hbb_powheg",))
+    ):
+        events = self[gen_tth_decay_products](events, **kwargs)
+        events = self[tth_variables](events, **kwargs)
+
+    events = self[gen_Hadron_products](events, **kwargs)
+    events = self[genHadron_variables](events, **kwargs)
+                       
     return events

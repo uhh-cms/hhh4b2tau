@@ -439,7 +439,7 @@ def add_variables(
         binning=(60, 0.0, 800.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$p_T_{H_1\rightarrow bb}^{gen}$",
+        x_title=r"$p_{T,H_1\rightarrow bb}^{gen}$",
     )
 
     cfg.add_variable(
@@ -447,7 +447,7 @@ def add_variables(
         binning=(60, 0.0, 800.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$p_T_{H_2\rightarrow bb}^{gen}$",
+        x_title=r"$p_{T,H_2\rightarrow bb}^{gen}$",
     )
 
     cfg.add_variable(
@@ -455,7 +455,7 @@ def add_variables(
         binning=(60, 0.0, 800.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$p_T_{H\rightarrow\tau\tau}^{gen}$",
+        x_title=r"$p_{T,H\rightarrow\tau\tau}^{gen}$",
     )
 
     cfg.add_variable(
@@ -659,7 +659,7 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3bl\tau} (\chi^2), (b_3,hhbtag)$",
+        x_title=r"$m_{3b2\tau} (\chi^2), (b_3,hhbtag)$",
     )
 
     cfg.add_variable(
@@ -667,5 +667,5 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3bl\tau} (\chi^2), (b_3,pt)$",
+        x_title=r"$m_{3b2\tau} (\chi^2), (b_3,pt)$",
     )

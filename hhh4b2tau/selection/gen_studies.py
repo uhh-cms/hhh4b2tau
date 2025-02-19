@@ -13,7 +13,7 @@ from columnflow.production.processes import process_ids
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.util import maybe_import
 
-from hhh4b2tau.production.example import cutflow_features
+from hhh4b2tau.production.features import cutflow_features
 from hhh4b2tau.production.gen_higgs_decay_products import gen_higgs_decay_products
 from hhh4b2tau.production.gen_higgs_decay_products import gen_tth_decay_products
 from hhh4b2tau.production.gen_higgs_decay_products import gen_Hadron_products
@@ -70,19 +70,21 @@ def gen_studies(
 
     events = self[gen_Hadron_products](events, **kwargs)
 
-    # select events with at least 4 gen b jets
-    n_gen_b_jet = ak.num(events.gen_b_jet)
+    from IPython import embed; embed(header="gen_studies")
 
-    results.steps["one_b_jets"] = n_gen_b_jet >= 1
-    results.steps["two_b_jets"] = n_gen_b_jet >= 2
-    results.steps["three_b_jets"] = n_gen_b_jet >= 3
+    # select events with at least 4 gen b jets
+    # n_gen_b_jet = ak.num(events.gen_b_jet)
+
+    # results.steps["one_b_jets"] = n_gen_b_jet >= 1
+    # results.steps["two_b_jets"] = n_gen_b_jet >= 2
+    # results.steps["three_b_jets"] = n_gen_b_jet >= 3
     # results.steps["four_b_jets"] = n_gen_b_jet >= 4
 
-    # select events with at least 2 GenVisTau
-    n_GenVisTau =ak.num(events.GenVisTau)
+    # # select events with at least 2 GenVisTau
+    # n_GenVisTau =ak.num(events.GenVisTau)
     
-    results.steps["one_tau"] = n_GenVisTau >= 1
-    results.steps["two_tau"] = n_GenVisTau >= 2
+    # results.steps["one_tau"] = n_GenVisTau >= 1
+    # results.steps["two_tau"] = n_GenVisTau >= 2
         
     # # get tau decay products
 
@@ -135,7 +137,4 @@ def gen_studies(
         **kwargs,
     )
 
-    # from IPython import embed; embed(header="end selector")
-
     return events, results
-

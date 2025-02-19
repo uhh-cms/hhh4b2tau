@@ -225,7 +225,7 @@ def add_config(
 
     # default objects, such as calibrator, selector, producer, ml model, inference model, etc
     cfg.x.default_calibrator = "default"
-    cfg.x.default_selector = "default"
+    cfg.x.default_selector = "new"
     cfg.x.default_producer = "default"
     cfg.x.default_ml_model = None
     cfg.x.default_inference_model = "example"
@@ -349,22 +349,32 @@ def add_config(
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     cfg.x.variable_groups = {
-        "all": ["delta_r_bb1", "delta_r_bb2", "delta_r_taulep", 
-                "delta_r_h12", "delta_r_h13", "delta_r_h23",
-                "cos_bb1", "cos_bb2", "cos_taulep",
-                "cos_h12", "cos_h13", "cos_h23",
-                "mhhh", "h1_mass", "h2_mass", "h3_mass",
-                "n_fatjet", "n_jet",
-                "m_3btaulep", "m_3btaulep_pt",
-                # "h1_unsort_mass", "h2_unsort_mass",
-                "delta_r_bb1_chi", "delta_r_bb2_chi",
-                "delta_r_h12_chi", "delta_r_h13_chi", "delta_r_h23_chi",
-                "cos_bb1_chi", "cos_bb2_chi",
-                "cos_h12_chi", "cos_h13_chi", "cos_h23_chi",
-                "h1_mass_chi", "h2_mass_chi",
-                "m_3btaulep_chi", "m_3btaulep_pt_chi",
-                "mds_h1_mass_chi", "mds_h2_mass_chi", "min_chi"
+        "all": [
+            "delta_r_bb1", "delta_r_bb2", "delta_r_taulep", 
+            "delta_r_h12", "delta_r_h13", "delta_r_h23",
+            "cos_bb1", "cos_bb2", "cos_taulep",
+            "cos_h12", "cos_h13", "cos_h23",
+            "mhhh", "h1_mass", "h2_mass", "h3_mass",
+            "n_fatjet", "n_jet",
+            "m_3btaulep", "m_3btaulep_pt",
+            # "h1_unsort_mass", "h2_unsort_mass",
+            "delta_r_bb1_chi", "delta_r_bb2_chi",
+            "delta_r_h12_chi", "delta_r_h13_chi", "delta_r_h23_chi",
+            "cos_bb1_chi", "cos_bb2_chi",
+            "cos_h12_chi", "cos_h13_chi", "cos_h23_chi",
+            "h1_mass_chi", "h2_mass_chi",
+            "m_3btaulep_chi", "m_3btaulep_pt_chi",
+            "mds_h1_mass_chi", "mds_h2_mass_chi", "min_chi"
                 ],
+        "all_gen": [
+            "mtautau_gen", "mbb_gen", "mhhh_gen", "mlnu_gen", "hpt_gen", "h1bpt_gen",
+            "h2bpt_gen", "htaupt_gen",
+            "delta_r_h12_gen", "delta_r_h13_gen", "delta_r_h23_gen", "delta_r_bb1_gen", 
+            "delta_r_bb2_gen",
+            "delta_r_tautau_gen",
+            "cos_h12_gen", "cos_h13_gen", "cos_h23_gen", "cos_bb1_gen", "cos_bb2_gen",
+            "cos_tautau_gen",
+        ]
     }
 
     # shift groups for conveniently looping over certain shifts
@@ -407,11 +417,6 @@ def add_config(
     cfg.x.selector_step_groups = {
         "default": ["json", "trigger", "met_filter", "jet_veto_map", "lepton", "jet2", "bjet"],
         "3b2tau": ["one_jet", "two_jet", "three_jet", "one_tau", "two_tau",],
-        "var": ["delta_r_bb1", "delta_r_bb2", "delta_r_tautau", 
-                "delta_r_h12", "delta_r_h13", "delta_r_h23",
-                "cos_bb1", "cos_bb2", "cos_tautau",
-                "cos_h12", "cos_h13", "cos_h23",
-                "mhhh", "h3_mass", "m_3b2tau", "m_3b2tau_pt",],
     }
 
     # calibrator groups for conveniently looping over certain calibrators

@@ -241,21 +241,21 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{4b2l}$",
+        x_title=r"$m_{4b2\tau}$",
     )
 
     cfg.add_variable(
         name="cos_taulep",
         null_value=EMPTY_FLOAT,
         binning=(24, -1, +1),
-        x_title=r"$ll$ $cos(\delta)$",
+        x_title=r"$\tau\tau$ $cos(\delta)$",
     )
 
     cfg.add_variable(
         name="delta_r_taulep",
         null_value=EMPTY_FLOAT,
         binning=(35, 0, 7),
-        x_title=r"$ll$ $\Delta R$",
+        x_title=r"$\tau\tau$ $\Delta R$",
     )
 
     cfg.add_variable(
@@ -381,7 +381,7 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3b2l}, (b_3,hhbtag)$",
+        x_title=r"$m_{3b2\tau}, (b_3,hhbtag)$",
     )
 
     cfg.add_variable(
@@ -389,18 +389,8 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3b2l}, (b_3,pt)$",
+        x_title=r"$m_{3b2\tau}, (b_3,pt)$",
     )
-
-
-
-
-
-
-
-
-
-
 
 
     # gen-level variables
@@ -441,7 +431,7 @@ def add_variables(
         binning=(60, 0.0, 800.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$p_T_H^{gen}$",
+        x_title=r"$p_{TH}^{gen}$",
     )
 
     cfg.add_variable(
@@ -669,7 +659,7 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3bl\tau} \chi^2, (b_3,hhbtag>>)$",
+        x_title=r"$m_{3bl\tau} (\chi^2), (b_3,hhbtag)$",
     )
 
     cfg.add_variable(
@@ -677,5 +667,5 @@ def add_variables(
         binning=(60, 150.0, 1300.0),
         null_value=EMPTY_FLOAT,
         unit="GeV",
-        x_title=r"$m_{3bl\tau} \chi^2, (b_3,pt>>)$",
+        x_title=r"$m_{3bl\tau} (\chi^2), (b_3,pt)$",
     )

@@ -34,6 +34,9 @@ from hhh4b2tau.production.features import cutflow_features
 from hbt.production.patches import patch_ecalBadCalibFilter
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
+from hhh4b2tau.production.gen_higgs_decay_products import gen_producer
+
+
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -84,13 +87,15 @@ def get_bad_events(self: Selector, events: ak.Array) -> ak.Array:
         mc_weight, pu_weight, btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), 
         process_ids, cutflow_features, increment_stats, attach_coffea_behavior,
         patch_ecalBadCalibFilter, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
-        category_ids, 
+        category_ids, gen_producer,
+
     },
     produces={
         trigger_selection, lepton_selection, jet_selection, mc_weight, pu_weight, 
         btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, cutflow_features, 
         increment_stats, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), 
-        category_ids, 
+        category_ids, gen_producer,
+
     },
     exposed=True,
     sandbox = dev_sandbox("bash::$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh"),
@@ -101,6 +106,11 @@ def new(
     stats: defaultdict,
     **kwargs,
 ) -> tuple[ak.Array, SelectionResult]:
+    
+    # add gen level objects and variables
+    events = self[gen_producer](events, **kwargs)
+
+    # from IPython import embed; embed(header="new selector")
     # ensure coffea behavior
     events = self[attach_coffea_behavior](events, **kwargs)
 
@@ -198,7 +208,9 @@ def new(
     # some cutflow features
     events = self[cutflow_features](events, results.objects, **kwargs)
 
-
+    # # require two tau
+    # results.steps["one_tau"] = ak.num(lepton_results.x.lepton_pair, axis=1) >= 1
+    # results.steps["two_tau"] = ak.num(lepton_results.x.lepton_pair, axis=1) >= 2
 
     # combined event selection after all steps
     event_sel = reduce(and_, results.steps.values())
@@ -232,7 +244,7 @@ def new(
 
 
 @new.init
-def default_init(self: Selector) -> None:
+def new_init(self: Selector) -> None:
     if getattr(self, "dataset_inst", None) is None:
         return
 

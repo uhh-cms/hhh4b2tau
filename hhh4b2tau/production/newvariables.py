@@ -14,6 +14,62 @@ ak = maybe_import("awkward")
 
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
+# helper functions for variables
+
+# cosine of 3D angle between two particles
+def cos(array1: ak.Array, array2: ak.Array) -> ak.Array:
+    return array1.pvec.dot(array2.pvec)/(array1.pvec.absolute()*array2.pvec.absolute())
+
+# creates record with useful variables
+def table_combo(array: ak.Array) -> ak.Array:
+    table = array.metric_table(array, metric=lambda a, b: (a+b))
+    massdiff_table1 = array.metric_table(array, 
+                            metric=lambda a, b: abs((a+b).mass-125))
+    # metric_table for delta_r and cos(delta)
+    delta_r_table = array.metric_table(array)
+    cos_table = array.metric_table(array, metric=lambda a, b: cos(a,b))
+    # create dictionary with indicies
+    idx1 = ak.local_index(table, axis=-2)
+    idx2 = ak.local_index(table, axis=-1)
+    table_combo = ak.zip({"pair_sum": table, 
+                            "mass_diff": massdiff_table1,
+                            "delta_r": delta_r_table,
+                            "cos": cos_table, 
+                            "idx1": idx1, "idx2": idx2})
+    # remove duplicates and self sums
+    table_combo = ak.mask(table_combo,table_combo.idx1<table_combo.idx2)
+    return table_combo
+
+# gets all unique index permutations for picking two set of pairs    
+def pair_permutations(array: ak.Array) -> ak.Array:
+    # # create all unique pair permutaions
+    idx = ak.local_index(array, axis=1)
+    pairs = ak.combinations(idx, 2, fields=["idx1","idx2"],axis=1)
+    permu = ak.combinations(pairs, 2,fields=["pair1","pair2"],axis=1)
+    permu_mask = ((permu.pair1.idx1 != permu.pair2.idx1) & 
+                  (permu.pair1.idx1 != permu.pair2.idx2) & 
+                  (permu.pair1.idx2 != permu.pair2.idx1) & 
+                  (permu.pair1.idx2 != permu.pair2.idx2))
+    permu = permu[permu_mask]
+    permu = ak.pad_none(permu,1)
+    return permu
+
+# puts out the two pairs where chi**2 is minimized and also the value of chi**2
+def min_chi_sqr_pair(array: ak.Array, table: ak.Array) -> ak.Array:
+    # minimise chi**2 for pairings
+    permu = pair_permutations(array)
+    chisq = ((((array[permu.pair1.idx1] + array[permu.pair1.idx2]).mass -125)/125)**2 + 
+             (((array[permu.pair2.idx1] + array[permu.pair2.idx2]).mass - 125)/125)**2)
+    sorted_chi_idx = ak.argsort(chisq, axis=1, ascending=True)
+    bestpairs = permu[sorted_chi_idx][:,0]
+    pairs_mask = (((table.idx1 == bestpairs.pair1.idx1) & (table.idx2 == bestpairs.pair1.idx2)) | 
+                  ((table.idx1 == bestpairs.pair2.idx1) & (table.idx2 == bestpairs.pair2.idx2)))
+    chi_table = ak.mask(table, pairs_mask)
+    chi_table = ak.flatten(ak.drop_none(chi_table,axis=1),axis=2)
+    chi_ptsorted_idx = ak.argsort(chi_table.pair_sum.pt, axis=1, ascending=False)
+    chi_table = chi_table[chi_ptsorted_idx]
+    min_chisq = chisq[sorted_chi_idx][:,0]
+    return chi_table, min_chisq
 
 @producer(
     uses=(
@@ -135,7 +191,7 @@ def hhh_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.A
         **kwargs,
     )
 
-    # from IPython import embed; embed()
+    # from IPython import embed; embed(header="hhh_decay_invariant_mass")
 
     # total number of partons per event
     n_taus = ak.num(events.gen_tau, axis=-1)
@@ -174,18 +230,18 @@ def hhh_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.A
     # nu_sum = ditaunu + dienu + dimunu
     lep_nu_sum = ditaunu + dienu + dimunu + dielectron + dimuon
 
-    h1 = events.gen_h_to_b[:,0]
-    h2 = events.gen_h_to_b[:,1]
-    h3 = events.gen_h_to_tau
+    h1 = events.gen_h_to_b[:,0] *1
+    h2 = events.gen_h_to_b[:,1] *1
+    h3 = ak.firsts(events.gen_h_to_tau) *1
 
-    b11 = events.gen_b[:,0,0]
-    b12 = events.gen_b[:,0,1]
+    b11 = events.gen_b[:,0,0] * 1
+    b12 = events.gen_b[:,0,1] * 1
 
-    b21 = events.gen_b[:,1,0]
-    b22 = events.gen_b[:,1,1]
+    b21 = events.gen_b[:,1,0] * 1
+    b22 = events.gen_b[:,1,1] * 1
 
-    tau1 = events.gen_tau[:,0,0]
-    tau2 = events.gen_tau[:,0,1]
+    tau1 = events.gen_tau[:,0,0] *1
+    tau2 = events.gen_tau[:,0,1] *1
 
 
     # pt of all Higgs
@@ -207,12 +263,12 @@ def hhh_decay_invariant_mass(self: Producer, events: ak.Array, **kwargs) -> ak.A
     # from IPython import embed; embed()
 
     # cosine of opening angle little delta between h and between their decay products 
-    cos_h12 = h1.pvec.dot(h2.pvec)/(h1.pvec.absolute()*h2.pvec.absolute())
-    cos_h13 = h1.pvec.dot(h3.pvec)/(h1.pvec.absolute()*h3.pvec.absolute())
-    cos_h23 = h2.pvec.dot(h3.pvec)/(h2.pvec.absolute()*h3.pvec.absolute())
-    cos_bb1 = b11.pvec.dot(b12.pvec)/(b11.pvec.absolute()*b12.pvec.absolute())
-    cos_bb2 = b21.pvec.dot(b22.pvec)/(b21.pvec.absolute()*b22.pvec.absolute())
-    cos_tautau = tau1.pvec.dot(tau2.pvec)/(tau1.pvec.absolute()*tau2.pvec.absolute())
+    cos_h12 = cos(h1, h2)
+    cos_h13 = cos(h1, h3)
+    cos_h23 = cos(h2, h3)
+    cos_bb1 = cos(b11, b12)
+    cos_bb2 = cos(b21, b22)
+    cos_tautau = cos(tau1, tau2)
 
     # four-lepton mass, taking into account only events with at least four leptons,
     # and otherwise substituting a predefined EMPTY_FLOAT value
@@ -415,14 +471,14 @@ def tth_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # (optionally) apply masks beforehand to avoid errors
     # for b1,b2 not necessary since the columns are always full 
-    bb1 = ak.flatten(events.gen_tth_b1)
-    bb2 = events.gen_tth_b2
-    tautau = ak.mask(events.gen_tth_tau, tau_mask)
+    bb1 = ak.flatten(events.gen_tth_b1) * 1
+    bb2 = events.gen_tth_b2 * 1
+    tautau = ak.mask(events.gen_tth_tau, tau_mask) * 1
 
-    b11 = bb1[:,0]
-    b12 = bb1[:,1]
-    b21 = bb2[:,0]
-    b22 = bb2[:,1]
+    b11 = bb1[:,0] * 1
+    b12 = bb1[:,1] * 1
+    b21 = bb2[:,0] * 1
+    b22 = bb2[:,1] * 1
 
     tau1 = tautau[:,0]
     tau2 = tautau[:,1]
@@ -433,9 +489,9 @@ def tth_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     delta_r_tautau = tau1.delta_r(tau2)
 
     # work still in progress since array dimensions differ from hhh
-    cos_bb1 = b11.pvec.dot(b12.pvec)/(b11.pvec.absolute()*b12.pvec.absolute())
-    cos_bb2 = b21.pvec.dot(b22.pvec)/(b21.pvec.absolute()*b22.pvec.absolute())
-    cos_tautau = tau1.pvec.dot(tau2.pvec)/(tau1.pvec.absolute()*tau2.pvec.absolute())
+    cos_bb1 = cos(b11, b12)
+    cos_bb2 = cos(b21, b22)
+    cos_tautau = cos(tau1, tau2)
 
     # invariant mass of all 4b2tau but still call it mhhh for comparison
     mhhh = (bb1.sum(axis=-1) + bb2.sum(axis=-2) + tautau.sum(axis=-2)).mass
@@ -706,62 +762,7 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     return events
 
 
-# helper functions for variables (still untested)
 
-# cosine of 3D angle between two particles
-def cos(array1: ak.Array, array2: ak.Array) -> ak.Array:
-    return array1.pvec.dot(array2.pvec)/(array1.pvec.absolute()*array2.pvec.absolute())
-
-# creates record with useful variables
-def table_combo(array: ak.Array) -> ak.Array:
-    table = array.metric_table(array, metric=lambda a, b: (a+b))
-    massdiff_table1 = array.metric_table(array, 
-                            metric=lambda a, b: abs((a+b).mass-125))
-    # metric_table for delta_r and cos(delta)
-    delta_r_table = array.metric_table(array)
-    cos_table = array.metric_table(array, metric=lambda a, b: cos(a,b))
-    # create dictionary with indicies
-    idx1 = ak.local_index(table, axis=-2)
-    idx2 = ak.local_index(table, axis=-1)
-    table_combo = ak.zip({"pair_sum": table, 
-                            "mass_diff": massdiff_table1,
-                            "delta_r": delta_r_table,
-                            "cos": cos_table, 
-                            "idx1": idx1, "idx2": idx2})
-    # remove duplicates and self sums
-    table_combo = ak.mask(table_combo,table_combo.idx1<table_combo.idx2)
-    return table_combo
-
-# gets all unique index permutations for picking two set of pairs    
-def pair_permutations(array: ak.Array) -> ak.Array:
-    # # create all unique pair permutaions
-    idx = ak.local_index(array, axis=1)
-    pairs = ak.combinations(idx, 2, fields=["idx1","idx2"],axis=1)
-    permu = ak.combinations(pairs, 2,fields=["pair1","pair2"],axis=1)
-    permu_mask = ((permu.pair1.idx1 != permu.pair2.idx1) & 
-                  (permu.pair1.idx1 != permu.pair2.idx2) & 
-                  (permu.pair1.idx2 != permu.pair2.idx1) & 
-                  (permu.pair1.idx2 != permu.pair2.idx2))
-    permu = permu[permu_mask]
-    permu = ak.pad_none(permu,1)
-    return permu
-
-# picks out the two pairs where chi**2 is minimized and also the value of chi**2
-def min_chi_sqr_pair(array: ak.Array, table: ak.Array) -> ak.Array:
-    # minimise chi**2 for pairings
-    permu = pair_permutations(array)
-    chisq = ((((array[permu.pair1.idx1] + array[permu.pair1.idx2]).mass -125)/125)**2 + 
-             (((array[permu.pair2.idx1] + array[permu.pair2.idx2]).mass - 125)/125)**2)
-    sorted_chi_idx = ak.argsort(chisq, axis=1, ascending=True)
-    bestpairs = permu[sorted_chi_idx][:,0]
-    pairs_mask = (((table.idx1 == bestpairs.pair1.idx1) & (table.idx2 == bestpairs.pair1.idx2)) | 
-                  ((table.idx1 == bestpairs.pair2.idx1) & (table.idx2 == bestpairs.pair2.idx2)))
-    chi_table = ak.mask(table, pairs_mask)
-    chi_table = ak.flatten(ak.drop_none(chi_table,axis=1),axis=2)
-    chi_ptsorted_idx = ak.argsort(chi_table.pair_sum.pt, axis=1, ascending=False)
-    chi_table = chi_table[chi_ptsorted_idx]
-    min_chisq = chisq[sorted_chi_idx][:,0]
-    return chi_table, min_chisq
 
 
 # producer for analysis on detector level
@@ -794,7 +795,7 @@ def min_chi_sqr_pair(array: ak.Array, table: ak.Array) -> ak.Array:
         "cos_h12_chi", "cos_h13_chi", "cos_h23_chi",
         "h1_mass_chi", "h2_mass_chi",
         "m_3btaulep_chi", "m_3btaulep_pt_chi",
-        "min_chi", "mds_h1_mass_chi", "mds_h2_mass_chi", "min_chi"
+        "min_chi", "mds_h1_mass_chi", "mds_h2_mass_chi",
     },
 )
 # def detector_variables(self: Producer, events: ak.Array, lepton_results: SelectionResult, **kwargs) -> ak.Array:

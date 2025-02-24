@@ -284,11 +284,13 @@ def gen_Hadron_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @producer(
-    uses={gen_higgs_decay_products, gen_tth_decay_products, gen_Hadron_products,
-          hhh_decay_invariant_mass, tth_variables, genHadron_variables,
+    uses={gen_higgs_decay_products, gen_tth_decay_products, 
+          hhh_decay_invariant_mass, tth_variables, 
+        #   gen_Hadron_products, genHadron_variables,
            },
-    produces={gen_higgs_decay_products, gen_tth_decay_products, gen_Hadron_products,
-              hhh_decay_invariant_mass, tth_variables, genHadron_variables,
+    produces={gen_higgs_decay_products, gen_tth_decay_products, 
+              hhh_decay_invariant_mass, tth_variables, 
+            #   gen_Hadron_products, genHadron_variables,
               },
         
 )
@@ -308,7 +310,7 @@ def gen_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = self[gen_tth_decay_products](events, **kwargs)
         events = self[tth_variables](events, **kwargs)
 
-    events = self[gen_Hadron_products](events, **kwargs)
-    events = self[genHadron_variables](events, **kwargs)
+    # events = self[gen_Hadron_products](events, **kwargs)
+    # events = self[genHadron_variables](events, **kwargs)
                        
     return events

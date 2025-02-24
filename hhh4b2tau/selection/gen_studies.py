@@ -70,7 +70,7 @@ def gen_studies(
 
     events = self[gen_Hadron_products](events, **kwargs)
 
-    from IPython import embed; embed(header="gen_studies")
+    # from IPython import embed; embed(header="gen_studies")
 
     # select events with at least 4 gen b jets
     # n_gen_b_jet = ak.num(events.gen_b_jet)

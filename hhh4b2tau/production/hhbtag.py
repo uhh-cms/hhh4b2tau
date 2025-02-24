@@ -45,7 +45,7 @@ def hhbtag(
     # get a mask of events where there are at least two tau candidates and at least three jets
     # and only get the scores for jets in these events
     event_mask = (
-        (ak.num(lepton_pair, axis=1) >= 3) &
+        (ak.num(lepton_pair, axis=1) >= 2) &
         (ak.sum(jet_mask, axis=1) >= 3)
     )
 

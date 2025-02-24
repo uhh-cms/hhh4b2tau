@@ -238,10 +238,12 @@ def add_config(
     # add a hist hook to work with histograms of data samples
     # i.e. morph data for hypothetical coupling that has not been generated yet
     import hhh4b2tau.plotting.morphing as morphing
-
-    cfg.x.hist_hooks = {
-    "morphing": morphing.morphing_hook,
-    }
+    cfg.x.hist_hooks = DotDict.wrap({
+        "morphing": morphing.morphing_hook,
+    })
+    # binning
+    from hbt.hist_hooks.binning import add_hooks as add_binning_hooks
+    add_binning_hooks(cfg)
 
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
@@ -822,6 +824,25 @@ def add_config(
         )
 
     ################################################################################################
+    # dataset / process specific methods
+    ################################################################################################
+
+    # top pt reweighting
+    # https://twiki.cern.ch/twiki/bin/view/CMS/TopPtReweighting?rev=31
+    from columnflow.production.cms.top_pt_weight import TopPtWeightConfig
+    cfg.x.top_pt_weight = TopPtWeightConfig(
+        params={
+            "a": 0.0615,
+            "a_up": 0.0615 * 1.5,
+            "a_down": 0.0615 * 0.5,
+            "b": -0.0005,
+            "b_up": -0.0005 * 1.5,
+            "b_down": -0.0005 * 0.5,
+        },
+        pt_max=500.0,
+    )
+
+    ################################################################################################
     # shifts
     ################################################################################################
 
@@ -1102,7 +1123,8 @@ def add_config(
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{json_pog_era}/btagging.json.gz", "v1"))
     # hh-btag repository (lightweight) with TF saved model directories
-    add_external("hh_btag_repo", ("https://github.com/hh-italian-group/HHbtag/archive/df5220db5d4a32d05dc81d652083aece8c99ccab.tar.gz", "v2"))  # noqa
+    add_external("hh_btag_repo", ("https://gitlab.cern.ch/hh/bbtautau/hh-btag/-/archive/master/hh-btag-master.tar.gz", "v3"))  # noqa
+    # add_external("hh_btag_repo", ("https://github.com/hh-italian-group/HHbtag/archive/df5220db5d4a32d05dc81d652083aece8c99ccab.tar.gz", "v2"))  # noqa
     # Tobias' tautauNN (https://github.com/uhh-cms/tautauNN)
     add_external("res_pdnn", ("/afs/cern.ch/work/m/mrieger/public/hbt/models/res_prod3/model_fold0.tgz", "v1"))
 
@@ -1203,7 +1225,7 @@ def add_config(
 
     # define per-dataset event weights
     for dataset in cfg.datasets:
-        if dataset.has_tag("ttbar"):
+        if dataset.has_tag("has_top"):
             dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
 
     # versions per task family, either referring to strings or to callables receving the invoking

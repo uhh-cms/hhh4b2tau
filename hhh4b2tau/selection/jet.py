@@ -130,7 +130,7 @@ def jet_selection(
         flat_hhbjet_mask[flat_jet_mask] = ak.flatten(sel_hhbjet_mask)
 
     # validate that either none or four hhbjets were identified
-    assert ak.all(((n_hhbjets := ak.sum(hhbjet_mask, axis=1)) == 0) | (n_hhbjets == 4))
+    assert ak.all(((n_hhbjets := ak.sum(hhbjet_mask, axis=1)) == 0) | (n_hhbjets == 3))
 
     fatjet_mask = (
         (events.FatJet.jetId == 6) &  # tight plus lepton veto
@@ -211,7 +211,7 @@ def jet_selection(
     jet_indices = sorted_indices_from_mask(default_mask, events.Jet.pt, ascending=False)
 
 
-    # get indices of the four hhbjets
+    # get indices of the hhbjets
     hhbjet_indices = sorted_indices_from_mask(hhbjet_mask, hhbtag_scores, ascending=False)
 
     # keep indices of default jets that are explicitly not selected as hhbjets for easier handling
@@ -234,11 +234,6 @@ def jet_selection(
         (ak.sum(default_mask, axis=1) >= 3)
     )
 
-    jet_sel4 = (
-        (ak.sum(default_mask, axis=1) >= 4)
-    )
-
-
     # some final type conversions
     jet_indices = ak.values_astype(ak.fill_none(jet_indices, 0), np.int32)
     hhbjet_indices = ak.values_astype(hhbjet_indices, np.int32)
@@ -257,7 +252,6 @@ def jet_selection(
             "one_jet": jet_sel1,
             "two_jet" : jet_sel2,
             "three_jet" : jet_sel3,
-            # "four_jet": jet_sel4,
         },
         objects={
             "Jet": {

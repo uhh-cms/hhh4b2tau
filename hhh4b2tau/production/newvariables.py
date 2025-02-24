@@ -862,7 +862,7 @@ def detector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # reconstructed higgs h1 and h2 are pt sorted from b-jets and h3 from taus
     h1 = bb1.pair_sum *1
     h2 = bb2.pair_sum *1
-    h3 = ak.pad_none(leps.pair_sum, 1) *1
+    h3 = ak.firsts(ak.pad_none(leps.pair_sum, 1)) *1
     
     # # unsorted h into bb, with h1_unsort with closest mass to 125
     md_sorted_jet_idx = ak.argsort(final_jet_table.mass_diff, axis=-1, ascending=True)

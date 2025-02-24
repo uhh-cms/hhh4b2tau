@@ -20,6 +20,7 @@ from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.cms.pileup import pu_weight
 from columnflow.production.cms.pdf import pdf_weights
 from columnflow.production.cms.scale import murmuf_weights
+from columnflow.production.cms.top_pt_weight import gen_parton_top
 from columnflow.production.util import attach_coffea_behavior
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.production.categories import category_ids
@@ -28,11 +29,14 @@ from columnflow.types import Iterable
 from hbt.selection.trigger import trigger_selection
 from hbt.selection.lepton import lepton_selection
 from hhh4b2tau.selection.jet import jet_selection
-import hhh4b2tau.production.processes as process_producers
+# import hhh4b2tau.production.processes as process_producers
+import hbt.production.processes as process_producers
 from hbt.production.btag import btag_weights_deepjet, btag_weights_pnet
-from hhh4b2tau.production.features import cutflow_features
+# from hhh4b2tau.production.features import cutflow_features
+from hbt.production.features import cutflow_features
 from hbt.production.patches import patch_ecalBadCalibFilter
-from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
+# from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
+from hbt.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
 from hhh4b2tau.production.gen_higgs_decay_products import gen_producer
 
@@ -87,14 +91,16 @@ def get_bad_events(self: Selector, events: ak.Array) -> ak.Array:
         mc_weight, pu_weight, btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), 
         process_ids, cutflow_features, increment_stats, attach_coffea_behavior,
         patch_ecalBadCalibFilter, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
-        category_ids, gen_producer,
+        category_ids, 
+        gen_producer,
 
     },
     produces={
         trigger_selection, lepton_selection, jet_selection, mc_weight, pu_weight, 
         btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, cutflow_features, 
         increment_stats, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), 
-        category_ids, gen_producer,
+        category_ids, 
+        # gen_producer,
 
     },
     exposed=True,
@@ -155,10 +161,6 @@ def new(
 
     # category ids
     events = self[category_ids](events, **kwargs)
-
-    # from IPython import embed; embed(header="new selector")
-    # saving lepton_pair from aux for detector_variables to run in the producer
-    # events = set_ak_column(events, "lepton_pair", lepton_results.x.lepton_pair)
 
     # mc-only functions
     if self.dataset_inst.is_mc:
@@ -275,6 +277,10 @@ def new_init(self: Selector) -> None:
             self.produces.add(prod)
             # save it as an attribute
             setattr(self, prod_name, prod)
+
+    if self.dataset_inst.has_tag("ttbar"):
+        self.uses.add(gen_parton_top)
+        self.produces.add(gen_parton_top)
 
 
 empty = new.derive("empty", cls_dict={})

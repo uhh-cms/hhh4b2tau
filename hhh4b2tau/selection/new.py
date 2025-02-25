@@ -100,7 +100,7 @@ def get_bad_events(self: Selector, events: ak.Array) -> ak.Array:
         btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, cutflow_features, 
         increment_stats, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), 
         category_ids, 
-        # gen_producer,
+        gen_producer,
 
     },
     exposed=True,
@@ -209,10 +209,6 @@ def new(
 
     # some cutflow features
     events = self[cutflow_features](events, results.objects, **kwargs)
-
-    # # require two tau
-    # results.steps["one_tau"] = ak.num(lepton_results.x.lepton_pair, axis=1) >= 1
-    # results.steps["two_tau"] = ak.num(lepton_results.x.lepton_pair, axis=1) >= 2
 
     # combined event selection after all steps
     event_sel = reduce(and_, results.steps.values())

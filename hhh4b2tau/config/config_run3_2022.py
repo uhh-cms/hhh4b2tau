@@ -1224,9 +1224,9 @@ def add_config(
     })
 
     # define per-dataset event weights
-    for dataset in cfg.datasets:
-        if dataset.has_tag("has_top"):
-            dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
+    # for dataset in cfg.datasets:
+    #     if dataset.has_tag("has_top"):
+    #         dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
 
     # versions per task family, either referring to strings or to callables receving the invoking
     # task instance and parameters to be passed to the task family

@@ -38,8 +38,6 @@ from hbt.production.patches import patch_ecalBadCalibFilter
 # from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 from hbt.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
-from hhh4b2tau.production.gen_higgs_decay_products import gen_producer
-
 
 
 np = maybe_import("numpy")
@@ -92,16 +90,12 @@ def get_bad_events(self: Selector, events: ak.Array) -> ak.Array:
         process_ids, cutflow_features, increment_stats, attach_coffea_behavior,
         patch_ecalBadCalibFilter, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
         category_ids, 
-        gen_producer,
-
     },
     produces={
         trigger_selection, lepton_selection, jet_selection, mc_weight, pu_weight, 
         btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, cutflow_features, 
         increment_stats, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), 
         category_ids, 
-        gen_producer,
-
     },
     exposed=True,
     sandbox = dev_sandbox("bash::$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh"),
@@ -113,10 +107,6 @@ def new(
     **kwargs,
 ) -> tuple[ak.Array, SelectionResult]:
     
-    # add gen level objects and variables
-    events = self[gen_producer](events, **kwargs)
-
-    # from IPython import embed; embed(header="new selector")
     # ensure coffea behavior
     events = self[attach_coffea_behavior](events, **kwargs)
 
@@ -237,6 +227,8 @@ def new(
         njets=results.x.n_central_jets,
         **kwargs,
     )
+
+    # from IPython import embed; embed(header="new selector")
 
     return events, results
 

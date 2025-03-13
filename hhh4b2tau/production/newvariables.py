@@ -772,8 +772,8 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     uses=(
     {   
         optional(f"{field}.{var}")
-        for field in ["Jet", "Tau", "Electron", "Muon", "FatJet",]
-        for var in ["pt", "eta", "phi", "mass", "charge", "hhbtag"]
+        for field in ["Jet", "Tau", "Electron", "Muon", "FatJet", ]
+        for var in ["pt", "eta", "phi", "mass", "charge", "hhbtag", ]
         } | 
         {
             attach_coffea_behavior,
@@ -810,8 +810,6 @@ def detector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # get lepton pair out of lepton selection
     lepton_pair = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
-
-    # from IPython import embed; embed(header="detector variables")
 
     # get indicies of jet pair mass closest to 125 
     jet_table_combo = table_combo(jet)
@@ -903,6 +901,8 @@ def detector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     mds_jet_chi = jet_chi_table[mds_jet_idx]
     mds_h1 = mds_jet_chi[:,0].pair_sum *1
     mds_h2 = mds_jet_chi[:,1].pair_sum *1
+
+    # from IPython import embed; embed(header="detector variables")
 
     events = set_ak_column_f32(
         events,
@@ -1137,4 +1137,100 @@ def detector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         m_3btaulep_pt,
     )
 
+    return events
+
+
+
+
+@producer(
+    uses=(
+    {   
+        optional(f"{field}.{var}")
+        for field in ["Jet", "GenMatchH1", "GenMatchH2", "HHBJet",]
+        for var in ["pt", "eta", "phi", "mass", "charge", "hhbtag", ]
+        } | 
+        {
+            attach_coffea_behavior,
+        }
+    ),
+    produces={
+        # gen match invariant masses
+        "mds_h1_mass_gm", "mds_h2_mass_gm", 
+    },
+)
+def jet_gen_match_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+################################################################################
+########################### gen matching #######################################
+################################################################################
+
+    events = self[attach_coffea_behavior](
+        events,
+        **kwargs,
+    )
+
+    events = self[attach_coffea_behavior](
+        events,
+        collections={ x : {
+                "type_name": "Jet",
+            } for x in ["GenMatchH1", "GenMatchH2", "HHBJet",]},
+        **kwargs,
+    )
+
+    hhbjet = events.HHBJet
+    genmatch1 = events.GenMatchH1
+    genmatch2 = events.GenMatchH2
+
+    h1_gm = ak.firsts(genmatch1[:,1:]) + ak.firsts(genmatch1[:,:1])
+    h2_gm = ak.firsts(genmatch2[:,1:]) + ak.firsts(genmatch2[:,:1])
+    gm_h_mds_mask = (h1_gm.mass - 125)**2 < (h2_gm.mass - 125)**2
+    mds_h1_gm = ak.where(gm_h_mds_mask, h1_gm, h2_gm)
+    mds_h2_gm = ak.where(gm_h_mds_mask, h2_gm, h1_gm)
+
+    events = set_ak_column_f32(
+        events,
+        "mds_h1_mass_gm",
+        mds_h1_gm.mass,
+    )
+
+    events = set_ak_column_f32(
+        events,
+        "mds_h2_mass_gm",
+        mds_h2_gm.mass,
+    )
+
+    return events
+
+
+
+@producer(
+    uses=(
+    {   
+        optional(f"{field}.{var}")
+        for field in ["Jet", "Tau", "Electron", "Muon",]
+        for var in ["pt", "eta", "phi", "mass", "charge", "hhbtag", ]
+        } | 
+        {
+            attach_coffea_behavior,
+        }
+    ),
+    produces=(
+        {"jet_lep_min_delta_r"}
+    ),
+)
+def jet_lep_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    events = self[attach_coffea_behavior](
+        events,
+        **kwargs,
+    )
+
+    lepton_pair = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
+    jet_lep_min_delta_r = ak.min(lepton_pair[:,0].delta_r(events.Jet),axis=1)
+    events = set_ak_column_f32(
+        events,
+        "jet_lep_min_delta_r",
+        jet_lep_min_delta_r,
+    )
+    
     return events

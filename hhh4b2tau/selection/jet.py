@@ -6,31 +6,31 @@ from functools import reduce
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.columnar_util import (
     EMPTY_FLOAT, set_ak_column, sorted_indices_from_mask, mask_from_indices, flat_np_view,
-    full_like,
+    full_like, get_ak_routes, remove_ak_column,
 )
 from columnflow.util import maybe_import, InsertableDict
 
-from hhh4b2tau.util import IF_RUN_2
+from hbt.util import IF_RUN_2
 from hhh4b2tau.production.hhbtag import hhbtag
-# from hhh4b2tau.selection.lepton import trigger_object_matching
+from hhh4b2tau.production.gen_higgs_decay_products import jet_gen_matching
 from hbt.selection.lepton import trigger_object_matching
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 @selector(
-    uses={ hhbtag,
+    uses={ hhbtag, jet_gen_matching,
         # custom columns created upstream, probably by a selector
         "trigger_ids",
         # nano columns
         "TrigObj.{pt,eta,phi}",
-        "Jet.{pt,eta,phi,mass,jetId}", IF_RUN_2("Jet.puId"),
+        "Jet.{pt,eta,phi,mass,jetId,btagDeepFlavB}", IF_RUN_2("Jet.puId"),
         "FatJet.{pt,eta,phi,mass,msoftdrop,jetId,subJetIdx1,subJetIdx2}",
         "SubJet.{pt,eta,phi,mass,btagDeepB}",
     },
     produces={
         # new columns
-        "Jet.hhbtag",
+        "Jet.hhbtag", "Gen_Matched_H{1,2}_idx"
     },
     # shifts are declared dynamically below in jet_selection_init
 )
@@ -52,9 +52,13 @@ def jet_selection(
     https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD?rev=100#Jets
     """
 
+    for jet_route in get_ak_routes(events.Jet):
+        if jet_route.column.endswith("IdxG"):
+            events = remove_ak_column(events, f"Jet.{jet_route}")
+
     is_2016 = self.config_inst.campaign.x.year == 2016
     ch_tautau = self.config_inst.get_channel("tautau")
-
+    # from IPython import embed; embed(header="jet sel")
     # local jet index
     li = ak.local_index(events.Jet)
 
@@ -77,7 +81,9 @@ def jet_selection(
         (events.Jet.pt > 20.0) &
         (abs(events.Jet.eta) < 2.5)
     )
-    # from IPython import embed; embed(header="jet selection")
+
+    # from IPython import embed; embed(header=f"check gen matching")
+
     # hhb-jets
     # --------------------------------------------------------------------------------------------
     # get the hhbtag values per jet per event
@@ -117,7 +123,7 @@ def jet_selection(
         )
 
     
-        # check if the pt-leading jet of the four hhbhets is matchedfold back into hhbjet_mask
+        # check if the pt-leading jet of the three hhbhets is matchedfold back into hhbjet_mask
         sel_hhbjet_mask = ak.Array(hhbjet_mask[ttj_mask])
         pt_sorting_indices = ak.argsort(events.Jet.pt[ttj_mask][sel_hhbjet_mask], axis=1, ascending=False)
         leading_matched = ak.fill_none(ak.firsts(matching_mask[sel_hhbjet_mask][pt_sorting_indices], axis=1), False)
@@ -129,7 +135,7 @@ def jet_selection(
         flat_jet_mask = ak.flatten(full_like(events.Jet.pt, False, dtype=bool) | ttj_mask)
         flat_hhbjet_mask[flat_jet_mask] = ak.flatten(sel_hhbjet_mask)
 
-    # validate that either none or four hhbjets were identified
+    # validate that either none or three hhbjets were identified
     assert ak.all(((n_hhbjets := ak.sum(hhbjet_mask, axis=1)) == 0) | (n_hhbjets == 3))
 
     fatjet_mask = (
@@ -234,6 +240,22 @@ def jet_selection(
         (ak.sum(default_mask, axis=1) >= 3)
     )
 
+    jet_sel4 = (
+        (ak.sum(default_mask, axis=1) >= 4)
+    )
+
+    btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
+    btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
+    btag_sel1 = (
+        (ak.sum(btag_mask, axis=1) >= 1) 
+    )
+    btag_sel2 = (
+        (ak.sum(btag_mask, axis=1) >= 2) 
+    )
+    btag_sel3 = (
+        (ak.sum(btag_mask, axis=1) >= 3) 
+    )
+
     # some final type conversions
     jet_indices = ak.values_astype(ak.fill_none(jet_indices, 0), np.int32)
     hhbjet_indices = ak.values_astype(hhbjet_indices, np.int32)
@@ -252,6 +274,10 @@ def jet_selection(
             "one_jet": jet_sel1,
             "two_jet" : jet_sel2,
             "three_jet" : jet_sel3,
+            "four_jet" : jet_sel4,
+            "one_btag": btag_sel1,
+            "two_btag": btag_sel2,
+            "three_btag": btag_sel3,
         },
         objects={
             "Jet": {
@@ -276,6 +302,18 @@ def jet_selection(
         },
     )
 
+# gen matching for HH -> bbbb to jets and save indices
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("hhh",))
+    ):
+        events = self[jet_gen_matching](events, **kwargs)
+
+        result.objects.Jet.update({       
+                    "GenMatchH1": events.Gen_Matched_H1_idx,
+                    "GenMatchH2": events.Gen_Matched_H2_idx,
+                },)
+    # from IPython import embed; embed(header="jet selection")
     return events, result
 
 

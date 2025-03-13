@@ -6,17 +6,20 @@ Producers that determine the generator-level particles related to a top quark de
 
 from __future__ import annotations
 from columnflow.production import Producer, producer
+from columnflow.production.util import attach_coffea_behavior
 from columnflow.util import maybe_import
 from columnflow.columnar_util import (
     set_ak_column, remove_ak_column, attach_behavior, EMPTY_FLOAT, get_ak_routes, remove_ak_column,
     optional_column as optional
 )
+from hhh4b2tau.production.util import table_combo
+from hhh4b2tau.production.higgs_reco import higgs_reco_mass_diff, higgs_reco_chi2
 from columnflow.types import Sequence
 import numpy as np
 
 from hhh4b2tau.production.newvariables import hhh_decay_invariant_mass
-from hhh4b2tau.production.newvariables import tth_variables
-from hhh4b2tau.production.newvariables import genHadron_variables
+# from hhh4b2tau.production.newvariables import tth_variables
+# from hhh4b2tau.production.newvariables import genHadron_variables
 
 ak = maybe_import("awkward")
 
@@ -26,13 +29,14 @@ class _GenPartMatchBase(Producer):
         # first, call the init function of the super class (Producer)
         super().__init__(*args, **kwargs)
         # define variables that are needed for the gen matching
-        self.variables: tuple[str] = ('pt', 'eta', 'phi', 'mass', 'pdgId', )
+        self.variables: tuple[str] = ('pt', 'eta', 'phi', 'mass', 'pdgId', 'hadronFlavour',)
 
     def init_func(self):
         # to perform a gen matching, we need information about the GenPartons
         # therefore, request all available information
         self.uses=(
-            {"GenPart.*"}
+            {"GenPart.*", optional("GenJet.*"), optional("Jet.*"), 
+             attach_coffea_behavior,}
         )
         # derived classes should produce the following output columns
         # note that this needs to be set explicitly when calling get_decay_idx!
@@ -58,7 +62,21 @@ class _GenPartMatchBase(Producer):
                 for mother in self.mothers
                 for child in self.children
                 for var in self.variables
-            }
+            } |
+            {
+                optional(f"match_gen_{mother}_to_{child}.{var}")
+                for mother in self.mothers
+                for child in self.children
+                for var in self.variables
+            } |
+            {   
+                optional(f"match_gen_{child}.{var}")
+                for child in self.children
+                for var in self.variables
+            } |
+            {   # gen matching related
+                optional('Gen_Matched_H1_idx'), optional('Gen_Matched_H2_idx'),
+                } 
         )
 
     def get_decay_idx(
@@ -213,8 +231,7 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
         mother_output_name="gen_tau_to_munu",
         children_gen_flags=["isFirstCopy", "isPromptTauDecayProduct"],
     )
-    # from IPython import embed
-    # embed(header="in gen_higgs_decay_products after W identification")
+    # from IPython import embed; embed(header="in gen_higgs_decay_products after W identification")
     return events
   
 # Access decay products for ttH channel
@@ -284,12 +301,12 @@ def gen_Hadron_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @producer(
-    uses={gen_higgs_decay_products, gen_tth_decay_products, 
-          hhh_decay_invariant_mass, tth_variables, 
+    uses={gen_higgs_decay_products, hhh_decay_invariant_mass,
+        #   gen_tth_decay_products, tth_variables, 
         #   gen_Hadron_products, genHadron_variables,
-           },
-    produces={gen_higgs_decay_products, gen_tth_decay_products, 
-              hhh_decay_invariant_mass, tth_variables, 
+              },
+    produces={gen_higgs_decay_products, hhh_decay_invariant_mass,
+            #   gen_tth_decay_products, tth_variables, 
             #   gen_Hadron_products, genHadron_variables,
               },
         
@@ -314,3 +331,76 @@ def gen_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # events = self[genHadron_variables](events, **kwargs)
                        
     return events
+
+# helper functions for variables
+
+
+
+
+
+# producer that matches hh--> bbbb from gen parton level to detector level
+@_GenPartMatchBase.producer(
+    mothers = ('h', ),
+    children = ('b', ),
+)
+def jet_gen_matching(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    events, match_h_b_idx, match_h_b_particles = self.get_decay_idx(
+        events,
+        mother_id=25,
+        children_id=5,
+        children_output_name="match_gen_b",
+        mother_output_name="match_gen_h_to_b",
+    )
+
+    # attach coffea behavior for four-vector arithmetic
+    events = self[attach_coffea_behavior](
+        events,
+        collections={ x : {
+                "type_name": "GenParticle",
+            } for x in [
+            "match_gen_h_to_b", 
+            "match_gen_b", 
+
+            ]},
+        **kwargs,
+    )
+
+    events = self[attach_coffea_behavior](
+        events,
+        **kwargs,
+    )
+
+    gen_b = ak.flatten(events.match_gen_b,axis=2) *1
+
+
+    parton_to_detector_table = gen_b.metric_table(events.Jet)
+    matched_jet_idx = ak.argmin(ak.mask(parton_to_detector_table,parton_to_detector_table<=0.4),axis=2)
+    Gen_Matched_H1_idx = ak.drop_none(matched_jet_idx[:,:2])
+    Gen_Matched_H2_idx = ak.drop_none(matched_jet_idx[:,2:])
+
+    events = set_ak_column(events, 'Gen_Matched_H1_idx', Gen_Matched_H1_idx)
+    events = set_ak_column(events, 'Gen_Matched_H2_idx', Gen_Matched_H2_idx)
+
+###########################################################################
+######################### first reconstruction method #####################
+###########################################################################
+
+    if self.has_dep(higgs_reco_mass_diff):
+        events = self[higgs_reco_mass_diff](events, **kwargs)
+
+###########################################################################
+######################## second reconstruction method #####################
+###########################################################################
+
+    # # create all unique pair permutaions
+
+    if self.has_dep(higgs_reco_chi2):
+        events = self[higgs_reco_chi2](events, **kwargs)
+
+    return events
+
+@jet_gen_matching.init
+def jet_gen_matchin_init(self):
+    self.uses |= {higgs_reco_mass_diff, higgs_reco_chi2}
+    self.produces |= {higgs_reco_mass_diff, higgs_reco_chi2}

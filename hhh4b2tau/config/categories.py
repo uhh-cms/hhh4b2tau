@@ -18,6 +18,7 @@ def add_categories(config: od.Config) -> None:
     # lepton channels
     add_category(config, name="etau", id=1, selection="cat_etau", label=config.channels.n.etau.label)
     add_category(config, name="mutau", id=2, selection="cat_mutau", label=config.channels.n.mutau.label)
+
     add_category(config, name="tautau", id=3, selection="cat_tautau", label=config.channels.n.tautau.label)
     add_category(config, name="ee", id=4, selection="cat_ee", label=config.channels.n.ee.label)
     add_category(config, name="mumu", id=5, selection="cat_mumu", label=config.channels.n.mumu.label)
@@ -32,6 +33,8 @@ def add_categories(config: od.Config) -> None:
     # kinematic categories
     add_category(config, name="incl", id=100, selection="cat_incl", label="inclusive")
     add_category(config, name="2j", id=110, selection="cat_2j", label="2 jets")
+
+    add_category(config, name="h3_mass_cut", id=120, selection="cat_h3_mass", label=r"$(h_{3} mass < 125\,GeV)$", tags={"h3_mass_cut"})
 
     #
     # build groups
@@ -61,7 +64,7 @@ def add_categories(config: od.Config) -> None:
             "label": ", ".join([
                 cat.label or cat.name
                 for cat in categories.values()
-                if cat.name != "os"  # os is the default
+                # if cat.name != "os"  # os is the default
             ]) or None,
         }
 
@@ -72,7 +75,7 @@ def add_categories(config: od.Config) -> None:
             config.get_category("etau"), config.get_category("mutau"), config.get_category("tautau"),
         ],
         # kinematic regions in the middle (to be extended)
-        "kin": [config.get_category("incl"), config.get_category("2j")],
+        "kin": [config.get_category("incl"), config.get_category("2j"), config.get_category("h3_mass_cut")],
         # qcd regions last
         "sign": [config.get_category("os"), config.get_category("ss")],
         "tau2": [config.get_category("iso"), config.get_category("noniso")],

@@ -22,20 +22,18 @@ from columnflow.production.cms.pdf import pdf_weights
 from columnflow.production.cms.scale import murmuf_weights
 from columnflow.production.cms.top_pt_weight import gen_parton_top
 from columnflow.production.util import attach_coffea_behavior
-from columnflow.util import maybe_import, dev_sandbox
 from columnflow.production.categories import category_ids
+
+from columnflow.util import maybe_import, dev_sandbox
 from columnflow.types import Iterable
 
 from hbt.selection.trigger import trigger_selection
 from hbt.selection.lepton import lepton_selection
 from hhh4b2tau.selection.jet import jet_selection
-# import hhh4b2tau.production.processes as process_producers
 import hbt.production.processes as process_producers
 from hbt.production.btag import btag_weights_deepjet, btag_weights_pnet
-# from hhh4b2tau.production.features import cutflow_features
 from hbt.production.features import cutflow_features
 from hbt.production.patches import patch_ecalBadCalibFilter
-# from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 from hbt.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
 
@@ -89,13 +87,11 @@ def get_bad_events(self: Selector, events: ak.Array) -> ak.Array:
         mc_weight, pu_weight, btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), 
         process_ids, cutflow_features, increment_stats, attach_coffea_behavior,
         patch_ecalBadCalibFilter, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
-        category_ids, 
     },
     produces={
         trigger_selection, lepton_selection, jet_selection, mc_weight, pu_weight, 
         btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, cutflow_features, 
         increment_stats, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), 
-        category_ids, 
     },
     exposed=True,
     sandbox = dev_sandbox("bash::$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh"),
@@ -148,9 +144,6 @@ def new(
     # jet selection
     events, jet_results = self[jet_selection](events, trigger_results, lepton_results, **kwargs)
     results += jet_results
-
-    # category ids
-    events = self[category_ids](events, **kwargs)
 
     # mc-only functions
     if self.dataset_inst.is_mc:
@@ -269,6 +262,22 @@ def new_init(self: Selector) -> None:
     if self.dataset_inst.has_tag("ttbar"):
         self.uses.add(gen_parton_top)
         self.produces.add(gen_parton_top)
+
+# selector with sparse output, test fo cutflow plots
+new_sparse_output = new.derive("new_sparse_output")
+
+@new_sparse_output.init
+def new_sparse_output_init(self: Selector) -> None:
+    super(new_sparse_output, self).init_func()
+
+    # remove unused dependencies
+    self.produces = {
+        process_ids,
+        category_ids,
+        # cutflow_features,
+        mc_weight,
+        increment_stats,
+    }
 
 
 empty = new.derive("empty", cls_dict={})

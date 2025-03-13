@@ -101,9 +101,13 @@ def add_config(
     for process_name in process_names:
         # add the process
         proc = cfg.add_process(procs.get(process_name))
+        if process_name.startswith("hhh_"):
+            proc.add_tag("hhh")
+            proc.add_tag("signal")
 
-        
-
+    from hhh4b2tau.config.add_genmatch_sub_procs import add_genmatch_subprocesses
+    add_genmatch_subprocesses(cfg=cfg)
+    
     from hhh4b2tau.config.styles import stylize_processes
     stylize_processes(cfg)
 
@@ -205,6 +209,9 @@ def add_config(
         if dataset_name.startswith("hh_"):
             dataset.add_tag("signal")
             dataset.add_tag("nonresonant_signal")
+        if dataset_name.startswith("hhh_"):
+            dataset.add_tag("hhh")
+            dataset.add_tag("signal")
         if dataset_name.startswith(("graviton_hh_", "radion_hh_")):
             dataset.add_tag("signal")
             dataset.add_tag("resonant_signal")
@@ -418,8 +425,29 @@ def add_config(
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
         "default": ["json", "trigger", "met_filter", "jet_veto_map", "lepton", "jet2", "bjet"],
-        "3b2tau": ["one_jet", "two_jet", "three_jet", "one_tau", "two_tau",],
+        "n_jet": ["one_jet", "two_jet", "three_jet", ],
     }
+
+    # selector step labels (for cutflow plots)
+    cfg.x.selector_step_labels = {
+        "one_jet": r"$\geq$ 1 jet",
+        "two_jet": r"$\geq$ 2 jet",
+        "three_jet": r"$\geq$ 3 jet",
+        "four_jet": r"$\geq$ 4 jet",
+        "one_btag": r"$\geq$ 1 b-tagged jets",
+        "two_btag": r"$\geq$ 2 b-tagged jets",
+        "three_btag": r"$\geq$ 3 b-tagged jets",
+        "four_btag": r"$\geq$ 4 b-tagged jets",
+        "json": "DQM cut",
+        "trigger": "Trigger",
+        "met_filter": r"$\cancle{E}_{T} Filter$",
+        "jet_veto_map": "Jet Veto",
+        "lepton": r"e, $\mu$, $\tau$",
+        "jet2": "Jets (v2)",
+        "bjet": "Bjets",
+
+    }
+
 
     # calibrator groups for conveniently looping over certain calibrators
     # (used during calibration)
@@ -1178,7 +1206,10 @@ def add_config(
             # general event info, mandatory for reading files with coffea
             ColumnCollection.MANDATORY_COFFEA,  # additional columns can be added as strings, similar to object info
             # object info
-            "Jet.*", 
+            "Jet.{pt,eta,phi,mass,hadronFlavour,puId,hhbtag,btagPNet*,btagDeep*}",
+            "HHBJet.{pt,eta,phi,mass,hadronFlavour,puId,hhbtag,btagPNet*,btagDeep*}",
+            "GenMatchH1.{pt,eta,phi,mass,hadronFlavour,puId,hhbtag,btagPNet*,btagDeep*}",
+            "GenMatchH2.{pt,eta,phi,mass,hadronFlavour,puId,hhbtag,btagPNet*,btagDeep*}",
             "FatJet.*",          
             "MET.pt", "MET.phi", "MET.significance", "MET.covXX", "MET.covXY", "MET.covYY",
             "Muon.*",
@@ -1186,7 +1217,7 @@ def add_config(
             "Tau.*",
             "PV.npvs",
             "PFCandidate.*",
-            "GenJet.*", "GenJetAK8.*", "GenVisTau.*",
+            "GenJet.*", "GenJetAK8.*", "GenVisTau.*", "GenPart.*",
             # all columns added during selection using a ColumnCollection flag
             ColumnCollection.ALL_FROM_SELECTOR,
         },

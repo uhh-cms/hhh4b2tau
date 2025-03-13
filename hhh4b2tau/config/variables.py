@@ -12,9 +12,8 @@ def add_variables(
     cfg.add_variable(
         name="event",
         expression="event",
-        binning=(1, 0.0, 1.0e9),
+        binning=(1, 0.0, 1.0e6),
         x_title="Event number",
-        discrete_x=True,
     )
     cfg.add_variable(
         name="run",
@@ -668,4 +667,21 @@ def add_variables(
         null_value=EMPTY_FLOAT,
         unit="GeV",
         x_title=r"$m_{3b2\tau} (\chi^2), (b_3,pt)$",
+    )
+
+
+    cfg.add_variable(
+        name="mds_h1_mass_gm",
+        binning=(40, 0.0, 400.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{H1}^{mds,gm}$",
+    )
+
+    cfg.add_variable(
+        name="mds_h2_mass_gm",
+        binning=(40, 0.0, 400.0),
+        null_value=EMPTY_FLOAT,
+        unit="GeV",
+        x_title=r"$m_{H2}^{mds,gm}$",
     )

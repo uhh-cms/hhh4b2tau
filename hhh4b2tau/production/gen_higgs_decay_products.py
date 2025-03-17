@@ -5,6 +5,7 @@ Producers that determine the generator-level particles related to a top quark de
 """
 
 from __future__ import annotations
+from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
 from columnflow.production.util import attach_coffea_behavior
 from columnflow.util import maybe_import
@@ -16,12 +17,15 @@ from hhh4b2tau.production.util import table_combo
 from hhh4b2tau.production.higgs_reco import higgs_reco_mass_diff, higgs_reco_chi2
 from columnflow.types import Sequence
 import numpy as np
+import law
 
 from hhh4b2tau.production.newvariables import hhh_decay_invariant_mass
 # from hhh4b2tau.production.newvariables import tth_variables
 # from hhh4b2tau.production.newvariables import genHadron_variables
 
 ak = maybe_import("awkward")
+
+logger = law.logger.get_logger(__name__)
 
 class _GenPartMatchBase(Producer):
 
@@ -75,8 +79,10 @@ class _GenPartMatchBase(Producer):
                 for var in self.variables
             } |
             {   # gen matching related
-                optional('Gen_Matched_H1_idx'), optional('Gen_Matched_H2_idx'),
-                } 
+                optional('Gen_Matched_H1_idx'),
+                optional('Gen_Matched_H2_idx')
+
+            } 
         )
 
     def get_decay_idx(
@@ -281,7 +287,7 @@ def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
 # Moving from GenParton level to Gen hardronic level
 
 @producer(
-    uses=({"GenJet.*", "GenVisTau.*", # "GenMET.*", "GenJetAK8.*", 
+    uses=({"GenJet.*", "GenVisTau.*",
            }),
     produces={"gen_b_jet.*", "GenVisTau.*",
               },
@@ -332,10 +338,6 @@ def gen_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
                        
     return events
 
-# helper functions for variables
-
-
-
 
 
 # producer that matches hh--> bbbb from gen parton level to detector level
@@ -343,7 +345,12 @@ def gen_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     mothers = ('h', ),
     children = ('b', ),
 )
-def jet_gen_matching(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def jet_gen_matching(
+    self: Producer,
+    events: ak.Array,
+    jet_result: SelectionResult | None = None,
+    **kwargs
+) -> ak.Array:
 
     events, match_h_b_idx, match_h_b_particles = self.get_decay_idx(
         events,
@@ -371,10 +378,18 @@ def jet_gen_matching(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         **kwargs,
     )
 
+    jet_idx = ak.local_index(events.Jet, axis=-1)
+
+    if isinstance(jet_result, SelectionResult):
+        jet_idx = jet_result.object.Jet.Jet
+    elif isinstance(jet_result, ak.Array):
+        jet_idx = jet_result
+
+
     gen_b = ak.flatten(events.match_gen_b,axis=2) *1
 
 
-    parton_to_detector_table = gen_b.metric_table(events.Jet)
+    parton_to_detector_table = gen_b.metric_table(events.Jet[jet_idx])
     matched_jet_idx = ak.argmin(ak.mask(parton_to_detector_table,parton_to_detector_table<=0.4),axis=2)
     Gen_Matched_H1_idx = ak.drop_none(matched_jet_idx[:,:2])
     Gen_Matched_H2_idx = ak.drop_none(matched_jet_idx[:,2:])
@@ -402,5 +417,7 @@ def jet_gen_matching(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @jet_gen_matching.init
 def jet_gen_matchin_init(self):
-    self.uses |= {higgs_reco_mass_diff, higgs_reco_chi2}
-    self.produces |= {higgs_reco_mass_diff, higgs_reco_chi2}
+    super(self.__class__, self).init_func()
+    # self.uses |= {higgs_reco_mass_diff, higgs_reco_chi2}
+    # self.produces |= {higgs_reco_mass_diff, higgs_reco_chi2}
+    

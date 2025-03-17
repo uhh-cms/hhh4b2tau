@@ -13,6 +13,7 @@ def add_genmatch_subprocesses(cfg):
                     name=f"{proc.name}_nomatch",
                     id=proc.id + 100,
                     label=f"{proc.label} unmatched",
+                    tags = ("gen_matching",),
                 )
 
                 # super process if h1 is matched
@@ -20,26 +21,31 @@ def add_genmatch_subprocesses(cfg):
                     name=f"{proc.name}_match_h1",
                     id=proc.id + 200,
                     label=f"{proc.label} match $H_{{1}}$",
+                    tags = ("gen_matching",),
                 )
                 proc_h1_no_h2 = h1_proc.add_process(
                     name=f"{proc.name}_match_h1_no_h2",
                     id=proc.id + 300,
                     label=f"{proc.label} match $H_{{1}}, !H_{{2}}$",
+                    tags = ("gen_matching",),
                 )
                 proc_h1_and_h2 = h1_proc.add_process(
                     name=f"{proc.name}_match_h1_and_h2",
                     id=proc.id + 400,
                     label=f"{proc.label} match $H_{{1}} + H_{{2}}$",
+                    tags = ("gen_matching",),
                 )
                 h2_proc = proc.add_process(
                     name=f"{proc.name}_match_h2",
                     id=proc.id + 500,
                     label=f"{proc.label} match $H_{{2}}$",
+                    tags = ("gen_matching",),
                 )
                 proc_h2_no_h1 = h2_proc.add_process(
                     name=f"{proc.name}_match_h2_no_h1",
                     id=proc.id + 600,
                     label=f"{proc.label} match $H_{{2}}, !H_{{1}}$",
+                    tags = ("gen_matching",),
                 )
                 h2_proc.add_process(proc_h1_and_h2)
             except od.unique.DuplicateNameException as e:

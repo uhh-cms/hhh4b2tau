@@ -246,6 +246,7 @@ def jet_selection(
 
     btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
     btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
+    
     btag_sel1 = (
         (ak.sum(btag_mask, axis=1) >= 1) 
     )

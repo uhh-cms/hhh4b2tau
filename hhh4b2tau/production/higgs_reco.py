@@ -1,7 +1,7 @@
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
-
+from columnflow.production.util import attach_coffea_behavior
 from hhh4b2tau.production.util import table_combo, min_chi_sqr_pair
 
 ak = maybe_import("awkward")
@@ -10,10 +10,11 @@ ak = maybe_import("awkward")
 class _HiggsReconstructor(Producer):
     
     def init_func(self):
-        self.uses = {"Jet.{pt,eta,mass,phi}"}
-        self.produces = {"BB1_idx", "BB2_idx"}
+        self.uses = {"Jet.{pt,eta,mass,phi}", attach_coffea_behavior}
+        self.produces = {"BB1_idx", "BB2_idx", attach_coffea_behavior}
 
     def load_jet_combinations(self, events: ak.Array):
+
         self.jet_table_combo = table_combo(events.Jet)
         self.jet_optimal_mass_diff1 = ak.min(
             ak.min(self.jet_table_combo.mass_diff, axis=-1),
@@ -34,11 +35,14 @@ class _HiggsReconstructor(Producer):
         )
         self.jet_num_mask = (ak.num(events.Jet) < 4) & (ak.num(events.Jet) > 1)
 
-@_HiggsReconstructor.producer()
+@_HiggsReconstructor.producer(
+        
+)
 def higgs_reco_mass_diff(self, events: ak.Array, **kwargs):
     # get indicies of jet pair mass closest to 125 
     
-    
+    # from IPython import embed; embed(header="load_jet_comb")
+    events = self[attach_coffea_behavior](events, **kwargs,)
     self.load_jet_combinations(events)
     jet_min_diff_idx1 = self.masked_table_combo.idx1
     jet_min_diff_idx2 = self.masked_table_combo.idx2
@@ -83,8 +87,8 @@ def higgs_reco_mass_diff(self, events: ak.Array, **kwargs):
     return events
 
 @_HiggsReconstructor.producer()
-def higgs_reco_chi2(self, events: ak.Array, **kwargs):
-
+def higgs_reco_chi2(self, events: ak.Array, **kwargs,):
+    events = self[attach_coffea_behavior](events, **kwargs)
     self.load_jet_combinations(events)
     jet_chi_table = min_chi_sqr_pair(events.Jet, self.jet_table_combo)
     bb1_chi = jet_chi_table[:,0]
@@ -97,3 +101,5 @@ def higgs_reco_chi2(self, events: ak.Array, **kwargs):
 
     events = set_ak_column(events, 'BB1_idx', bb1_chi_idx)
     events = set_ak_column(events, 'BB2_idx', bb2_chi_idx)
+
+    return events

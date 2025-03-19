@@ -7,11 +7,14 @@ from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.columnar_util import (
     EMPTY_FLOAT, set_ak_column, sorted_indices_from_mask, mask_from_indices, flat_np_view,
     full_like, get_ak_routes, remove_ak_column,
+    optional_column as optional
 )
 from columnflow.util import maybe_import, InsertableDict
 
 from hbt.util import IF_RUN_2
 from hhh4b2tau.production.hhbtag import hhbtag
+# from hbt.production.hhbtag import hhbtag
+
 from hhh4b2tau.production.gen_higgs_decay_products import jet_gen_matching
 from hbt.selection.lepton import trigger_object_matching
 
@@ -30,7 +33,7 @@ ak = maybe_import("awkward")
     },
     produces={
         # new columns
-        "Jet.hhbtag", "Gen_Matched_H{1,2}_idx"
+        "Jet.hhbtag", optional("Gen_Matched_H1_idx"), optional("Gen_Matched_H2_idx"),
     },
     # shifts are declared dynamically below in jet_selection_init
 )
@@ -89,12 +92,14 @@ def jet_selection(
     # get the hhbtag values per jet per event
     hhbtag_scores = self[hhbtag](events, default_mask, lepton_results.x.lepton_pair, **kwargs)
 
-    # create a mask where only the three highest scoring hhbjets are selected
+    # create a mask where only the four highest scoring hhbjets are selected
     score_indices = ak.argsort(hhbtag_scores, axis=1, ascending=False)
-    hhbjet_mask = mask_from_indices(score_indices[:, :3], hhbtag_scores)
+    hhbjet_mask = mask_from_indices(score_indices[:, :4], hhbtag_scores)
+    # hhbjet_mask = mask_from_indices(score_indices[:, :2], hhbtag_scores)
 
-    # deselect jets in events with less than three valid scores
-    hhbjet_mask = hhbjet_mask & (ak.sum(hhbtag_scores != EMPTY_FLOAT, axis=1) >= 3)
+    # deselect jets in events with less than four valid scores
+    hhbjet_mask = hhbjet_mask & (ak.sum(hhbtag_scores != EMPTY_FLOAT, axis=1) >= 4)
+    # hhbjet_mask = hhbjet_mask & (ak.sum(hhbtag_scores != EMPTY_FLOAT, axis=1) >= 2)
 
     # create a mask to select tautau events that were only triggered by a tau-tau-jet cross trigger
     false_mask = full_like(events.event, False, dtype=bool)
@@ -135,8 +140,9 @@ def jet_selection(
         flat_jet_mask = ak.flatten(full_like(events.Jet.pt, False, dtype=bool) | ttj_mask)
         flat_hhbjet_mask[flat_jet_mask] = ak.flatten(sel_hhbjet_mask)
 
-    # validate that either none or three hhbjets were identified
-    assert ak.all(((n_hhbjets := ak.sum(hhbjet_mask, axis=1)) == 0) | (n_hhbjets == 3))
+    # validate that either none or four hhbjets were identified
+    assert ak.all(((n_hhbjets := ak.sum(hhbjet_mask, axis=1)) == 0) | (n_hhbjets == 4))
+    # assert ak.all(((n_hhbjets := ak.sum(hhbjet_mask, axis=1)) == 0) | (n_hhbjets == 2))
 
     fatjet_mask = (
         (events.FatJet.jetId == 6) &  # tight plus lepton veto
@@ -228,34 +234,12 @@ def jet_selection(
     )
 
     # final event selection
-    jet_sel1 = (
-        (ak.sum(default_mask, axis=1) >= 1) 
-    )
 
-    jet_sel2 = (
-        (ak.sum(default_mask, axis=1) >= 2)
-    )
-
-    jet_sel3 = (
-        (ak.sum(default_mask, axis=1) >= 3)
-    )
-
-    jet_sel4 = (
-        (ak.sum(default_mask, axis=1) >= 4)
-    )
+    n_jet = ak.sum(default_mask, axis=1)
 
     btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
     btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
-    
-    btag_sel1 = (
-        (ak.sum(btag_mask, axis=1) >= 1) 
-    )
-    btag_sel2 = (
-        (ak.sum(btag_mask, axis=1) >= 2) 
-    )
-    btag_sel3 = (
-        (ak.sum(btag_mask, axis=1) >= 3) 
-    )
+    n_btag = ak.sum(btag_mask, axis=1)
 
     # some final type conversions
     jet_indices = ak.values_astype(ak.fill_none(jet_indices, 0), np.int32)
@@ -272,13 +256,14 @@ def jet_selection(
     # to create them, e.g. {"Jet": {"MyCustomJetCollection": indices_applied_to_Jet}}
     result = SelectionResult(
         steps={
-            "one_jet": jet_sel1,
-            "two_jet" : jet_sel2,
-            "three_jet" : jet_sel3,
-            "four_jet" : jet_sel4,
-            "one_btag": btag_sel1,
-            "two_btag": btag_sel2,
-            "three_btag": btag_sel3,
+            "one_jet": n_jet >= 1,
+            "two_jet" : n_jet >= 2,
+            "three_jet" : n_jet >= 3,
+            # "four_jet" : n_jet >= 4,
+            "one_btag": n_btag >= 1,
+            "two_btag": n_btag >= 2,
+            "three_btag": n_btag >= 3,
+            # "four_btag": n_btag >= 4,
         },
         objects={
             "Jet": {

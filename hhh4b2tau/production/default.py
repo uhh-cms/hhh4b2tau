@@ -20,7 +20,6 @@ from hhh4b2tau.production.btag import normalized_btag_weights_deepjet, normalize
 from hhh4b2tau.production.tau import tau_weights, trigger_weights
 from hhh4b2tau.production.newvariables import jet_angle_difference
 from hhh4b2tau.production.newvariables import detector_variables
-from hhh4b2tau.production.newvariables import jet_lep_variables
 from hhh4b2tau.production.newvariables import jet_gen_match_variables
 
 
@@ -39,7 +38,6 @@ ak = maybe_import("awkward")
         IF_DATASET_HAS_LHE_WEIGHTS(normalized_pdf_weight, normalized_murmuf_weight),
         jet_angle_difference, 
         detector_variables, 
-        jet_lep_variables,
         jet_gen_match_variables,
     },
     produces={
@@ -50,7 +48,6 @@ ak = maybe_import("awkward")
         IF_DATASET_HAS_LHE_WEIGHTS(normalized_pdf_weight, normalized_murmuf_weight),
         jet_angle_difference, 
         detector_variables, 
-        jet_lep_variables,
         jet_gen_match_variables,
     },
     produce_weights=True,
@@ -104,7 +101,6 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = self[detector_variables](events, **kwargs)
     events = self[jet_angle_difference](events, **kwargs)
-    events = self[jet_lep_variables](events, **kwargs)
 
     if (self.dataset_inst.is_mc and
         any(self.dataset_inst.name.lower().startswith(x)

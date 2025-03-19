@@ -39,8 +39,8 @@ def produce_genmatched_procids_chi2(self, events: ak.Array, **kwargs):
 
     return events
 
-@produce_genmatched_procids_mass_diff.init
-def produce_genmatched_procids_mass_diff_init(self):
+@produce_genmatched_procids_chi2.init
+def produce_genmatched_procids_chi2_init(self):
     self.out_column = process_ids.produces
     self.uses |= self.out_column
     self.produces |= self.out_column

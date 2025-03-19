@@ -1,4 +1,13 @@
-from columnflow.columnar_util import EMPTY_FLOAT
+# coding: utf-8
+
+"""
+Definition of variables.
+"""
+from functools import partial
+
+import order as od
+
+from columnflow.columnar_util import EMPTY_FLOAT, attach_coffea_behavior, default_coffea_collections
 from columnflow.util import maybe_import
 
 ak = maybe_import("awkward")
@@ -684,4 +693,55 @@ def add_variables(
         null_value=EMPTY_FLOAT,
         unit="GeV",
         x_title=r"$m_{H2}^{mds,gm}$",
+    )
+
+    # build variables for dilepton, and jet_lepton
+    def delta_r12(vectors):
+        # delta r between first two elements
+        dr = ak.firsts(vectors[:, :1], axis=1).delta_r(ak.firsts(vectors[:, 1:2], axis=1))
+        return ak.fill_none(dr, EMPTY_FLOAT)
+
+    def build_dilep(events, which=None):
+        leps = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
+        if which == "dr":
+            return delta_r12(leps)
+        dilep = leps.sum(axis=1)
+        if which is None:
+            return dilep * 1
+        if which == "mass":
+            return dilep.mass
+        if which == "pt":
+            return dilep.pt
+        if which == "eta":
+            return dilep.eta
+        if which == "abs_eta":
+            return abs(dilep.eta)
+        if which == "phi":
+            return dilep.phi
+        if which == "energy":
+            return dilep.energy
+        min_jet = events.Jet[ak.unflatten(ak.argmin(leps[:,0].delta_r(events.Jet),axis=1),1)] * 1
+        if which == "jet_dr":
+            return leps[:,0].delta_r(min_jet)
+        if which == "lep_jet_mass":
+            return (leps[:,0] + min_jet).mass
+        raise ValueError(f"Unknown which: {which}")
+
+    build_dilep.inputs = ["{Electron,Muon,Tau,Jet}.{pt,eta,phi,mass}"]
+
+    cfg.add_variable(
+        name="lep_jet_dr",
+        expression=partial(build_dilep, which="jet_dr"),
+        aux={"inputs": build_dilep.inputs},
+        binning=(35, 0, 7),
+        x_title=r"$\Delta R_{l,jet}$",
+    )
+
+    cfg.add_variable(
+        name="lep_jet_mass",
+        expression=partial(build_dilep, which="lep_jet_mass"),
+        aux={"inputs": build_dilep.inputs},
+        binning=(40, 0.0, 400.0),
+        unit="GeV",
+        x_title=r"$m_{l,jet}$",
     )

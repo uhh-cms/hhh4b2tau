@@ -236,7 +236,8 @@ def add_config(
     cfg.x.default_producer = "default"
     cfg.x.default_ml_model = None
     cfg.x.default_inference_model = "example"
-    cfg.x.default_categories = ("incl",)
+    cfg.x.default_categories = ("mutau__os__iso",)
+    # cfg.x.default_categories = ("incl",)
     cfg.x.default_variables = ("n_jet", "jet1_pt")
 
     # set default weight_producer
@@ -293,9 +294,9 @@ def add_config(
             f"hhh_4b2tau_c3{x}_d4{y}" for x,y in ((0, 0), (19, 19), (4, 9), ("m1p5", "m0p5"), ("m1", "m1"), (1, 2))
         ],
 
-        "hhh_compare_3": [
+        "hhh_compare_3": (hhh_compare_3 := [
             f"hhh_4b2tau_c3{x}_d4{y}" for x,y in ((1, 0), (4, 9))
-        ],
+        ]),
 
         "sm_higgs": (sm_higgs := [
             "tth",
@@ -303,6 +304,8 @@ def add_config(
             "hh_ggf_hbb_htt_kl1_kt1",
         ]),
         "sm": sorted(list(set(split_backgrounds + sm_higgs))),
+
+        "standard": sorted(list(set(split_backgrounds + sm_higgs + hhh_compare_3))),
     }
 
     # dataset groups for conveniently looping over certain datasets
@@ -364,7 +367,7 @@ def add_config(
             "cos_bb1", "cos_bb2", "cos_taulep",
             "cos_h12", "cos_h13", "cos_h23",
             "mhhh", "h1_mass", "h2_mass", "h3_mass",
-            "n_fatjet", "n_jet",
+            # "n_fatjet", "n_jet",
             "m_3btaulep", "m_3btaulep_pt",
             # "h1_unsort_mass", "h2_unsort_mass",
             "delta_r_bb1_chi", "delta_r_bb2_chi",
@@ -373,7 +376,8 @@ def add_config(
             "cos_h12_chi", "cos_h13_chi", "cos_h23_chi",
             "h1_mass_chi", "h2_mass_chi",
             "m_3btaulep_chi", "m_3btaulep_pt_chi",
-            "mds_h1_mass_chi", "mds_h2_mass_chi", "min_chi"
+            "mds_h1_mass_chi", "mds_h2_mass_chi", "min_chi",
+            "lep_jet_dr", "lep_jet_mass",
                 ],
         "all_gen": [
             "mtautau_gen", "mbb_gen", "mhhh_gen", "mlnu_gen", "hpt_gen", "h1bpt_gen",
@@ -434,10 +438,10 @@ def add_config(
         "two_jet": r"$\geq$ 2 jet",
         "three_jet": r"$\geq$ 3 jet",
         "four_jet": r"$\geq$ 4 jet",
-        "one_btag": r"$\geq$ 1 b-tagged jets",
-        "two_btag": r"$\geq$ 2 b-tagged jets",
-        "three_btag": r"$\geq$ 3 b-tagged jets",
-        "four_btag": r"$\geq$ 4 b-tagged jets",
+        "one_btag": r"$\geq$ 1 b-tag",
+        "two_btag": r"$\geq$ 2 b-tag",
+        "three_btag": r"$\geq$ 3 b-tag",
+        "four_btag": r"$\geq$ 4 b-tag",
         "json": "DQM cut",
         "trigger": "Trigger",
         "met_filter": r"$\cancle{E}_{T} Filter$",
@@ -455,7 +459,10 @@ def add_config(
 
     # producer groups for conveniently looping over certain producers
     # (used during the ProduceColumns task)
-    cfg.x.producer_groups = {}
+    cfg.x.producer_groups = {
+        "mass_diff": ["default", "produce_genmatched_procids_mass_diff",],
+        "chi2": ["default", "produce_genmatched_procids_chi2",],
+    }
 
     # ml_model groups for conveniently looping over certain ml_models
     # (used during the machine learning tasks)

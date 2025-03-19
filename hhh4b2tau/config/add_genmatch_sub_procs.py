@@ -1,5 +1,6 @@
 import order as od
 import law
+from columnflow.util import DotDict
 
 logger = law.logger.get_logger(__name__)
 

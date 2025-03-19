@@ -98,7 +98,50 @@ def stylize_processes(config: od.Config) -> None:
             p.unstack=True
             p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$"
             p.scale="stack"
-    
+
+        if (p := config.get_process("hhh_4b2tau_c3{c3}_d4{d4}_nomatch".format(
+            c3=str(c3).replace("-", "m").replace(".", "p"),
+            d4=str(d4).replace("-", "m").replace(".", "p"),
+            ), default=None)):
+            p.color1 = cfg.x.colors.red
+            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ unmatched"
+
+        if (p := config.get_process("hhh_4b2tau_c3{c3}_d4{d4}_match_h1".format(
+            c3=str(c3).replace("-", "m").replace(".", "p"),
+            d4=str(d4).replace("-", "m").replace(".", "p"),
+            ), default=None)):
+            p.color1 = cfg.x.colors.bright_orange
+            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match $H_{{1}}$"
+
+        if (p := config.get_process("hhh_4b2tau_c3{c3}_d4{d4}_match_h1_no_h2".format(
+            c3=str(c3).replace("-", "m").replace(".", "p"),
+            d4=str(d4).replace("-", "m").replace(".", "p"),
+            ), default=None)):
+            p.color1 = cfg.x.colors.purple
+            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match $H_{{1}}, !H_{{2}}$"
+
+        if (p := config.get_process("hhh_4b2tau_c3{c3}_d4{d4}_match_h1_and_h2".format(
+            c3=str(c3).replace("-", "m").replace(".", "p"),
+            d4=str(d4).replace("-", "m").replace(".", "p"),
+            ), default=None)):
+            p.color1 = cfg.x.colors.bright_blue
+            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match $H_{{1}} + H_{{2}}$"
+
+        if (p := config.get_process("hhh_4b2tau_c3{c3}_d4{d4}_match_h2".format(
+            c3=str(c3).replace("-", "m").replace(".", "p"),
+            d4=str(d4).replace("-", "m").replace(".", "p"),
+            ), default=None)):
+            p.color1 = cfg.x.colors.teal
+            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match $H_{{2}}$"
+
+        if (p := config.get_process("hhh_4b2tau_c3{c3}_d4{d4}_match_h2_no_h1".format(
+            c3=str(c3).replace("-", "m").replace(".", "p"),
+            d4=str(d4).replace("-", "m").replace(".", "p"),
+            ), default=None)):
+            p.color1 = cfg.x.colors.yellow
+            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match $H_{{2}}, !H_{{1}}$"
+
+
 
     if (p := config.get_process("hh_vbf_hbb_htt_kv1_k2v1_kl1", default=None)):
         p.color1 = cfg.x.colors.dark_blue

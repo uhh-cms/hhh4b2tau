@@ -34,7 +34,7 @@ def add_categories(config: od.Config) -> None:
     add_category(config, name="incl", id=100, selection="cat_incl", label="inclusive")
     add_category(config, name="2j", id=110, selection="cat_2j", label="2 jets")
 
-    add_category(config, name="h3_mass_cut", id=120, selection="cat_h3_mass", label=r"$(h_{3} mass < 125\,GeV)$", tags={"h3_mass_cut"})
+    add_category(config, name="h3_mass_cut", id=120, selection="cat_h3_mass", label=r"$(m_{H3} < 125\,GeV)$", tags={"h3_mass_cut"})
 
     #
     # build groups

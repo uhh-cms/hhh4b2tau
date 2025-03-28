@@ -378,6 +378,11 @@ def add_config(
             "m_3btaulep_chi", "m_3btaulep_pt_chi",
             "mds_h1_mass_chi", "mds_h2_mass_chi", "min_chi",
             "lep_jet_dr", "lep_jet_mass",
+            # "ele_eta", "electron_pt", 
+            "muon_pt", 
+            "ht",
+            "jets_pt", "jet1_eta", "jet_phi", "jet1_pt",
+            "jet_delta_phi", "jet_delta_r_12", "jet_delta_r_13",
                 ],
         "all_gen": [
             "mtautau_gen", "mbb_gen", "mhhh_gen", "mlnu_gen", "hpt_gen", "h1bpt_gen",
@@ -398,6 +403,7 @@ def add_config(
     # (used during plotting)
     cfg.x.general_settings_groups = {
         "compare_shapes": {"skip_ratio": True, "shape_norm": True, "cms_label": "simpw"},
+        "default": {"skip_ratio": True, "cms_label": "simpw"},
     }
 
     # process_settings groups for conveniently looping over different values for the process-settings parameter
@@ -430,6 +436,7 @@ def add_config(
     cfg.x.selector_step_groups = {
         "default": ["json", "trigger", "met_filter", "jet_veto_map", "lepton", "jet2", "bjet"],
         "n_jet": ["one_jet", "two_jet", "three_jet", ],
+        "standard": ["dihiggs", "mutau", "three_jet", "one_btag", "two_btag", "three_btag",],
     }
 
     # selector step labels (for cutflow plots)
@@ -438,10 +445,10 @@ def add_config(
         "two_jet": r"$\geq$ 2 jet",
         "three_jet": r"$\geq$ 3 jet",
         "four_jet": r"$\geq$ 4 jet",
-        "one_btag": r"$\geq$ 1 b-tag",
-        "two_btag": r"$\geq$ 2 b-tag",
-        "three_btag": r"$\geq$ 3 b-tag",
-        "four_btag": r"$\geq$ 4 b-tag",
+        "one_btag": r"$\geq$ 1 btg",
+        "two_btag": r"$\geq$ 2 btg",
+        "three_btag": r"$\geq$ 3 btg",
+        "four_btag": r"$\geq$ 4 btg",
         "json": "DQM cut",
         "trigger": "Trigger",
         "met_filter": r"$\cancle{E}_{T} Filter$",
@@ -449,7 +456,8 @@ def add_config(
         "lepton": r"e, $\mu$, $\tau$",
         "jet2": "Jets (v2)",
         "bjet": "Bjets",
-
+        "dihiggs": "HH",
+        "mutau": r"$\mu$ $\tau_h$",
     }
 
 
@@ -1291,8 +1299,9 @@ def add_config(
     # note: it is recommended to always add an inclusive category with id=1 or name="incl" which is used
     #       in various places, e.g. for the inclusive cutflow plots and the "empty" selector
     
-    from hhh4b2tau.config.categories import add_categories
+    from hhh4b2tau.config.categories import add_categories, add_categories_incl_only
     add_categories(cfg)
+    # add_categories_incl_only(cfg)
 
     from hhh4b2tau.config.variables import add_variables
     add_variables(cfg)

@@ -293,7 +293,7 @@ def jet_selection(
         any(self.dataset_inst.name.lower().startswith(x)
             for x in ("hhh",))
     ):
-        events = self[jet_gen_matching](events, **kwargs)
+        events = self[jet_gen_matching](events, jet_result=jet_indices, **kwargs)
 
         result.objects.Jet.update({       
                     "GenMatchH1": events.Gen_Matched_H1_idx,

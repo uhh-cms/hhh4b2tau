@@ -145,6 +145,21 @@ def new(
     events, jet_results = self[jet_selection](events, trigger_results, lepton_results, **kwargs)
     results += jet_results
 
+    # from IPython import embed; embed(header="new selector")
+    # group hbt selection as one big step
+    hbt_mask = (
+        results.steps.two_jet & 
+        results.steps.lepton & 
+        results.steps.trigger & 
+        results.steps.met_filter & 
+        results.steps.jet_veto_map & 
+        results.steps.json
+        )
+    results.steps.update({
+        "dihiggs": hbt_mask,
+        "mutau": events.channel_id == 2,
+        })
+
     # mc-only functions
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)
@@ -220,8 +235,6 @@ def new(
         njets=results.x.n_central_jets,
         **kwargs,
     )
-
-    # from IPython import embed; embed(header="new selector")
 
     return events, results
 

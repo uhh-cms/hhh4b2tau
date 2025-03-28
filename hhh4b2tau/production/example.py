@@ -136,8 +136,8 @@ def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = self[deterministic_seeds](events, **kwargs)
 
     # adding new variables
-    events = self[jet_angle_difference](events, **kwargs)
-    events = self[genHadron_variables](events, **kwargs)
+    # events = self[jet_angle_difference](events, **kwargs)
+    # events = self[genHadron_variables](events, **kwargs)
     
     if (self.dataset_inst.is_mc and
         any(self.dataset_inst.name.lower().startswith(x)
@@ -145,10 +145,10 @@ def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     ):
         events = self[hhh_decay_invariant_mass](events, **kwargs)
         
-    if (self.dataset_inst.is_mc and
-        any(self.dataset_inst.name.lower().startswith(x)
-            for x in ("tth_hbb_powheg",))
-    ):
-        events = self[tth_variables](events, **kwargs)
+    # if (self.dataset_inst.is_mc and
+    #     any(self.dataset_inst.name.lower().startswith(x)
+    #         for x in ("tth_hbb_powheg",))
+    # ):
+    #     events = self[tth_variables](events, **kwargs)
 
     return events

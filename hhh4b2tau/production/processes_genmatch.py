@@ -9,13 +9,14 @@ ak = maybe_import("awkward")
 
 @producer(
     uses={higgs_reco_mass_diff, process_ids_genmatched_higgs},
+    produces={higgs_reco_mass_diff},
 )
 def produce_genmatched_procids_mass_diff(self, events: ak.Array, **kwargs):
 
+    events = self[higgs_reco_mass_diff](events, **kwargs)
+
     if self.dataset_inst.has_tag("hhh"):
         # do stuff
-        events = self[higgs_reco_mass_diff](events, **kwargs)
-
         events = self[process_ids_genmatched_higgs](events, **kwargs)
 
     return events
@@ -28,13 +29,14 @@ def produce_genmatched_procids_mass_diff_init(self):
 
 @producer(
     uses={higgs_reco_chi2, process_ids_genmatched_higgs},
+    produces={higgs_reco_chi2},
 )
 def produce_genmatched_procids_chi2(self, events: ak.Array, **kwargs):
 
+    events = self[higgs_reco_chi2](events, **kwargs)
+
     if self.dataset_inst.has_tag("hhh"):
         # do stuff
-        events = self[higgs_reco_chi2](events, **kwargs)
-
         events = self[process_ids_genmatched_higgs](events, **kwargs)
 
     return events

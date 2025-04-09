@@ -97,7 +97,7 @@ def stylize_processes(config: od.Config) -> None:
             p.color1 = color
             p.unstack=True
             p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$"
-            # p.scale="stack"
+            p.scale="stack"
 
         if (p := config.get_process("hhh_4b2tau_c3{c3}_d4{d4}_nomatch".format(
             c3=str(c3).replace("-", "m").replace(".", "p"),

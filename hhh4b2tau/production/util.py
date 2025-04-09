@@ -1,6 +1,7 @@
 from columnflow.util import maybe_import
 from columnflow.columnar_util import attach_coffea_behavior
 ak = maybe_import("awkward")
+np = maybe_import("numpy")
 
 # creates record with useful variables
 def table_combo(array: ak.Array) -> ak.Array:
@@ -42,4 +43,9 @@ def min_chi_sqr_pair(array: ak.Array, table: ak.Array) -> ak.Array:
     chi_table = ak.mask(table, pairs_mask)
     chi_table = ak.flatten(ak.drop_none(chi_table,axis=1),axis=2)
 
-    return chi_table
+    min_chisq = chisq[sorted_chi_idx][:,0]
+    rando_mask = (np.random.rand(len(array)) >= 0.5)
+    bb1_chi= ak.where(chi_table[:,0], chi_table[:,1], rando_mask)
+    bb2_chi= ak.where(chi_table[:,1], chi_table[:,0], rando_mask)
+
+    return bb1_chi, bb2_chi, min_chisq, rando_mask

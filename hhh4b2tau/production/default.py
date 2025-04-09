@@ -99,7 +99,7 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         # if self.has_dep(top_pt_weight):
         #     events = self[top_pt_weight](events, **kwargs)
 
-    events = self[detector_variables](events, **kwargs)
+    # events = self[detector_variables](events, **kwargs)
     events = self[jet_angle_difference](events, **kwargs)
 
     if (self.dataset_inst.is_mc and

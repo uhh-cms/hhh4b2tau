@@ -34,6 +34,10 @@ def add_categories(config: od.Config) -> None:
     add_category(config, name="incl", id=100, selection="cat_incl", label="inclusive")
     add_category(config, name="2j", id=110, selection="cat_2j", label="2 jets")
 
+    add_category(config, name="1btag", id=111, selection="cat_1btag", label="1 b-tag(s)")
+    add_category(config, name="2btag", id=112, selection="cat_2btag", label="2 b-tag(s)")
+    add_category(config, name="3btag", id=113, selection="cat_3btag", label="3 b-tag(s)")
+
     add_category(config, name="h3_mass_cut", id=120, selection="cat_h3_mass", label=r"$(m_{H3} < 125\,GeV)$", tags={"h3_mass_cut"})
 
     #
@@ -75,7 +79,11 @@ def add_categories(config: od.Config) -> None:
             config.get_category("etau"), config.get_category("mutau"), config.get_category("tautau"),
         ],
         # kinematic regions in the middle (to be extended)
-        "kin": [config.get_category("incl"), config.get_category("2j"), config.get_category("h3_mass_cut")],
+        "kin": [
+            config.get_category("incl"), config.get_category("2j"), 
+            config.get_category("1btag"), config.get_category("2btag"), config.get_category("3btag"),
+            config.get_category("h3_mass_cut"),
+                ],
         # qcd regions last
         "sign": [config.get_category("os"), config.get_category("ss")],
         "tau2": [config.get_category("iso"), config.get_category("noniso")],

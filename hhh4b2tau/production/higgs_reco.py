@@ -1,17 +1,23 @@
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, optional_column as optional
 from columnflow.production.util import attach_coffea_behavior
 from hhh4b2tau.production.util import table_combo, min_chi_sqr_pair
+import functools
 
 ak = maybe_import("awkward")
+np = maybe_import("numpy")
 
-
+set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 class _HiggsReconstructor(Producer):
     
     def init_func(self):
         self.uses = {"Jet.{pt,eta,mass,phi}", attach_coffea_behavior}
-        self.produces = {"BB1_idx", "BB2_idx", attach_coffea_behavior}
+        self.produces = {
+            "BB{1,2}_idx",
+            optional("min_chisq"), optional("rando_mask"), 
+            attach_coffea_behavior,
+            }
 
     def load_jet_combinations(self, events: ak.Array):
 
@@ -80,6 +86,8 @@ def higgs_reco_mass_diff(self, events: ak.Array, **kwargs):
 
     bb1_idx = ak.concatenate([ak.unflatten(bb1.idx1,1),ak.unflatten(bb1.idx2,1)],axis=1)
     bb2_idx = ak.concatenate([ak.unflatten(bb2.idx1,1),ak.unflatten(bb2.idx2,1)],axis=1)
+    bb1_idx = ak.drop_none(bb1_idx)
+    bb2_idx = ak.drop_none(bb2_idx)
 
     events = set_ak_column(events, 'BB1_idx', bb1_idx)
     events = set_ak_column(events, 'BB2_idx', bb2_idx)
@@ -90,16 +98,19 @@ def higgs_reco_mass_diff(self, events: ak.Array, **kwargs):
 def higgs_reco_chi2(self, events: ak.Array, **kwargs,):
     events = self[attach_coffea_behavior](events, **kwargs)
     self.load_jet_combinations(events)
-    jet_chi_table = min_chi_sqr_pair(events.Jet, self.jet_table_combo)
-    bb1_chi = jet_chi_table[:,0]
-    bb2_chi = jet_chi_table[:,1]
+    bb1, bb2 , min_chisq, rando_mask = min_chi_sqr_pair(events.Jet, self.jet_table_combo)
+
     # insert pairs for case < 4 jets
-    bb1_chi = ak.where(self.jet_num_mask, self.lone_pair, bb1_chi)
+    bb1 = ak.where(self.jet_num_mask, self.lone_pair, bb1)
+    # extract indicies
+    bb1_idx = ak.concatenate([ak.unflatten(bb1.idx1,1),ak.unflatten(bb1.idx2,1)],axis=1)
+    bb2_idx = ak.concatenate([ak.unflatten(bb2.idx1,1),ak.unflatten(bb2.idx2,1)],axis=1)
+    bb1_idx = ak.drop_none(bb1_idx)
+    bb2_idx = ak.drop_none(bb2_idx)
 
-    bb1_chi_idx = ak.concatenate([ak.unflatten(bb1_chi.idx1,1),ak.unflatten(bb1_chi.idx2,1)],axis=1)
-    bb2_chi_idx = ak.concatenate([ak.unflatten(bb2_chi.idx1,1),ak.unflatten(bb2_chi.idx2,1)],axis=1)
-
-    events = set_ak_column(events, 'BB1_idx', bb1_chi_idx)
-    events = set_ak_column(events, 'BB2_idx', bb2_chi_idx)
+    events = set_ak_column(events, "BB1_idx", bb1_idx)
+    events = set_ak_column(events, "BB2_idx", bb2_idx)
+    events = set_ak_column_f32(events, "min_chisq", min_chisq)
+    events = set_ak_column(events, "rando_mask", rando_mask)
 
     return events

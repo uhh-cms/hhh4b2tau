@@ -305,10 +305,7 @@ def compare_idx(
     compare_idx=compare_idx,
 )
 def process_ids_genmatched_higgs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    """
-    Assigns each dy event a single process id, based on the number of jets and the di-lepton pt of
-    the LHE record. This is used for the stitching of the DY samples.
-    """
+
     # as always, we assume that each dataset has exactly one process associated to it
     if len(self.dataset_inst.processes) != 1:
         raise NotImplementedError(

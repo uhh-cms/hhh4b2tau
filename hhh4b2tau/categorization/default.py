@@ -89,6 +89,26 @@ def cat_2j(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.
     # two or more jets
     return events, ak.num(events.Jet.pt, axis=1) >= 2
 
+@categorizer(uses={"Jet.btagDeepFlavB"})
+def cat_1btag(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    # one or more b jets
+    btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
+    btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
+    return events, ak.sum(btag_mask, axis=1) >= 1
+
+@categorizer(uses={"Jet.btagDeepFlavB"})
+def cat_2btag(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    # one or more b jets
+    btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
+    btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
+    return events, ak.sum(btag_mask, axis=1) >= 2
+
+@categorizer(uses={"Jet.btagDeepFlavB"})
+def cat_3btag(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    # one or more b jets
+    btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
+    btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
+    return events, ak.sum(btag_mask, axis=1) >= 3
 
 @categorizer(uses={"{Electron,Muon,Tau}.{pt,eta,phi,mass,charge}"})
 def cat_h3_mass(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:

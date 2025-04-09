@@ -795,7 +795,7 @@ def genHadron_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "cos_h12_chi", "cos_h13_chi", "cos_h23_chi",
         "h1_mass_chi", "h2_mass_chi",
         "m_3btaulep_chi", "m_3btaulep_pt_chi",
-        "min_chi", "mds_h1_mass_chi", "mds_h2_mass_chi",
+        "min_chisq", "mds_h1_mass_chi", "mds_h2_mass_chi",
     },
 )
 # def detector_variables(self: Producer, events: ak.Array, lepton_results: SelectionResult, **kwargs) -> ak.Array:
@@ -885,7 +885,7 @@ def detector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # # create all unique pair permutaions
 
-    jet_chi_table, min_chi = min_chi_sqr_pair(jet, jet_table_combo)
+    jet_chi_table, min_chisq = min_chi_sqr_pair(jet, jet_table_combo)
     bb1_chi = jet_chi_table[:,0]
     bb2_chi = jet_chi_table[:,1]
     # insert pairs for case < 4 jets
@@ -918,8 +918,8 @@ def detector_variables(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = set_ak_column_f32(
         events,
-        "min_chi",
-        min_chi,
+        "min_chisq",
+        min_chisq,
     )
 
     events = set_ak_column_f32(

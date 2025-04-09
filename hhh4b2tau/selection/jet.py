@@ -237,9 +237,9 @@ def jet_selection(
 
     n_jet = ak.sum(default_mask, axis=1)
 
-    btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
-    btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
-    n_btag = ak.sum(btag_mask, axis=1)
+    # btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
+    # btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
+    # n_btag = ak.sum(btag_mask, axis=1)
 
     # some final type conversions
     jet_indices = ak.values_astype(ak.fill_none(jet_indices, 0), np.int32)
@@ -260,9 +260,9 @@ def jet_selection(
             "two_jet" : n_jet >= 2,
             "three_jet" : n_jet >= 3,
             # "four_jet" : n_jet >= 4,
-            "one_btag": n_btag >= 1,
-            "two_btag": n_btag >= 2,
-            "three_btag": n_btag >= 3,
+            # "one_btag": n_btag >= 1,
+            # "two_btag": n_btag >= 2,
+            # "three_btag": n_btag >= 3,
             # "four_btag": n_btag >= 4,
         },
         objects={

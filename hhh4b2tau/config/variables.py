@@ -707,31 +707,37 @@ def add_variables(config: od.Config) -> None:
     #     x_title=r"$m_{H2}^{mds,gm}$",
     # )
 
-    def delta_r12(vectors):
+    
+    def delta_r12(*vectors):
         # delta r between first two elements
-        # from IPython import embed; embed(header="delta_r12")
-        dr = ak.firsts(vectors[:, :1], axis=1).delta_r(ak.firsts(vectors[:, 1:2], axis=1))
+        if len(vectors[-1]) == 2:
+            vec0 = vectors[0][0]
+            vec1 = vectors[0][1]
+        else:
+            vec0 = vectors[0][:, :1]
+            vec1 = vectors[0][:, 1:2]
+        dr = ak.firsts(vec0, axis=1).delta_r(ak.firsts(vec1, axis=1))
         return ak.fill_none(dr, EMPTY_FLOAT)
-    
-    def delta_r12_alt(array0, array1):
-        dr = ak.firsts(array0, axis=1).delta_r(ak.firsts(array1, axis=1))
-        return ak.fill_none(dr, EMPTY_FLOAT)
-    
 
-    # cosine of 3D angle between two particles
-    def cos(vectors) -> ak.Array:
-        cos = vectors[:, :1].pvec.dot(vectors[:, 1:2].pvec)/(vectors[:, :1].pvec.absolute()*vectors[:, 1:2].pvec.absolute())
-        cos = ak.firsts(cos)
+    def cos(*vectors) -> ak.Array:
+        if len(vectors[-1]) == 2:
+            vec0 = ak.firsts(vectors[0][0])
+            vec1 = ak.firsts(vectors[0][1])
+        else:
+            vec0 = vectors[0][:, :1]
+            vec1 = vectors[0][:, 1:2]
+        cos = vec0.pvec.dot(vec1.pvec)/(vec0.pvec.absolute()*vec1.pvec.absolute())
         return ak.fill_none(cos, EMPTY_FLOAT)
+
+    def lvec_sum(*vectors) -> ak.Array:
+        if len(vectors) == 1:
+            sum = vectors[0][:, :1] + vectors[0][:, 1:2]
+        else: 
+            sum = ak.firsts(vectors[0])
+            for vec in vectors[1:]:
+                sum = sum + ak.firsts(vec) 
+        return sum
     
-    def cos_alt(array0, array1) -> ak.Array:
-        array0 = ak.firsts(array0)
-        array1 = ak.firsts(array1)
-        cos = array0.pvec.dot(array1.pvec)/(array0.pvec.absolute()*array1.pvec.absolute())
-        return ak.fill_none(cos, EMPTY_FLOAT)
-    
-    def lvec_sum(vectors) -> ak.Array:
-        return vectors[:, :1] + vectors[:, 1:2]
 
     def build_higgs_reco(events, obj = None, var = None):
         events = attach_coffea_behavior(events)
@@ -739,11 +745,11 @@ def add_variables(config: od.Config) -> None:
         bb1 = events.Jet[events.BB1_idx] *1
         bb2 = events.Jet[events.BB2_idx] *1
         leps = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
-        
+
         h1 = lvec_sum(bb1)
         h2 = lvec_sum(bb2)
         h3 = lvec_sum(leps)
-        # from IPython import embed; embed(header="build_higgs_reco")
+
         if obj == "bb1":
             vectors = bb1
         if obj == "bb2":
@@ -758,44 +764,32 @@ def add_variables(config: od.Config) -> None:
         if obj == "h3":
             vectors = h3
 
-        # special treatment for these combinations because of emerging of union types by concatenating
         if obj == "h12":
-            if  var == "cos":
-                return cos_alt(h1,h2)
-            if var == "dr":
-                return delta_r12_alt(h1,h2)
-
+            vectors = h1, h2
         if obj == "h13":
-            if  var == "cos":
-                return cos_alt(h1,h3)
-            if var == "dr":
-                return delta_r12_alt(h1,h3)
-            
+            vectors = h1, h3
         if obj == "h23":
-            if  var == "cos":
-                return cos_alt(h2,h3)
-            if var == "dr":
-                return delta_r12_alt(h2,h3)
-        
+            vectors = h2, h3
 
         if obj == "3b2tau":
-            mds_mask = (h1.mass-125)**2 <= (h2.mass-125)**2
+            mds_mask = (ak.firsts(h1).mass-125)**2 <= (ak.firsts(h2).mass-125)**2
+            mds_mask =ak.fill_none(mds_mask, True)
             h_best = ak.where(mds_mask, h1, h2) *1
             h_best_idx = ak.where(mds_mask, events.BB1_idx, events.BB2_idx)
             rem_jet_mask = ((ak.local_index(events.Jet, axis=-1) != h_best_idx[:,0]) &
                             (ak.local_index(events.Jet, axis=-1) != h_best_idx[:,1]) )
-            j3 = ak.unflatten(events.Jet[rem_jet_mask][:,0],1) *1
-            vectors = h_best + h3 + j3
+            j3 = events.Jet[rem_jet_mask][:,:1] *1
+            vectors = lvec_sum(h_best, h3,  j3)
 
         if obj == "hhh":
-            vectors = h1 + h2 + h3
+            vectors = lvec_sum(h1, h2, h3)
 
         if  var == "cos":
             return cos(vectors)
         if var == "dr":
             return delta_r12(vectors)
         if var == "mass":
-            return vectors.mass
+            return ak.fill_none(vectors.mass, EMPTY_FLOAT)
         if var == "pt":
             return vectors.pt
         if var == "eta":
@@ -1241,10 +1235,10 @@ def add_variable(config: od.Config, *args, **kwargs) -> od.Variable:
     variable = config.add_variable(*args, **kwargs)
 
     # defaults
-    if not variable.has_aux("underflow"):
-        variable.x.underflow = True
-    if not variable.has_aux("overflow"):
-        variable.x.overflow = True
+    # if not variable.has_aux("underflow"):
+    #     variable.x.underflow = True
+    # if not variable.has_aux("overflow"):
+    #     variable.x.overflow = True
 
     return variable
 

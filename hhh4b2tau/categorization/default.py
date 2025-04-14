@@ -6,10 +6,12 @@ Exemplary selection methods.
 
 from columnflow.categorization import Categorizer, categorizer
 from columnflow.util import maybe_import
-from columnflow.columnar_util import attach_coffea_behavior
+from columnflow.columnar_util import attach_coffea_behavior,  EMPTY_FLOAT
 
+from hhh4b2tau.config.variables import build_higgs_reco
 
 ak = maybe_import("awkward")
+np = maybe_import("numpy")
 
 
 #
@@ -84,35 +86,71 @@ def cat_incl(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
     return events, ak.ones_like(events.event) == 1
 
 
-@categorizer(uses={"Jet.pt"})
+@categorizer(uses={"Jet.{pt,phi,eta,mass}"})
 def cat_2j(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     # two or more jets
     return events, ak.num(events.Jet.pt, axis=1) >= 2
 
-@categorizer(uses={"Jet.btagDeepFlavB"})
+@categorizer(uses={"Jet.{pt,phi,eta,mass}"})
+def cat_4j(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    # four or more jets
+    return events, ak.num(events.Jet.pt, axis=1) >= 4
+
+@categorizer(uses={"Jet.{pt,phi,eta,mass,btagDeepFlavB}"})
 def cat_1btag(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     # one or more b jets
     btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
     btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
     return events, ak.sum(btag_mask, axis=1) >= 1
 
-@categorizer(uses={"Jet.btagDeepFlavB"})
+@categorizer(uses={"Jet.{pt,phi,eta,mass,btagDeepFlavB}"})
 def cat_2btag(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     # one or more b jets
     btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
     btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
     return events, ak.sum(btag_mask, axis=1) >= 2
 
-@categorizer(uses={"Jet.btagDeepFlavB"})
+@categorizer(uses={"Jet.{pt,phi,eta,mass,btagDeepFlavB}"})
 def cat_3btag(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     # one or more b jets
     btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
     btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
     return events, ak.sum(btag_mask, axis=1) >= 3
 
-@categorizer(uses={"{Electron,Muon,Tau}.{pt,eta,phi,mass,charge}"})
+# categorizer class to access created variables more conveniently
+class _VarCut(Categorizer):
+    def init_func(self):
+        self.uses = {"{Electron,Muon,Tau,Jet}.{pt,eta,phi,mass}", "BB{1,2}_idx"}
+
+    def rebuild_higgs_reco_mask(self, events: ak.Array, obj: str, var: str, lower = None, higher = None):
+        value = build_higgs_reco(events, obj, var)
+        self.emptyf_mask = (value != EMPTY_FLOAT)
+        self.lower_mask = np.ones(len(events), dtype=bool)
+        self.higher_mask = np.ones(len(events), dtype=bool)
+        if lower != None:
+            self.lower_mask = (value <= lower)
+        if higher != None:
+            self.higher_mask = (value >= higher)
+        self.final_mask = self.emptyf_mask & self.lower_mask & self.higher_mask
+
+
+@_VarCut.categorizer()          
 def cat_h3_mass(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    events = attach_coffea_behavior(events)
-    leps = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
-    dilep = leps.sum(axis=1)
-    return events, dilep.mass < 125
+    self.rebuild_higgs_reco_mask(events, "h3", "mass", lower = 125)
+    return events, self.final_mask
+
+
+@_VarCut.categorizer()
+def cat_leps_cos(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    self.rebuild_higgs_reco_mask(events, "leps", "dr", higher = -0.25)
+    return events, self.final_mask
+
+@_VarCut.categorizer()
+def cat_leps_dr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    self.rebuild_higgs_reco_mask(events, "leps", "dr", lower = 2.4)
+    return events, self.final_mask
+
+@_VarCut.categorizer()
+def cat_leps_dr_harsh(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    self.rebuild_higgs_reco_mask(events, "leps", "dr", lower = 2.0)
+    return events, self.final_mask

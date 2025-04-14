@@ -22,7 +22,7 @@ from columnflow.production.cms.pdf import pdf_weights
 from columnflow.production.cms.scale import murmuf_weights
 from columnflow.production.cms.top_pt_weight import gen_parton_top
 from columnflow.production.util import attach_coffea_behavior
-from columnflow.production.categories import category_ids
+# from columnflow.production.categories import category_ids
 
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.types import Iterable
@@ -206,7 +206,7 @@ def new(
         events = self[process_ids](events, **kwargs)
 
     # some cutflow features
-    events = self[cutflow_features](events, results.objects, **kwargs)
+    # events = self[cutflow_features](events, results.objects, **kwargs)
 
     # combined event selection after all steps
     event_sel = reduce(and_, results.steps.values())
@@ -286,7 +286,7 @@ def new_sparse_output_init(self: Selector) -> None:
     # remove unused dependencies
     self.produces = {
         process_ids,
-        category_ids,
+        # category_ids,
         # cutflow_features,
         mc_weight,
         increment_stats,

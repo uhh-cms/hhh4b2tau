@@ -356,7 +356,14 @@ def add_config(
 
     # category groups for conveniently looping over certain categories
     # (used during plotting)
-    cfg.x.category_groups = {}
+    cfg.x.category_groups = {
+        "compare_dc": [
+            "mutau__os__iso", "mutau__h3_mass_cut__os__iso",
+            "mutau__1btag__os__h3_mass_cut__iso", 
+            "mutau__2btag__os__h3_mass_cut__iso",
+            "mutau__3btag__os__h3_mass_cut__iso",
+            ]
+        }
 
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
@@ -418,6 +425,15 @@ def add_config(
             "cos_tautau_gen",
         ]
     }
+
+    # resolved_variables = dict()
+    # for var_group, vals in cfg.x.variable_groups:
+    #     values = list()
+    #     for val in vals:
+    #         values.extend(law.util.brace_expand(val))
+    #     resolved_variables[var_group] = values[:]
+    
+    # cfg.x.variable_groups = resolved_variables
 
     # shift groups for conveniently looping over certain shifts
     # (used during plotting)

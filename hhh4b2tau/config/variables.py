@@ -13,6 +13,128 @@ from columnflow.util import maybe_import
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
 
+def delta_r12(*vectors):
+        # delta r between first two elements
+        if len(vectors[-1]) == 2:
+            vec0 = vectors[0][0]
+            vec1 = vectors[0][1]
+        else:
+            vec0 = vectors[0][:, :1]
+            vec1 = vectors[0][:, 1:2]
+        dr = ak.firsts(vec0, axis=1).delta_r(ak.firsts(vec1, axis=1))
+        return ak.fill_none(dr, EMPTY_FLOAT)
+
+def cos(*vectors) -> ak.Array:
+    if len(vectors[-1]) == 2:
+        vec0 = ak.firsts(vectors[0][0])
+        vec1 = ak.firsts(vectors[0][1])
+    else:
+        vec0 = vectors[0][:, :1]
+        vec1 = vectors[0][:, 1:2]
+    cos = vec0.pvec.dot(vec1.pvec)/(vec0.pvec.absolute()*vec1.pvec.absolute())
+    return ak.fill_none(cos, EMPTY_FLOAT)
+
+def lvec_sum(*vectors) -> ak.Array:
+    if len(vectors) == 1:
+        sum = vectors[0][:, :1] + vectors[0][:, 1:2]
+    else: 
+        sum = ak.firsts(vectors[0])
+        for vec in vectors[1:]:
+            sum = sum + ak.firsts(vec) 
+    return sum
+
+def build_higgs_reco(events, obj = None, var = None):
+    events = attach_coffea_behavior(events)
+    
+    bb1 = events.Jet[events.BB1_idx] *1
+    bb2 = events.Jet[events.BB2_idx] *1
+    leps = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
+
+    h1 = lvec_sum(bb1)
+    h2 = lvec_sum(bb2)
+    h3 = lvec_sum(leps)
+    # from IPython import embed; embed(header="build higgs reco")
+    if obj == "bb1":
+        vectors = bb1
+    if obj == "bb2":
+        vectors = bb2
+    if obj == "leps":
+        vectors = leps
+
+    if obj == "h1":
+        vectors = h1
+    if obj == "h2":
+        vectors = h2
+    if obj == "h3":
+        vectors = h3
+
+    if obj == "h12":
+        vectors = h1, h2
+    if obj == "h13":
+        vectors = h1, h3
+    if obj == "h23":
+        vectors = h2, h3
+
+    if obj == "3b2tau":
+        mds_mask = (ak.firsts(h1).mass-125)**2 <= (ak.firsts(h2).mass-125)**2
+        mds_mask =ak.fill_none(mds_mask, True)
+        h_best = ak.where(mds_mask, h1, h2) *1
+        h_best_idx = ak.where(mds_mask, events.BB1_idx, events.BB2_idx)
+        rem_jet_mask = ((ak.local_index(events.Jet, axis=-1) != h_best_idx[:,0]) &
+                        (ak.local_index(events.Jet, axis=-1) != h_best_idx[:,1]) )
+        j3 = events.Jet[rem_jet_mask][:,:1] *1
+        vectors = lvec_sum(h_best, h3,  j3)
+
+    if obj == "hhh":
+        vectors = lvec_sum(h1, h2, h3)
+
+    # if  var == "cos":
+    #     return cos(vectors)
+    # if var == "dr":
+    #     return delta_r12(vectors)
+    # if var == "mass":
+    #     return ak.fill_none(vectors.mass, EMPTY_FLOAT)
+    # if var == "pt":
+    #     return vectors.pt
+    # if var == "eta":
+    #     return vectors.eta
+    # if var == "abs_eta":
+    #     return abs(vectors.eta)
+    # if var == "phi":
+    #     return vectors.phi
+    # if var == "energy":
+    #     return vectors.energy
+    
+    if  var == "cos":
+        value = cos(vectors)
+    if var == "dr":
+        value = delta_r12(vectors)
+    if var == "mass":
+        value = vectors.mass
+    if var == "pt":
+        value = vectors.pt
+    if var == "eta":
+        value = vectors.eta
+    if var == "abs_eta":
+        value = abs(vectors.eta)
+    if var == "phi":
+        value = vectors.phi
+    if var == "energy":
+        value = vectors.energy
+
+    # if necessary reduce dimensions for categorizer
+    try:
+        value = ak.firsts(value)
+    except:
+        pass
+    
+    return ak.fill_none(value, EMPTY_FLOAT)
+
+    # raise ValueError(f"Unknown obj or var: {obj, var}")
+
+build_higgs_reco.inputs = ["{Electron,Muon,Tau,Jet}.{pt,eta,phi,mass}", "BB{1,2}_idx"]
+
+
 def add_variables(config: od.Config) -> None:
     # add variables
     # (the "event", "run" and "lumi" variables are required for some cutflow plotting task,
@@ -707,105 +829,6 @@ def add_variables(config: od.Config) -> None:
     #     x_title=r"$m_{H2}^{mds,gm}$",
     # )
 
-    
-    def delta_r12(*vectors):
-        # delta r between first two elements
-        if len(vectors[-1]) == 2:
-            vec0 = vectors[0][0]
-            vec1 = vectors[0][1]
-        else:
-            vec0 = vectors[0][:, :1]
-            vec1 = vectors[0][:, 1:2]
-        dr = ak.firsts(vec0, axis=1).delta_r(ak.firsts(vec1, axis=1))
-        return ak.fill_none(dr, EMPTY_FLOAT)
-
-    def cos(*vectors) -> ak.Array:
-        if len(vectors[-1]) == 2:
-            vec0 = ak.firsts(vectors[0][0])
-            vec1 = ak.firsts(vectors[0][1])
-        else:
-            vec0 = vectors[0][:, :1]
-            vec1 = vectors[0][:, 1:2]
-        cos = vec0.pvec.dot(vec1.pvec)/(vec0.pvec.absolute()*vec1.pvec.absolute())
-        return ak.fill_none(cos, EMPTY_FLOAT)
-
-    def lvec_sum(*vectors) -> ak.Array:
-        if len(vectors) == 1:
-            sum = vectors[0][:, :1] + vectors[0][:, 1:2]
-        else: 
-            sum = ak.firsts(vectors[0])
-            for vec in vectors[1:]:
-                sum = sum + ak.firsts(vec) 
-        return sum
-    
-
-    def build_higgs_reco(events, obj = None, var = None):
-        events = attach_coffea_behavior(events)
-
-        bb1 = events.Jet[events.BB1_idx] *1
-        bb2 = events.Jet[events.BB2_idx] *1
-        leps = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
-
-        h1 = lvec_sum(bb1)
-        h2 = lvec_sum(bb2)
-        h3 = lvec_sum(leps)
-
-        if obj == "bb1":
-            vectors = bb1
-        if obj == "bb2":
-            vectors = bb2
-        if obj == "leps":
-            vectors = leps
-
-        if obj == "h1":
-            vectors = h1
-        if obj == "h2":
-            vectors = h2
-        if obj == "h3":
-            vectors = h3
-
-        if obj == "h12":
-            vectors = h1, h2
-        if obj == "h13":
-            vectors = h1, h3
-        if obj == "h23":
-            vectors = h2, h3
-
-        if obj == "3b2tau":
-            mds_mask = (ak.firsts(h1).mass-125)**2 <= (ak.firsts(h2).mass-125)**2
-            mds_mask =ak.fill_none(mds_mask, True)
-            h_best = ak.where(mds_mask, h1, h2) *1
-            h_best_idx = ak.where(mds_mask, events.BB1_idx, events.BB2_idx)
-            rem_jet_mask = ((ak.local_index(events.Jet, axis=-1) != h_best_idx[:,0]) &
-                            (ak.local_index(events.Jet, axis=-1) != h_best_idx[:,1]) )
-            j3 = events.Jet[rem_jet_mask][:,:1] *1
-            vectors = lvec_sum(h_best, h3,  j3)
-
-        if obj == "hhh":
-            vectors = lvec_sum(h1, h2, h3)
-
-        if  var == "cos":
-            return cos(vectors)
-        if var == "dr":
-            return delta_r12(vectors)
-        if var == "mass":
-            return ak.fill_none(vectors.mass, EMPTY_FLOAT)
-        if var == "pt":
-            return vectors.pt
-        if var == "eta":
-            return vectors.eta
-        if var == "abs_eta":
-            return abs(vectors.eta)
-        if var == "phi":
-            return vectors.phi
-        if var == "energy":
-            return vectors.energy
-        
-        
-        raise ValueError(f"Unknown obj or var: {obj, var}")
-    
-    build_higgs_reco.inputs = ["{Electron,Muon,Tau,Jet}.{pt,eta,phi,mass}", "BB{1,2}_idx"]
-
     add_variable(
         config,
         name="min_chisq",
@@ -1108,7 +1131,7 @@ def add_variables(config: od.Config) -> None:
         name="h3_abs_eta",
         expression=partial(build_higgs_reco, obj="h3", var="abs_eta"),
         aux={"inputs": build_higgs_reco.inputs},
-        binning=(30, -3.0, 3.0),
+        binning=(30, 0.0, 3.0),
         x_title=r"$H_3$ $|\eta|$",
     )
 

@@ -17,18 +17,86 @@ def hhh(self):
     self.add_category(
         "incl",
         config_category="incl",
-        config_variable="m_3btaulep_chi",
+        config_variable="m_3btaulep_pt",
         data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
         mc_stats=True,
     )
     self.add_category(
         "mutau__os__iso",
         config_category="mutau__os__iso",
-        config_variable="m_3btaulep_chi",
+        config_variable="m_3btaulep_pt",
         data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
         mc_stats=True,
     )
 
+    self.add_category(
+        "mutau__1btag__os__iso",
+        config_category="mutau__1btag__os___iso",
+        config_variable="m_3btaulep_pt",
+        data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
+        mc_stats=True,
+    )
+    self.add_category(
+        "mutau__2btag__os__iso",
+        config_category="mutau__2btag__os___iso",
+        config_variable="m_3btaulep_pt",
+        data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
+        mc_stats=True,
+    )
+    self.add_category(
+        "mutau__3btag__os__iso",
+        config_category="mutau__3btag__os___iso",
+        config_variable="m_3btaulep_pt",
+        data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
+        mc_stats=True,
+    )
+
+    self.add_category(
+        "mutau__h3_mass__os__iso",
+        config_category="mutau__h3_mass__os__iso",
+        config_variable="m_3btaulep_pt",
+        data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
+        mc_stats=True,
+    )
+
+    self.add_category(
+        "mutau__h3_mass__leps_cos__os__iso",
+        config_category="mutau__h3_mass__leps_cos__os__iso",
+        config_variable="m_3btaulep_pt",
+        data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
+        mc_stats=True,
+    )
+
+    self.add_category(
+        "mutau__h3_mass__leps_cos__leps_dr__os__iso",
+        config_category="mutau__h3_mass__leps_cos__leps_dr__os__iso",
+        config_variable="m_3btaulep_pt",
+        data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
+        mc_stats=True,
+    )
+
+    self.add_category(
+        "mutau__h3_mass__leps_cos__leps_dr_harsh__os__iso",
+        config_category="mutau__h3_mass__leps_cos__leps_dr_harsh__os__iso",
+        config_variable="m_3btaulep_pt",
+        data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
+        mc_stats=True,
+    )
+
+    self.add_category(
+        "mutau__h3_mass__leps_dr__os__iso",
+        config_category="mutau__h3_mass__leps_dr__os__iso",
+        config_variable="m_3btaulep_pt",
+        data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
+        mc_stats=True,
+    )
+    self.add_category(
+        "mutau__h3_mass__leps_dr_harsh__os__iso",
+        config_category="mutau__h3_mass__leps_dr_harsh__os__iso",
+        config_variable="m_3btaulep_pt",
+        data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
+        mc_stats=True,
+    )
     #
     # processes
     #

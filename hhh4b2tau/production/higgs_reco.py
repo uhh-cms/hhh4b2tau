@@ -41,9 +41,7 @@ class _HiggsReconstructor(Producer):
         )
         self.jet_num_mask = (ak.num(events.Jet) < 4) & (ak.num(events.Jet) > 1)
 
-@_HiggsReconstructor.producer(
-        
-)
+@_HiggsReconstructor.producer()     
 def higgs_reco_mass_diff(self, events: ak.Array, **kwargs):
     # get indicies of jet pair mass closest to 125 
     

@@ -31,7 +31,8 @@ ak = maybe_import("awkward")
 
 @producer(
     uses={
-        category_ids, stitched_normalization_weights, normalized_pu_weight,
+        # category_ids, 
+        stitched_normalization_weights, normalized_pu_weight,
         tau_weights, trigger_weights,
         normalized_btag_weights_deepjet, IF_RUN_3(normalized_btag_weights_pnet),
         electron_weights, muon_weights, 
@@ -41,7 +42,8 @@ ak = maybe_import("awkward")
         jet_gen_match_variables,
     },
     produces={
-        category_ids, stitched_normalization_weights, normalized_pu_weight,
+        # category_ids, 
+        stitched_normalization_weights, normalized_pu_weight,
         tau_weights, trigger_weights,
         normalized_btag_weights_deepjet, IF_RUN_3(normalized_btag_weights_pnet),
         electron_weights, muon_weights, 
@@ -55,7 +57,7 @@ ak = maybe_import("awkward")
 def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # category ids
-    events = self[category_ids](events, **kwargs)
+    # events = self[category_ids](events, **kwargs)
     # from IPython import embed; embed(header="default producer")
 
     # mc-only weights
@@ -98,6 +100,7 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         # # top pt weight
         # if self.has_dep(top_pt_weight):
         #     events = self[top_pt_weight](events, **kwargs)
+
 
     # events = self[detector_variables](events, **kwargs)
     events = self[jet_angle_difference](events, **kwargs)

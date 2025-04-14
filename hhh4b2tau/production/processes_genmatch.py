@@ -1,6 +1,7 @@
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.production.processes import process_ids
+from columnflow.production.categories import category_ids
 from hhh4b2tau.production.processes import process_ids_genmatched_higgs
 
 from hhh4b2tau.production.higgs_reco import higgs_reco_mass_diff, higgs_reco_chi2
@@ -8,13 +9,13 @@ from hhh4b2tau.production.higgs_reco import higgs_reco_mass_diff, higgs_reco_chi
 ak = maybe_import("awkward")
 
 @producer(
-    uses={higgs_reco_mass_diff, process_ids_genmatched_higgs},
-    produces={higgs_reco_mass_diff},
+    uses={higgs_reco_mass_diff, process_ids_genmatched_higgs, category_ids,},
+    produces={higgs_reco_mass_diff, category_ids,},
 )
 def produce_genmatched_procids_mass_diff(self, events: ak.Array, **kwargs):
 
     events = self[higgs_reco_mass_diff](events, **kwargs)
-
+    events = self[category_ids](events, **kwargs)
     if self.dataset_inst.has_tag("hhh"):
         # do stuff
         events = self[process_ids_genmatched_higgs](events, **kwargs)
@@ -28,17 +29,16 @@ def produce_genmatched_procids_mass_diff_init(self):
     self.produces |= self.out_column
 
 @producer(
-    uses={higgs_reco_chi2, process_ids_genmatched_higgs},
-    produces={higgs_reco_chi2},
+    uses={higgs_reco_chi2, process_ids_genmatched_higgs, category_ids,},
+    produces={higgs_reco_chi2, category_ids,},
 )
 def produce_genmatched_procids_chi2(self, events: ak.Array, **kwargs):
-
     events = self[higgs_reco_chi2](events, **kwargs)
-
+    events = self[category_ids](events, **kwargs)
     if self.dataset_inst.has_tag("hhh"):
         # do stuff
         events = self[process_ids_genmatched_higgs](events, **kwargs)
-
+    # from IPython import embed; embed(header="procids")
     return events
 
 @produce_genmatched_procids_chi2.init

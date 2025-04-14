@@ -33,13 +33,17 @@ def add_categories(config: od.Config) -> None:
     # kinematic categories
     add_category(config, name="incl", id=100, selection="cat_incl", label="inclusive")
     add_category(config, name="2j", id=110, selection="cat_2j", label="2 jets")
+    add_category(config, name="4j", id=111, selection="cat_4j", label="4 jets")
 
-    add_category(config, name="1btag", id=111, selection="cat_1btag", label="1 b-tag(s)")
-    add_category(config, name="2btag", id=112, selection="cat_2btag", label="2 b-tag(s)")
-    add_category(config, name="3btag", id=113, selection="cat_3btag", label="3 b-tag(s)")
+    add_category(config, name="1btag", id=112, selection="cat_1btag", label="1 b-tag(s)")
+    add_category(config, name="2btag", id=113, selection="cat_2btag", label="2 b-tag(s)")
+    add_category(config, name="3btag", id=114, selection="cat_3btag", label="3 b-tag(s)")
 
-    add_category(config, name="h3_mass_cut", id=120, selection="cat_h3_mass", label=r"$(m_{H3} < 125\,GeV)$", tags={"h3_mass_cut"})
+    add_category(config, name="h3_mass", id=120, selection="cat_h3_mass", label=r"$m_{H3}<125 .\GeV$", tags={"h3_mass"})
 
+    add_category(config, name="leps_cos", id=121, selection="cat_leps_cos", label=r"$\cos(\delta) > -0.25$", tags={"leps_cos"})
+    add_category(config, name="leps_dr", id=122, selection="cat_leps_dr", label=r"$\Delta R_{ll} < 2.4$", tags={"leps_dr"})
+    add_category(config, name="leps_dr_harsh", id=123, selection="cat_leps_dr_harsh", label=r"$\Delta R_{ll} < 2.0$", tags={"leps_dr_harsh"})
     #
     # build groups
     #
@@ -76,14 +80,23 @@ def add_categories(config: od.Config) -> None:
     main_categories = {
         # channels first
         "channel": [
-            config.get_category("etau"), config.get_category("mutau"), config.get_category("tautau"),
+            # config.get_category("etau"), config.get_category("tautau"),
+            config.get_category("mutau"),
         ],
         # kinematic regions in the middle (to be extended)
         "kin": [
-            config.get_category("incl"), config.get_category("2j"), 
+            config.get_category("incl"), config.get_category("2j"), config.get_category("4j"), 
             config.get_category("1btag"), config.get_category("2btag"), config.get_category("3btag"),
-            config.get_category("h3_mass_cut"),
-                ],
+        ],
+        "h3_mass": [
+            config.get_category("h3_mass"),
+        ],
+        "leps_cos": [
+            config.get_category("leps_cos"),
+        ],
+        "leps_dr": [
+            config.get_category("leps_dr"), config.get_category("leps_dr_harsh"),
+        ],
         # qcd regions last
         "sign": [config.get_category("os"), config.get_category("ss")],
         "tau2": [config.get_category("iso"), config.get_category("noniso")],

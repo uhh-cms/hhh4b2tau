@@ -19,28 +19,28 @@ def delta_r12(*vectors):
             vec0 = vectors[0][0]
             vec1 = vectors[0][1]
         else:
-            vec0 = vectors[0][:, :1]
-            vec1 = vectors[0][:, 1:2]
-        dr = ak.firsts(vec0, axis=1).delta_r(ak.firsts(vec1, axis=1))
-        return ak.fill_none(dr, EMPTY_FLOAT)
+            vec0 = ak.firsts(vectors[0][:, :1])
+            vec1 = ak.firsts(vectors[0][:, 1:2])
+        dr = vec0.delta_r(vec1)
+        return dr
 
 def cos(*vectors) -> ak.Array:
     if len(vectors[-1]) == 2:
-        vec0 = ak.firsts(vectors[0][0])
-        vec1 = ak.firsts(vectors[0][1])
+        vec0 = vectors[0][0]
+        vec1 = vectors[0][1]
     else:
-        vec0 = vectors[0][:, :1]
-        vec1 = vectors[0][:, 1:2]
+        vec0 = ak.firsts(vectors[0][:, :1])
+        vec1 = ak.firsts(vectors[0][:, 1:2])
     cos = vec0.pvec.dot(vec1.pvec)/(vec0.pvec.absolute()*vec1.pvec.absolute())
-    return ak.fill_none(cos, EMPTY_FLOAT)
+    return cos
 
 def lvec_sum(*vectors) -> ak.Array:
     if len(vectors) == 1:
-        sum = vectors[0][:, :1] + vectors[0][:, 1:2]
+        sum = ak.firsts(vectors[0][:, :1]) + ak.firsts(vectors[0][:, 1:2])
     else: 
-        sum = ak.firsts(vectors[0])
+        sum = vectors[0]
         for vec in vectors[1:]:
-            sum = sum + ak.firsts(vec) 
+            sum = sum + vec
     return sum
 
 def build_higgs_reco(events, obj = None, var = None):
@@ -53,7 +53,7 @@ def build_higgs_reco(events, obj = None, var = None):
     h1 = lvec_sum(bb1)
     h2 = lvec_sum(bb2)
     h3 = lvec_sum(leps)
-    # from IPython import embed; embed(header="build higgs reco")
+
     if obj == "bb1":
         vectors = bb1
     if obj == "bb2":
@@ -76,34 +76,17 @@ def build_higgs_reco(events, obj = None, var = None):
         vectors = h2, h3
 
     if obj == "3b2tau":
-        mds_mask = (ak.firsts(h1).mass-125)**2 <= (ak.firsts(h2).mass-125)**2
+        mds_mask = (h1.mass-125)**2 <= (h2.mass-125)**2
         mds_mask =ak.fill_none(mds_mask, True)
         h_best = ak.where(mds_mask, h1, h2) *1
         h_best_idx = ak.where(mds_mask, events.BB1_idx, events.BB2_idx)
         rem_jet_mask = ((ak.local_index(events.Jet, axis=-1) != h_best_idx[:,0]) &
                         (ak.local_index(events.Jet, axis=-1) != h_best_idx[:,1]) )
-        j3 = events.Jet[rem_jet_mask][:,:1] *1
+        j3 = ak.firsts(events.Jet[rem_jet_mask][:,:1]) *1
         vectors = lvec_sum(h_best, h3,  j3)
 
     if obj == "hhh":
         vectors = lvec_sum(h1, h2, h3)
-
-    # if  var == "cos":
-    #     return cos(vectors)
-    # if var == "dr":
-    #     return delta_r12(vectors)
-    # if var == "mass":
-    #     return ak.fill_none(vectors.mass, EMPTY_FLOAT)
-    # if var == "pt":
-    #     return vectors.pt
-    # if var == "eta":
-    #     return vectors.eta
-    # if var == "abs_eta":
-    #     return abs(vectors.eta)
-    # if var == "phi":
-    #     return vectors.phi
-    # if var == "energy":
-    #     return vectors.energy
     
     if  var == "cos":
         value = cos(vectors)

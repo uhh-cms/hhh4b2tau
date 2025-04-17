@@ -157,7 +157,7 @@ def new(
         )
     results.steps.update({
         "dihiggs": hbt_mask,
-        "mutau": events.channel_id == 2,
+        # "mutau": events.channel_id == 2,
         })
 
     # mc-only functions

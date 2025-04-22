@@ -45,7 +45,7 @@ def min_chi_sqr_pair(array: ak.Array, table: ak.Array) -> ak.Array:
 
     min_chisq = chisq[sorted_chi_idx][:,0]
     rando_mask = (np.random.rand(len(array)) >= 0.5)
-    bb1_chi= ak.where(chi_table[:,0], chi_table[:,1], rando_mask)
-    bb2_chi= ak.where(chi_table[:,1], chi_table[:,0], rando_mask)
+    bb1_chi= ak.where(rando_mask, chi_table[:,0], chi_table[:,1])
+    bb2_chi= ak.where(rando_mask, chi_table[:,1], chi_table[:,0])
 
     return bb1_chi, bb2_chi, min_chisq, rando_mask

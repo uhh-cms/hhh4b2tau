@@ -14,7 +14,7 @@ from columnflow.columnar_util import (
     optional_column as optional
 )
 from hhh4b2tau.production.util import table_combo
-from hhh4b2tau.production.higgs_reco import higgs_reco_mass_diff, higgs_reco_chi2
+from hhh4b2tau.production.higgs_reco import higgs_reco_mds, higgs_reco_chi2
 from columnflow.types import Sequence
 import numpy as np
 import law
@@ -401,8 +401,8 @@ def jet_gen_matching(
 ######################### first reconstruction method #####################
 ###########################################################################
 
-    if self.has_dep(higgs_reco_mass_diff):
-        events = self[higgs_reco_mass_diff](events, **kwargs)
+    if self.has_dep(higgs_reco_mds):
+        events = self[higgs_reco_mds](events, **kwargs)
 
 ###########################################################################
 ######################## second reconstruction method #####################
@@ -418,6 +418,6 @@ def jet_gen_matching(
 @jet_gen_matching.init
 def jet_gen_matchin_init(self):
     super(self.__class__, self).init_func()
-    # self.uses |= {higgs_reco_mass_diff, higgs_reco_chi2}
-    # self.produces |= {higgs_reco_mass_diff, higgs_reco_chi2}
+    # self.uses |= {higgs_reco_mds, higgs_reco_chi2}
+    # self.produces |= {higgs_reco_mds, higgs_reco_chi2}
     

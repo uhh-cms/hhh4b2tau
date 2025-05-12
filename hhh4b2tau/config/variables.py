@@ -45,13 +45,17 @@ def lvec_sum(*vectors) -> ak.Array:
 
 def build_higgs_reco(events, obj = None, var = None):
     events = attach_coffea_behavior(events)
-    
-    bb1 = events.Jet[events.BB1_idx] *1
-    bb2 = events.Jet[events.BB2_idx] *1
+    try:
+        bb1 = events.Jet[events.BB1_idx] *1
+        bb2 = events.Jet[events.BB2_idx] *1
+
+        h1 = lvec_sum(bb1)
+        h2 = lvec_sum(bb2)
+    except:
+        pass
+
     leps = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
 
-    h1 = lvec_sum(bb1)
-    h2 = lvec_sum(bb2)
     h3 = lvec_sum(leps)
 
     if obj == "bb1":
@@ -113,7 +117,6 @@ def build_higgs_reco(events, obj = None, var = None):
     
     return ak.fill_none(value, EMPTY_FLOAT)
 
-    # raise ValueError(f"Unknown obj or var: {obj, var}")
 
 build_higgs_reco.inputs = ["{Electron,Muon,Tau,Jet}.{pt,eta,phi,mass}", "BB{1,2}_idx"]
 
@@ -126,7 +129,7 @@ def add_variables(config: od.Config) -> None:
         config,
         name="event",
         expression="event",
-        binning=(1, 0.0, 1.0e6),
+        binning=(1, 0.0, 1e9),
         x_title="Event number",
     )
     add_variable(
@@ -305,21 +308,21 @@ def add_variables(config: od.Config) -> None:
         config,
         name="cos_bb1_hadron",
         binning=(24, -1, +1),
-        x_title=r"$bb_1$ $cos(\delta)^{gen,hadron}$",
+        x_title=r"$bb_1$ $\cos(\delta)^{gen,hadron}$",
     )
 
     add_variable(
         config,
         name="cos_bb2_hadron",
         binning=(24, -1, +1),
-        x_title=r"$bb_2$ $cos(\delta)^{gen,hadron}$",
+        x_title=r"$bb_2$ $\cos(\delta)^{gen,hadron}$",
     )
 
     add_variable(
         config,
         name="cos_tautau_hadron",
         binning=(24, -1, +1),
-        x_title=r"$\tau\tau$ $cos(\delta)^{gen,hadron}$",
+        x_title=r"$\tau\tau$ $\cos(\delta)^{gen,hadron}$",
     )
 
     add_variable(
@@ -347,21 +350,21 @@ def add_variables(config: od.Config) -> None:
         config,
         name="cos_h12_hadron",
         binning=(24, -1, +1),
-        x_title=r"H $cos(\delta)_{1,2}^{gen,hadron}$",
+        x_title=r"H $\cos(\delta)_{1,2}^{gen,hadron}$",
     )
 
     add_variable(
         config,
         name="cos_h13_hadron",
         binning=(24, -1, +1),
-        x_title=r"H $cos(\delta)_{1,3}^{gen,hadron}$",
+        x_title=r"H $\cos(\delta)_{1,3}^{gen,hadron}$",
     )
 
     add_variable(
         config,
         name="cos_h23_hadron",
         binning=(24, -1, +1),
-        x_title=r"H $cos(\delta)_{2,3}^{gen,hadron}$",
+        x_title=r"H $\cos(\delta)_{2,3}^{gen,hadron}$",
     )
 
 
@@ -814,9 +817,9 @@ def add_variables(config: od.Config) -> None:
 
     add_variable(
         config,
-        name="min_chisq",
+        name="min_chi2",
         binning=(50, 0, 0.4),
-        x_title=r"minimal $\Delta\chi^2$",
+        x_title=r"minimal $\chi^2$",
     )
 
     add_variable(
@@ -826,7 +829,7 @@ def add_variables(config: od.Config) -> None:
         aux={"inputs": build_higgs_reco.inputs},
         binning=(60, 150.0, 1300.0),
         unit="GeV",
-        x_title=r"$m_{3b2\tau}, (b_3,pt)$",
+        x_title=r"$m_{3j2l}, (b_3,pt)$",
     )
 
     add_variable(
@@ -836,7 +839,7 @@ def add_variables(config: od.Config) -> None:
         aux={"inputs": build_higgs_reco.inputs},
         binning=(60, 150.0, 1300.0),
         unit="GeV",
-        x_title=r"$m_{4b2\tau}$",
+        x_title=r"$m_{4j2l}$",
     )
 
     add_variable(
@@ -872,7 +875,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="bb1", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$bb_1$ $cos(\delta)$",
+        x_title=r"$bb_1$ $\cos(\delta)$",
     )
 
     add_variable(
@@ -881,7 +884,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="bb2", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$bb_2$ $cos(\delta)$",
+        x_title=r"$bb_2$ $\cos(\delta)$",
     )
 
     add_variable(
@@ -890,7 +893,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="leps", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$\tau\tau$ $cos(\delta)$",
+        x_title=r"$ll$ $\cos(\delta)$",
     )
 
     add_variable(
@@ -926,7 +929,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="h12", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$H$ $cos(\delta)_{1,2}$",
+        x_title=r"$H$ $\cos(\delta)_{1,2}$",
     )
 
     add_variable(
@@ -935,7 +938,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="h13", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$H$ $cos(\delta)_{1,3}$",
+        x_title=r"$H$ $\cos(\delta)_{1,3}$",
     )
 
     add_variable(
@@ -944,7 +947,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="h23", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$H$ $cos(\delta)_{2,3}$",
+        x_title=r"$H$ $\cos(\delta)_{2,3}$",
     )
 
     add_variable(
@@ -1157,7 +1160,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_dilep, which="jet_dr"),
         aux={"inputs": build_dilep.inputs},
         binning=(35, 0, 7),
-        x_title=r"$\Delta R_{l,jet}$",
+        x_title=r"$\Delta R_{l,j}$",
     )
 
     add_variable(
@@ -1167,7 +1170,7 @@ def add_variables(config: od.Config) -> None:
         aux={"inputs": build_dilep.inputs},
         binning=(40, 0.0, 400.0),
         unit="GeV",
-        x_title=r"$m_{l,jet}$",
+        x_title=r"$m_{l,j}$",
     )
 
 

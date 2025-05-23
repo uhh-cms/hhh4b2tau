@@ -74,21 +74,19 @@ def higgs_reco_mds(self, events: ak.Array, **kwargs):
     bb1_idx = ak.where(self.jet_num_mask, self.lone_pair_idx, bb1_idx)
 
     # special treatment because of two seperate values that are minimized
-
-
-    min_chi2_1 = chi2_12(events.Jet[bb1_idx]) 
-    min_chi2_2 = chi2_12(events.Jet[bb2_idx])
+    chi2_1 = chi2_12(events.Jet[bb1_idx]) 
+    chi2_2 = chi2_12(events.Jet[bb2_idx])
 
     events = set_ak_column(events, 'BB1_idx', bb1_idx)
     events = set_ak_column(events, 'BB2_idx', bb2_idx)
-    events = set_ak_column(events, 'min_chi2_1', min_chi2_1)
-    events = set_ak_column(events, 'min_chi2_2', min_chi2_2)
+    events = set_ak_column_f32(events, 'chi2_1', chi2_1)
+    events = set_ak_column_f32(events, 'chi2_2', chi2_2)
     return events
 
 @higgs_reco_mds.init
 def higgs_reco_mds_init(self: Producer) -> None:
     super(higgs_reco_mds, self).init_func()
-    self.produces |= {'min_chi2_{1,2}'}
+    self.produces |= {'chi2_{1,2}'}
 
 
 def chi2_12(vectors):
@@ -114,14 +112,14 @@ def higgs_reco_chi2(self, events: ak.Array, **kwargs,):
 
     events = set_ak_column(events, 'BB1_idx', bb1_idx)
     events = set_ak_column(events, 'BB2_idx', bb2_idx)
-    events = set_ak_column_f32(events, "min_chi2", min_func_val)
+    events = set_ak_column_f32(events, "chi2", min_func_val)
 
     return events
 
 @higgs_reco_chi2.init
 def higgs_reco_chi2_init(self: Producer) -> None:
     super(higgs_reco_chi2, self).init_func()
-    self.produces |= {'min_chi2'}
+    self.produces |= {'chi2'}
 
 
 
@@ -143,11 +141,11 @@ def higgs_reco_dhh(self, events: ak.Array, **kwargs,):
 
     events = set_ak_column(events, 'BB1_idx', bb1_idx)
     events = set_ak_column(events, 'BB2_idx', bb2_idx)
-    events = set_ak_column_f32(events, 'min_dhh', min_func_val)
+    events = set_ak_column_f32(events, 'dhh', min_func_val)
 
     return events
 
 @higgs_reco_dhh.init
 def higgs_reco_dhh_init(self: Producer) -> None:
     super(higgs_reco_dhh, self).init_func()
-    self.produces |= {'min_dhh'}
+    self.produces |= {'dhh'}

@@ -55,34 +55,34 @@ class _GenPartMatchBase(Producer):
                 optional(f"gen_{child}.{var}")
                 for child in self.children
                 for var in self.variables
-            } |
-            {   
-                optional(f"gen_tth_{child}.{var}")
-                for child in self.children
-                for var in self.variables
-            } |
-            {   
-                optional(f"gen_tth_{mother}_to_{child}.{var}")
-                for mother in self.mothers
-                for child in self.children
-                for var in self.variables
-            } |
-            {
-                optional(f"match_gen_{mother}_to_{child}.{var}")
-                for mother in self.mothers
-                for child in self.children
-                for var in self.variables
-            } |
-            {   
-                optional(f"match_gen_{child}.{var}")
-                for child in self.children
-                for var in self.variables
-            } |
-            {   # gen matching related
-                optional('Gen_Matched_H1_idx'),
-                optional('Gen_Matched_H2_idx')
+            }
+            # {   
+            #     optional(f"gen_tth_{child}.{var}")
+            #     for child in self.children
+            #     for var in self.variables
+            # } |
+            # {   
+            #     optional(f"gen_tth_{mother}_to_{child}.{var}")
+            #     for mother in self.mothers
+            #     for child in self.children
+            #     for var in self.variables
+            # } 
+            # {
+            #     optional(f"match_gen_{mother}_to_{child}.{var}")
+            #     for mother in self.mothers
+            #     for child in self.children
+            #     for var in self.variables
+            # } |
+            # {   
+            #     optional(f"match_gen_{child}.{var}")
+            #     for child in self.children
+            #     for var in self.variables
+            # } |
+            # {   # gen matching related
+            #     optional('Gen_Matched_H1_idx'),
+            #     optional('Gen_Matched_H2_idx')
 
-            } 
+            # } 
         )
 
     def get_decay_idx(
@@ -239,6 +239,9 @@ def gen_higgs_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.A
     )
     # from IPython import embed; embed(header="in gen_higgs_decay_products after W identification")
     return events
+
+
+
   
 # Access decay products for ttH channel
 @_GenPartMatchBase.producer(
@@ -280,6 +283,21 @@ def gen_tth_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     )
     # from IPython import embed; embed(header='in gen_tth')
     return events
+
+@gen_tth_decay_products.init
+def gen_tth_decay_products_init(self):
+    super(self.__class__, self).init_func()
+    self.produces |= (      
+                { optional(f"gen_tth_{child}.{var}")
+                  for child in self.children
+                  for var in self.variables
+                } |
+                { optional(f"gen_tth_{mother}_to_{child}.{var}")
+                  for mother in self.mothers
+                  for child in self.children
+                  for var in self.variables
+                } 
+        )
 
 
 
@@ -343,7 +361,7 @@ def gen_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 # producer that matches hh--> bbbb from gen parton level to detector level
 @_GenPartMatchBase.producer(
     mothers = ('h', ),
-    children = ('b', ),
+    children = ('b', 'tau',),
 )
 def jet_gen_matching(
     self: Producer,
@@ -358,6 +376,14 @@ def jet_gen_matching(
         children_id=5,
         children_output_name="match_gen_b",
         mother_output_name="match_gen_h_to_b",
+    )
+
+    events, match_h_tau_idx, match_h_tau_particles = self.get_decay_idx(
+        events,
+        mother_id=25,
+        children_id=15,
+        children_output_name="match_gen_tau",
+        mother_output_name="match_gen_h_to_tau",
     )
 
     # attach coffea behavior for four-vector arithmetic
@@ -418,6 +444,18 @@ def jet_gen_matching(
 @jet_gen_matching.init
 def jet_gen_matchin_init(self):
     super(self.__class__, self).init_func()
+    self.produces |= (
+        { optional(f"match_gen_{child}.{var}") 
+          for child in self.children
+          for var in self.variables} |
+        { optional(f"match_gen_{mother}_to_{child}.{var}")
+           for mother in self.mothers
+           for child in self.children
+           for var in self.variables} |
+        { 'Gen_Matched_H1_idx',
+          'Gen_Matched_H2_idx'}
+        )
+                    
     # self.uses |= {higgs_reco_mds, higgs_reco_chi2}
     # self.produces |= {higgs_reco_mds, higgs_reco_chi2}
     

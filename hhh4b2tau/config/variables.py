@@ -43,20 +43,17 @@ def lvec_sum(*vectors) -> ak.Array:
             sum = sum + vec
     return sum
 
-def build_higgs_reco(events, obj = None, var = None):
-    events = attach_coffea_behavior(events)
-    try:
-        bb1 = events.Jet[events.BB1_idx] *1
-        bb2 = events.Jet[events.BB2_idx] *1
 
-        h1 = lvec_sum(bb1)
-        h2 = lvec_sum(bb2)
-    except:
-        pass
-
-    leps = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
-
-    h3 = lvec_sum(leps)
+def output_vectors(
+        obj=None, 
+        bb1=None, 
+        bb2=None, 
+        leps=None, 
+        h1=None, 
+        h2=None, 
+        h3=None, 
+        jjj=None
+    ):
 
     if obj == "bb1":
         vectors = bb1
@@ -79,19 +76,16 @@ def build_higgs_reco(events, obj = None, var = None):
     if obj == "h23":
         vectors = h2, h3
 
-    if obj == "3b2tau":
-        mds_mask = (h1.mass-125)**2 <= (h2.mass-125)**2
-        mds_mask =ak.fill_none(mds_mask, True)
-        h_best = ak.where(mds_mask, h1, h2) *1
-        h_best_idx = ak.where(mds_mask, events.BB1_idx, events.BB2_idx)
-        rem_jet_mask = ((ak.local_index(events.Jet, axis=-1) != h_best_idx[:,0]) &
-                        (ak.local_index(events.Jet, axis=-1) != h_best_idx[:,1]) )
-        j3 = ak.firsts(events.Jet[rem_jet_mask][:,:1]) *1
-        vectors = lvec_sum(h_best, h3,  j3)
-
+    if obj == "3j2l":
+        vectors = (jjj + h3)
     if obj == "hhh":
         vectors = lvec_sum(h1, h2, h3)
-    
+        
+    return vectors
+
+# generic function to put out variable values
+def output_value(vectors=None, var=None):
+
     if  var == "cos":
         value = cos(vectors)
     if var == "dr":
@@ -118,7 +112,163 @@ def build_higgs_reco(events, obj = None, var = None):
     return ak.fill_none(value, EMPTY_FLOAT)
 
 
-build_higgs_reco.inputs = ["{Electron,Muon,Tau,Jet}.{pt,eta,phi,mass}", "BB{1,2}_idx"]
+def build_higgs_reco(events, obj = None, var = None):
+    events = attach_coffea_behavior(events)
+    try:
+        bb1 = events.Jet[events.BB1_idx] *1
+        bb2 = events.Jet[events.BB2_idx] *1
+
+        h1 = lvec_sum(bb1)
+        h2 = lvec_sum(bb2)
+    except:
+        pass
+
+    leps = ak.concatenate([events.Electron * 1, events.Muon * 1, events.Tau * 1], axis=1)[:, :2]
+
+    h3 = lvec_sum(leps)
+
+    btag_idx = ak.argsort(events.Jet.btagDeepFlavB, ascending=False)
+    jjj = events.Jet[btag_idx][:, :3].sum(axis=1) *1
+
+    vectors = output_vectors(
+        obj=obj,
+        bb1=bb1, 
+        bb2=bb2,
+        leps=leps,
+        h1=h1,
+        h2=h2,
+        h3=h3,
+        jjj=jjj,
+    )
+
+    return output_value(vectors=vectors,var=var)
+
+
+build_higgs_reco.inputs = [
+    "{Electron,Muon,Tau,Jet}.{pt,eta,phi,mass}", 
+    "BB{1,2}_idx", 
+    "Jet.btagDeepFlavB"
+]
+
+def build_jet_gen_matched(events, obj=None, var = None, mds=False):
+    
+    events = attach_coffea_behavior(events)
+    bb1 = events.Jet[events.Gen_Matched_H1_idx] *1
+    bb2 = events.Jet[events.Gen_Matched_H2_idx] *1
+    if mds == False:
+        from hhh4b2tau.production.util import swap_random
+        bb1, bb2 = swap_random(bb1, bb2)
+
+    h1 = lvec_sum(bb1)
+    h2 = lvec_sum(bb2)
+    # mass difference sorting: mass of H1 is closer to 125 GeV 
+    if mds == True: 
+        from hhh4b2tau.production.util import order_pairs
+        mds_mask = ((h1.mass - 125)**2 <= (h2.mass - 125)**2)
+        # if only one H is reconstructed it will be h1
+        mds_mask = ak.where(ak.is_none(h1), False, mds_mask)
+        mds_mask = ak.fill_none(mds_mask, True)
+        h1, h2 = order_pairs(h1, h2, ~mds_mask)
+
+
+    vectors = output_vectors(
+        obj=obj,
+        # bb1=bb1, 
+        # bb2=bb2,
+        # leps=leps,
+        h1=h1,
+        h2=h2,
+        # h3=h3,
+        # jjj=jjj,
+    )
+
+    return output_value(vectors=vectors,var=var)
+
+build_jet_gen_matched.inputs = [
+    "Jet.{pt,eta,phi,mass,btagDeepFlavB}",
+    "Gen_Matched_H{1,2}_idx",
+]
+
+# gen level objects
+def build_gen_higgs(events, obj=None, var=None):
+    events = attach_coffea_behavior(
+        events,
+        collections={ x : {"type_name": "GenParticle"} for x in build_gen_higgs.objects}
+    )
+
+    h1 = events.gen_h_to_b[:,0] *1
+    h2 = events.gen_h_to_b[:,1] *1
+    h3 = ak.firsts(events.gen_h_to_tau) *1
+
+    bb1 = events.gen_b[:, 0] * 1
+    bb2 = events.gen_b[:, 1] * 1
+    leps = ak.firsts(events.gen_tau) *1
+
+    bbbb = ak.flatten(events.gen_b,axis=2)
+    jjj_idx = ak.argsort(bbbb.pt, ascending=False)[:,:3]
+    jjj = bbbb[jjj_idx].sum(axis=1)*1
+
+    vectors = output_vectors(
+        obj=obj,
+        bb1=bb1, 
+        bb2=bb2,
+        leps=leps,
+        h1=h1,
+        h2=h2,
+        h3=h3,
+        jjj=jjj,
+    )
+    
+    return output_value(vectors=vectors,var=var)
+
+build_gen_higgs.objects = [
+    "gen_b", 
+    "gen_tau", 
+    "gen_h_to_b", 
+    "gen_h_to_tau",
+    # "gen_taunu",
+    # "gen_electron",
+    # "gen_enu",
+    # "gen_munu",
+    # "gen_muon",
+]
+
+build_gen_higgs.variables = [
+    'pt', 
+    'eta', 
+    'phi', 
+    'mass', 
+    'pdgId', 
+]
+
+build_gen_higgs.inputs = [
+    f"{obj}.{var}" 
+    for obj in build_gen_higgs.objects 
+    for var in build_gen_higgs.variables
+]  
+
+# variables that use gen and detector level objects
+# set op for a specific operation
+def build_higgs_reco_gen(events, obj=None, var=None, op=None):
+    events = attach_coffea_behavior(events)
+    events = attach_coffea_behavior(
+        events,
+        collections={ x : {"type_name": "GenParticle"} for x in build_gen_higgs.objects}
+    )
+    reco_var = build_higgs_reco(events, obj=obj, var=var)
+    gen_var = build_gen_higgs(events, obj=obj, var=var)
+    # consider EMPTY_FLOAT values 
+    ef_mask = (reco_var != EMPTY_FLOAT) & (gen_var != EMPTY_FLOAT)
+
+    if op == "diff":
+        value = gen_var - reco_var
+
+    value = ak.where(ef_mask, value, EMPTY_FLOAT)
+
+    return value
+
+build_higgs_reco_gen.inputs = build_higgs_reco.inputs + build_gen_higgs.inputs
+
 
 
 def add_variables(config: od.Config) -> None:
@@ -367,188 +517,27 @@ def add_variables(config: od.Config) -> None:
         x_title=r"H $\cos(\delta)_{2,3}^{gen,hadron}$",
     )
 
-
-    # detector level
-
-    # add_variable(
-    #     config,
-    #     name="mhhh",
-    #     binning=(60, 150.0, 1300.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{4b2\tau}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="cos_taulep",
-    #     binning=(24, -1, +1),
-    #     x_title=r"$\tau\tau$ $cos(\delta)$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="delta_r_taulep",
-    #     binning=(35, 0, 7),
-    #     x_title=r"$\tau\tau$ $\Delta R$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="h3_mass",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H3}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="n_fatjet",
-    #     expression="n_fatjet",
-    #     binning=(5, 0, 5),
-    #     x_title="Number of fat jets",
-    #     discrete_x=True,
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="h1_unsort_mass",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H1}^{unsorted}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="h2_unsort_mass",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H2}^{unsorted}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="delta_r_h12",
-    #     binning=(35, 0, 7),
-    #     x_title=r"H $\Delta R_{1,2}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="delta_r_h13",
-    #     binning=(35, 0, 7),
-    #     x_title=r"H $\Delta R_{1,3}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="delta_r_h23",
-    #     binning=(35, 0, 7),
-    #     x_title=r"H $\Delta R_{2,3}$",
-    # )
-    
-    # add_variable(
-    #     config,
-    #     name="delta_r_bb1",
-    #     binning=(35, 0, 7),
-    #     x_title=r"$bb_1$ $\Delta R$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="delta_r_bb2",
-    #     binning=(35, 0, 7),
-    #     x_title=r"$bb_2$ $\Delta R$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="cos_h12",
-    #     binning=(24, -1, +1),
-    #     x_title=r"H $cos(\delta)_{1,2}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="cos_h13",
-    #     binning=(24, -1, +1),
-    #     x_title=r"H $cos(\delta)_{1,3}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="cos_h23",
-    #     binning=(24, -1, +1),
-    #     x_title=r"H $cos(\delta)_{2,3}$",
-    # )
-    
-    # add_variable(
-    #     config,
-    #     name="cos_bb1",
-    #     binning=(24, -1, +1),
-    #     x_title=r"$bb_1$ $cos(\delta)$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="cos_bb2",
-    #     binning=(24, -1, +1),
-    #     x_title=r"$bb_2$ $cos(\delta)$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="h1_mass",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H1}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="h2_mass",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H2}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="m_3btaulep",
-    #     binning=(60, 150.0, 1300.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{3b2\tau}, (b_3,hhbtag)$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="m_3btaulep_pt",
-    #     binning=(60, 150.0, 1300.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{3b2\tau}, (b_3,pt)$",
-    # )
-
-
     # gen-level variables
     add_variable(
         config,
         name="mtautau_gen",
-        binning=(40, 120.0, 130.0),
+        binning=(40, 123.5, 126.0),
         unit="GeV",
-        x_title=r"$m_{\tau\tau}^{gen}$",
+        x_title=r"$m_{H\rightarrow\tau\tau}^{gen}$",
     )
 
     add_variable(
         config,
         name="mbb_gen",
-        binning=(40, 120.0, 130.0),
+        binning=(40, 122.0, 126.0),
         unit="GeV",
-        x_title=r"$m_{bb}^{gen}$",
+        x_title=r"$m_{H \rightarrow bb}^{gen}$",
     )
 
     add_variable(
         config,
         name="mhhh_gen",
-        binning=(60, 150.0, 1300.0),
+        binning=(60, 350.0, 1350.0),
         unit="GeV",
         x_title=r"$m_{HHH}^{gen}$",
     )
@@ -566,7 +555,7 @@ def add_variables(config: od.Config) -> None:
         name="hpt_gen",
         binning=(60, 0.0, 800.0),
         unit="GeV",
-        x_title=r"$p_{TH}^{gen}$",
+        x_title=r"$p_{T,H}^{gen}$",
     )
 
     add_variable(
@@ -597,239 +586,154 @@ def add_variables(config: od.Config) -> None:
         config,
         name="delta_r_h12_gen",
         binning=(35, 0, 7),
-        x_title=r"H $\Delta R_{1,2}^{gen}$",
+        x_title=r"$\Delta R_{H1,2}^{gen}$",
     )
 
     add_variable(
         config,
         name="delta_r_h13_gen",
         binning=(35, 0, 7),
-        x_title=r"H $\Delta R_{1,3}^{gen}$",
+        x_title=r"$\Delta R_{H1,3}^{gen}$",
     )
 
     add_variable(
         config,
         name="delta_r_h23_gen",
         binning=(35, 0, 7),
-        x_title=r"H $\Delta R_{2,3}^{gen}$",
+        x_title=r"$\Delta R_{H2,3}^{gen}$",
     )
     
     add_variable(
         config,
         name="delta_r_bb1_gen",
         binning=(35, 0, 7),
-        x_title=r"$bb_1$ $\Delta R^{gen}$",
+        x_title=r"$\Delta R_{H1\rightarrow bb}^{gen}$",
     )
 
     add_variable(
         config,
         name="delta_r_bb2_gen",
         binning=(35, 0, 7),
-        x_title=r"$bb_2$ $\Delta R^{gen}$",
+        x_title=r"$\Delta R_{H2\rightarrow bb}^{gen}$",
     )
 
     add_variable(
         config,
         name="delta_r_tautau_gen",
         binning=(35, 0, 7),
-        x_title=r"$\tau\tau$ $\Delta R^{gen}$",
+        x_title=r"$\Delta R_{H3\rightarrow \tau\tau}^{gen}$",
     )
 
     add_variable(
         config,
         name="cos_h12_gen",
         binning=(24, -1, +1),
-        x_title=r"H $cos(\delta)_{1,2}^{gen}$",
+        x_title=r"$cos(\delta_{H1,2})^{gen}$",
     )
 
     add_variable(
         config,
         name="cos_h13_gen",
         binning=(24, -1, +1),
-        x_title=r"H $cos(\delta)_{1,3}^{gen}$",
+        x_title=r"$cos(\delta_{H1,3})^{gen}$",
     )
 
     add_variable(
         config,
         name="cos_h23_gen",
         binning=(24, -1, +1),
-        x_title=r"H $cos(\delta)_{2,3}^{gen}$",
+        x_title=r"$cos(\delta_{H2,3})^{gen}$",
     )
     
     add_variable(
         config,
         name="cos_bb1_gen",
         binning=(24, -1, +1),
-        x_title=r"$bb_1$ $cos(\delta)^{gen}$",
+        x_title=r"$cos(\delta_{H1\rightarrow bb})^{gen}$",
     )
 
     add_variable(
         config,
         name="cos_bb2_gen",
         binning=(24, -1, +1),
-        x_title=r"$bb_2$ $cos(\delta)^{gen}$",
+        x_title=r"$cos(\delta_{H2\rightarrow bb})^{gen}$",
     )
 
     add_variable(
         config,
         name="cos_tautau_gen",
         binning=(24, -1, +1),
-        x_title=r"$\tau\tau$ $cos(\delta)^{gen}$",
+        x_title=r"$cos(\delta_{H3\rightarrow \tau\tau})^{gen}$",
     )
-
-
-    ### detector level but with experimental Delta chi**2 minimization to H mass for jet pairing
-
-    # add_variable(
-    #     config,
-    #     name="mds_h1_mass_chi",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H1}$ $(\Delta\chi^2)$ (mds)",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="mds_h2_mass_chi",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H2}$ $(\Delta\chi^2)$ (mds)",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="delta_r_h12_chi",
-    #     binning=(35, 0, 7),
-    #     x_title=r"H $(\Delta\chi^2)$ $\Delta R_{1,2}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="delta_r_h13_chi",
-    #     binning=(35, 0, 7),
-    #     x_title=r"H $(\Delta\chi^2)$ $\Delta R_{1,3}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="delta_r_h23_chi",
-    #     binning=(35, 0, 7),
-    #     x_title=r"H $(\Delta\chi^2)$ $\Delta R_{2,3}$",
-    # )
-    
-    # add_variable(
-    #     config,
-    #     name="delta_r_bb1_chi",
-    #     binning=(35, 0, 7),
-    #     x_title=r"$bb_1$ $(\Delta\chi^2)$ $\Delta R$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="delta_r_bb2_chi",
-    #     binning=(35, 0, 7),
-    #     x_title=r"$bb_2$ $(\Delta\chi^2)$ $\Delta R$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="cos_h12_chi",
-    #     binning=(24, -1, +1),
-    #     x_title=r"H $(\Delta\chi^2)$ $cos(\delta)_{1,2}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="cos_h13_chi",
-    #     binning=(24, -1, +1),
-    #     x_title=r"H $(\Delta\chi^2)$ $cos(\delta)_{1,3}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="cos_h23_chi",
-    #     binning=(24, -1, +1),
-    #     x_title=r"H $(\Delta\chi^2)$ $cos(\delta)_{2,3}$",
-    # )
-    
-    # add_variable(
-    #     config,
-    #     name="cos_bb1_chi",
-    #     binning=(24, -1, +1),
-    #     x_title=r"$bb_1$ $(\Delta\chi^2)$ $cos(\delta)$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="cos_bb2_chi",
-    #     binning=(24, -1, +1),
-    #     x_title=r"$bb_2$ $(\Delta\chi^2)$ $cos(\delta)$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="h1_mass_chi",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H1}$ $(\Delta\chi^2)$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="h2_mass_chi",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H2}$ $(\Delta\chi^2)$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="m_3btaulep_chi",
-    #     binning=(60, 150.0, 1300.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{3b2\tau} (\Delta\chi^2), (b_3,hhbtag)$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="m_3btaulep_pt_chi",
-    #     binning=(60, 150.0, 1300.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{3b2\tau} (\Delta\chi^2), (b_3,pt)$",
-    # )
-
-
-    # add_variable(
-    #     config,
-    #     name="mds_h1_mass_gm",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H1}^{mds,gm}$",
-    # )
-
-    # add_variable(
-    #     config,
-    #     name="mds_h2_mass_gm",
-    #     binning=(40, 0.0, 400.0),
-    #     unit="GeV",
-    #     x_title=r"$m_{H2}^{mds,gm}$",
-    # )
 
     add_variable(
         config,
-        name="min_chi2",
+        name="chi2",
         binning=(50, 0, 0.4),
-        x_title=r"minimal $\chi^2$",
+        # # for flat-s binning
+        # binning=(120, 0, 0.4),
+        x_title=r"$\chi^2$",
     )
 
     add_variable(
         config,
-        name="m_3btaulep_pt",
-        expression=partial(build_higgs_reco, obj="3b2tau", var="mass"),
+        name="chi2_1",
+        binning=(50, 0, 0.15),
+        x_title=r"$\chi^2_{H1}$",
+    )
+
+    add_variable(
+        config,
+        name="chi2_2",
+        binning=(50, 0, 0.4),
+        x_title=r"$\chi^2_{H2}$",
+    )
+
+    add_variable(
+        config,
+        name="dhh",
+        binning=(50, 0, 20),
+        x_title=r"$D_{HH}$",
+    )
+
+    add_variable(
+        config,
+        name="m3j2l",
+        expression=partial(build_higgs_reco, obj="3j2l", var="mass"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(60, 150.0, 1300.0),
         unit="GeV",
-        x_title=r"$m_{3j2l}, (b_3,pt)$",
+        x_title=r"$m_{3j2l}$",
+    )
+
+    add_variable(
+        config,
+        name="delta_m3j2l",
+        expression=partial(
+            build_higgs_reco_gen, 
+            obj="3j2l", 
+            var="mass", 
+            op="diff"
+            ),
+        aux={"inputs": build_higgs_reco_gen.inputs},
+        binning=(60, -100.0, 700.0),
+        unit="GeV",
+        x_title=r"$\Delta m_{3j2l}^{gen,det}$",
+    )
+
+    add_variable(
+        config,
+        name="delta_mhhh",
+        expression=partial(
+            build_higgs_reco_gen, 
+            obj="hhh", 
+            var="mass", 
+            op="diff"
+            ),
+        aux={"inputs": build_higgs_reco_gen.inputs},
+        binning=(60, -400.0, 700.0),
+        unit="GeV",
+        x_title=r"$\Delta m_{4j2l}^{gen,det}$",
     )
 
     add_variable(
@@ -844,56 +748,56 @@ def add_variables(config: od.Config) -> None:
 
     add_variable(
         config,
-        name="delta_r_bb1",
+        name="delta_r_jj1",
         expression=partial(build_higgs_reco, obj="bb1", var="dr"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(35, 0, 7),
-        x_title=r"$bb_1$ $\Delta R$",
+        x_title=r"$\Delta R_{jj1}$",
     )
 
     add_variable(
         config,
-        name="delta_r_bb2",
+        name="delta_r_jj2",
         expression=partial(build_higgs_reco, obj="bb2", var="dr"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(35, 0, 7),
-        x_title=r"$bb_2$ $\Delta R$",
+        x_title=r"$\Delta R_{jj2}$",
     )
 
     add_variable(
         config,
-        name="delta_r_taulep",
+        name="delta_r_ll",
         expression=partial(build_higgs_reco, obj="leps", var="dr"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(35, 0, 7),
-        x_title=r"$\tau\tau$ $\Delta R$",
+        x_title=r"$\Delta R_{ll}$",
     )
 
     add_variable(
         config,
-        name="cos_bb1",
+        name="cos_jj1",
         expression=partial(build_higgs_reco, obj="bb1", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$bb_1$ $\cos(\delta)$",
+        x_title=r"$\cos(\delta_{jj1})$",
     )
 
     add_variable(
         config,
-        name="cos_bb2",
+        name="cos_jj2",
         expression=partial(build_higgs_reco, obj="bb2", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$bb_2$ $\cos(\delta)$",
+        x_title=r"$\cos(\delta_{jj2})$",
     )
 
     add_variable(
         config,
-        name="cos_taulep",
+        name="cos_ll",
         expression=partial(build_higgs_reco, obj="leps", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$ll$ $\cos(\delta)$",
+        x_title=r"$\cos(\delta_{ll})$",
     )
 
     add_variable(
@@ -902,7 +806,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="h12", var="dr"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(35, 0, 7),
-        x_title=r"$H$ $\Delta R_{1,2}$",
+        x_title=r"$\Delta R_{H1,2}$",
     )
 
     add_variable(
@@ -911,7 +815,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="h13", var="dr"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(35, 0, 7),
-        x_title=r"$H$ $\Delta R_{1,3}$",
+        x_title=r"$\Delta R_{H1,3}$",
     )
 
     add_variable(
@@ -920,7 +824,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="h23", var="dr"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(35, 0, 7),
-        x_title=r"$H$ $\Delta R_{2,3}$",
+        x_title=r"$\Delta R_{H2,3}$",
     )
 
     add_variable(
@@ -929,7 +833,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="h12", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$H$ $\cos(\delta)_{1,2}$",
+        x_title=r"$\cos(\delta)_{H1,2}$",
     )
 
     add_variable(
@@ -938,7 +842,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="h13", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$H$ $\cos(\delta)_{1,3}$",
+        x_title=r"$\cos(\delta)_{H1,3}$",
     )
 
     add_variable(
@@ -947,7 +851,7 @@ def add_variables(config: od.Config) -> None:
         expression=partial(build_higgs_reco, obj="h23", var="cos"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(24, -1, +1),
-        x_title=r"$H$ $\cos(\delta)_{2,3}$",
+        x_title=r"$\cos(\delta)_{H2,3}$",
     )
 
     add_variable(
@@ -1119,6 +1023,46 @@ def add_variables(config: od.Config) -> None:
         aux={"inputs": build_higgs_reco.inputs},
         binning=(30, 0.0, 3.0),
         x_title=r"$H_3$ $|\eta|$",
+    )
+
+    add_variable(
+        config,
+        name="h1_mass_gm",
+        expression=partial(build_jet_gen_matched, obj="h1", var="mass"),
+        aux={"inputs": build_jet_gen_matched.inputs},
+        binning=(40, 0.0, 400.0),
+        unit="GeV",
+        x_title=r"$m_{H1}^{gm}$",
+    )
+
+    add_variable(
+        config,
+        name="h2_mass_gm",
+        expression=partial(build_jet_gen_matched, obj="h2", var="mass"),
+        aux={"inputs": build_jet_gen_matched.inputs},
+        binning=(40, 0.0, 400.0),
+        unit="GeV",
+        x_title=r"$m_{H2}^{gm}$",
+    )
+
+    add_variable(
+        config,
+        name="h1_mass_gm_mds",
+        expression=partial(build_jet_gen_matched, obj="h1", var="mass", mds=True),
+        aux={"inputs": build_jet_gen_matched.inputs},
+        binning=(40, 0.0, 400.0),
+        unit="GeV",
+        x_title=r"$m_{H1}^{gm,mds}$",
+    )
+
+    add_variable(
+        config,
+        name="h2_mass_gm_mds",
+        expression=partial(build_jet_gen_matched, obj="h2", var="mass", mds=True),
+        aux={"inputs": build_jet_gen_matched.inputs},
+        binning=(40, 0.0, 400.0),
+        unit="GeV",
+        x_title=r"$m_{H2}^{gm,mds}$",
     )
 
 

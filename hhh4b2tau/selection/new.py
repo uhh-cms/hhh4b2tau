@@ -22,10 +22,10 @@ from columnflow.production.cms.pdf import pdf_weights
 from columnflow.production.cms.scale import murmuf_weights
 from columnflow.production.cms.top_pt_weight import gen_parton_top
 from columnflow.production.util import attach_coffea_behavior
-# from columnflow.production.categories import category_ids
 
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.types import Iterable
+from columnflow.columnar_util import sorted_indices_from_mask
 
 from hbt.selection.trigger import trigger_selection
 from hbt.selection.lepton import lepton_selection
@@ -35,7 +35,8 @@ from hbt.production.btag import btag_weights_deepjet, btag_weights_pnet
 from hbt.production.features import cutflow_features
 from hbt.production.patches import patch_ecalBadCalibFilter
 from hbt.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
-
+from hhh4b2tau.config.variables import lvec_sum, delta_r12
+from hhh4b2tau.production.gen_higgs_decay_products import gen_higgs_decay_products
 
 
 np = maybe_import("numpy")
@@ -85,13 +86,17 @@ def get_bad_events(self: Selector, events: ak.Array) -> ak.Array:
         json_filter, hhh_met_filters, IF_RUN_3(jet_veto_map), 
         trigger_selection, lepton_selection, jet_selection,
         mc_weight, pu_weight, btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), 
-        process_ids, cutflow_features, increment_stats, attach_coffea_behavior,
+        process_ids, increment_stats, attach_coffea_behavior,
         patch_ecalBadCalibFilter, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights),
+        cutflow_features, 
+        gen_higgs_decay_products,
     },
     produces={
         trigger_selection, lepton_selection, jet_selection, mc_weight, pu_weight, 
-        btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, cutflow_features, 
+        btag_weights_deepjet, IF_RUN_3(btag_weights_pnet), process_ids, 
         increment_stats, IF_DATASET_HAS_LHE_WEIGHTS(pdf_weights, murmuf_weights), 
+        cutflow_features, 
+        gen_higgs_decay_products,
     },
     exposed=True,
     sandbox = dev_sandbox("bash::$HHH4B2TAU_BASE/sandboxes/venv_columnar_tf.sh"),
@@ -146,19 +151,6 @@ def new(
     results += jet_results
 
     # from IPython import embed; embed(header="new selector")
-    # group hbt selection as one big step
-    hbt_mask = (
-        results.steps.two_jet & 
-        results.steps.lepton & 
-        results.steps.trigger & 
-        results.steps.met_filter & 
-        results.steps.jet_veto_map & 
-        results.steps.json
-        )
-    results.steps.update({
-        "dihiggs": hbt_mask,
-        # "mutau": events.channel_id == 2,
-        })
 
     # mc-only functions
     if self.dataset_inst.is_mc:
@@ -197,6 +189,12 @@ def new(
                 **kwargs,
             )
 
+    if (self.dataset_inst.is_mc and
+        any(self.dataset_inst.name.lower().startswith(x)
+            for x in ("hhh",))
+    ):
+        events = self[gen_higgs_decay_products](events, **kwargs)
+
     # create process ids
     if self.process_ids_dy is not None:
         events = self[self.process_ids_dy](events, **kwargs)
@@ -205,7 +203,7 @@ def new(
     else:
         events = self[process_ids](events, **kwargs)
 
-    # some cutflow features
+    # # some cutflow features
     # events = self[cutflow_features](events, results.objects, **kwargs)
 
     # combined event selection after all steps
@@ -276,21 +274,120 @@ def new_init(self: Selector) -> None:
         self.uses.add(gen_parton_top)
         self.produces.add(gen_parton_top)
 
-# selector with sparse output, test fo cutflow plots
-new_sparse_output = new.derive("new_sparse_output")
 
-@new_sparse_output.init
-def new_sparse_output_init(self: Selector) -> None:
-    super(new_sparse_output, self).init_func()
+new_var_cuts = new.derive("new_var_cuts")
 
-    # remove unused dependencies
-    self.produces = {
-        process_ids,
-        # category_ids,
-        # cutflow_features,
-        mc_weight,
-        increment_stats,
-    }
+@new_var_cuts.init
+def new_var_cuts_init(self: Selector) -> None:
+    super(new_var_cuts, self).init_func()
+
+    # used = {
+    #     cutflow_features,
+    # }
+
+    # self.uses += used
+    # self.produces += used
+
+@new_var_cuts.call
+def new_var_cuts_call(
+    self: Selector,
+    events: ak.Array,
+    stats: defaultdict,
+    **kwargs,
+) -> tuple[ak.Array, SelectionResult]:
+    
+    events, results = super(new_var_cuts, self).call_func(events, stats, **kwargs)
+    # ensure coffea behavior
+    events = self[attach_coffea_behavior](events, **kwargs)
+    # from IPython import embed; embed(header="new selector")
+
+    # some cutflow features
+    events = self[cutflow_features](events, results.objects, **kwargs)
+    
+    # group hbt selection as one big step
+    hbt_mask = (
+        results.steps.two_jet & 
+        results.steps.lepton & 
+        results.steps.trigger & 
+        results.steps.met_filter & 
+        results.steps.jet_veto_map & 
+        results.steps.json
+        )
+    
+    electron_indices = results.objects.Electron.Electron
+    muon_indices = results.objects.Muon.Muon
+    tau_indices = results.objects.Tau.Tau
+
+    leps = ak.concatenate(
+        [
+            events.Electron[electron_indices] * 1,
+            events.Muon[muon_indices] * 1,
+            events.Tau[tau_indices] * 1,
+        ],
+        axis=1,
+        )[:, :2]
+
+    # apply variable cuts
+    h3_mass_mask = ak.fill_none((lvec_sum(leps).mass < 125), False)
+
+    leps_dr_mask = ak.fill_none((delta_r12(leps) < 2.0), False)
+
+    jet_indices = results.objects.Jet.Jet
+    j1_pt_mask = ak.fill_none(ak.firsts(events.Jet[jet_indices][:, :1].pt > 100), False)
+
+    results.steps.update({
+        "dihiggs": hbt_mask,
+        "mutau": events.channel_id == self.config_inst.channels.n.mutau.id,
+        "h3_mass": h3_mass_mask,
+        "leps_dr": leps_dr_mask,
+        "j1_pt": j1_pt_mask,
+        })
+
+    return events, results
+
+
+# # selector with sparse output, test for cutflow plots
+# new_sparse_output = new.derive("new_sparse_output")
+
+# @new_sparse_output.init
+# def new_sparse_output_init(self: Selector) -> None:
+#     super(new_sparse_output, self).init_func()
+
+#     # remove unused dependencies
+#     self.produces = {
+#         process_ids,
+#         # category_ids,
+#         # cutflow_features,
+#         mc_weight,
+#         increment_stats,
+#     }
+
+
+
+# looser selection for DNN
+
+new_loose = new.derive("new_loose", cls_dict={})
+
+@new_loose.init
+def new_loose_init(self: Selector) -> None:
+    super(new_loose, self).init_func()
+
+@new_loose.call
+def new_loose_call(
+    self: Selector,
+    events: ak.Array,
+    stats: defaultdict,
+    **kwargs,
+) -> tuple[ak.Array, SelectionResult]:
+    
+    events, results = super(new_loose, self).call_func(events, stats, **kwargs)
+    # ensure coffea behavior
+    events = self[attach_coffea_behavior](events, **kwargs)
+
+    # remove b-tag requirements
+    del results.steps["one_btag"], results.steps["two_btag"], results.steps["three_btag"]
+
+    return events, results
 
 
 empty = new.derive("empty", cls_dict={})

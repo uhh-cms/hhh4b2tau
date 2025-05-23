@@ -112,22 +112,24 @@ def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @producer(
     uses={
         features, category_ids, normalization_weights, deterministic_seeds, 
-        jet_angle_difference, 
-        genHadron_variables,
-        hhh_decay_invariant_mass, tth_variables,
+        # jet_angle_difference, 
+        # genHadron_variables,
+        hhh_decay_invariant_mass, 
+        # tth_variables,
     },
     produces={
         features, category_ids, normalization_weights, deterministic_seeds, 
-        jet_angle_difference, 
-        genHadron_variables,
-        hhh_decay_invariant_mass, tth_variables,
+        # jet_angle_difference, 
+        # genHadron_variables,
+        hhh_decay_invariant_mass, 
+        # tth_variables,
     },
 )
 def empty(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = self[normalization_weights](events, **kwargs)
-    # features
-    events = self[features](events, **kwargs)
+    # # features
+    # events = self[features](events, **kwargs)
 
     # category ids
     events = self[category_ids](events, **kwargs)

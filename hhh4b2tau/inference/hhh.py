@@ -14,64 +14,41 @@ def hhh(self):
     # categories
     #
 
+    variable = "m3j2l"
+    # variable = "chi2"
+    kin_cat =["3b0j", "3b1j", "4b"]
+    data = ["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"]
+
+    self.add_category(
+        "incl",
+        config_category="incl",
+        config_variable=variable,
+        data_from_processes=data,
+        mc_stats=True,
+    )
+
+
+    self.add_category(
+        f"mutau__incl__os__iso" ,
+        config_category=f"mutau__incl__os__iso" ,
+        config_variable=variable,
+        data_from_processes=data,
+        mc_stats=True,
+    )
+    self.add_category(
+        f"mutau__incl__os__iso__var_cuts" ,
+        config_category=f"mutau__incl__os__iso__var_cuts" ,
+        config_variable=variable,
+        data_from_processes=data,
+        mc_stats=True,
+    )
     # self.add_category(
-    #     "incl",
-    #     config_category="incl",
-    #     config_variable="m_3btaulep_pt",
-    #     data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
+    #     f"mutau__incl__os__iso__var_cuts__3j2l" ,
+    #     config_category=f"mutau__incl__os__iso__var_cuts__3j2l" ,
+    #     config_variable=variable,
+    #     data_from_processes=data,
     #     mc_stats=True,
     # )
-    # self.add_category(
-    #     "mutau__os__iso",
-    #     config_category="mutau__os__iso",
-    #     config_variable="m_3btaulep_pt",
-    #     data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
-    #     mc_stats=True,
-    # )
-
-
-    for kin in ("incl", "2btag", "3btag"):
-
-        self.add_category(
-            f"mutau__{kin}__os__iso",
-            config_category=f"mutau__{kin}__os__iso",
-            config_variable="m_3btaulep_pt",
-            data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
-            mc_stats=True,
-        )
-
-        self.add_category(
-            f"mutau__{kin}__h3_mass__os__iso",
-            config_category=f"mutau__{kin}__h3_mass__os__iso",
-            config_variable="m_3btaulep_pt",
-            data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
-            mc_stats=True,
-        )
-
-        # self.add_category(
-        #     f"mutau__{kin}__h3_mass__leps_cos__os__iso",
-        #     config_category=f"mutau__{kin}__h3_mass__leps_cos__os__iso",
-        #     config_variable="m_3btaulep_pt",
-        #     data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
-        #     mc_stats=True,
-        # )
-
-        # self.add_category(
-        #     f"mutau__{kin}__h3_mass__leps_cos__leps_dr__os__iso",
-        #     config_category=f"mutau__{kin}__h3_mass__leps_cos__leps_dr__os__iso",
-        #     config_variable="m_3btaulep_pt",
-        #     data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
-        #     mc_stats=True,
-        # )
-
-        self.add_category(
-            f"mutau__{kin}__h3_mass__leps_dr__os__iso",
-            config_category=f"mutau__{kin}__h3_mass__leps_dr__os__iso",
-            config_variable="m_3btaulep_pt",
-            data_from_processes=["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"],
-            mc_stats=True,
-        )
-
 
     #
     # processes

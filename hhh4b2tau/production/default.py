@@ -21,7 +21,8 @@ from hhh4b2tau.production.tau import tau_weights, trigger_weights
 from hhh4b2tau.production.newvariables import jet_angle_difference
 from hhh4b2tau.production.newvariables import detector_variables
 from hhh4b2tau.production.newvariables import jet_gen_match_variables
-
+from hhh4b2tau.production.newvariables import hhh_decay_invariant_mass
+# from hhh4b2tau.production.gen_higgs_decay_products import gen_higgs_decay_products
 
 from hhh4b2tau.util import IF_DATASET_HAS_LHE_WEIGHTS, IF_RUN_3
 
@@ -40,6 +41,8 @@ ak = maybe_import("awkward")
         jet_angle_difference, 
         detector_variables, 
         jet_gen_match_variables,
+        # gen_higgs_decay_products,
+        hhh_decay_invariant_mass,
     },
     produces={
         # category_ids, 
@@ -51,6 +54,7 @@ ak = maybe_import("awkward")
         jet_angle_difference, 
         detector_variables, 
         jet_gen_match_variables,
+        hhh_decay_invariant_mass,
     },
     produce_weights=True,
 )
@@ -110,6 +114,8 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             for x in ("hhh",))
     ):
         events = self[jet_gen_match_variables](events, **kwargs)
+        # from IPython import embed; embed(header="string - 116 in default.py ")
+        events = self[hhh_decay_invariant_mass](events, **kwargs)
 
     return events
 

@@ -62,7 +62,6 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # category ids
     # events = self[category_ids](events, **kwargs)
-    # from IPython import embed; embed(header="default producer")
 
     # mc-only weights
     if self.dataset_inst.is_mc:

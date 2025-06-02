@@ -61,14 +61,13 @@ def add_categories(config: od.Config) -> None:
 
     # kinematic categories
     add_category(config, name="incl", id=100, selection="cat_incl", label="inclusive")
-    # add_category(config, name="4j", id=111, selection="cat_4j", label="4 jets")
-    # add_category(config, name="3b", id=115, selection="cat_3btag", label=r"$< 3$ jets")
+
     add_category(config, name="3b0j", id=115, selection="cat_3b0j", label=r"$=3$ b-tags, 0 jets")
     add_category(config, name="3b1j", id=116, selection="cat_3b1j", label=r"$=3$ b-tags, $\geq 1$ jets")
     add_category(config, name="4b", id=117, selection="cat_4b", label=r"$\geq 4$ b-tags")
 
-    # add_category(config, name="h3_mass", id=120, selection="cat_h3_mass", label=r"$m_{H3}<125 \ GeV$", tags={"h3_mass"})
-    # add_category(config, name="h3_mass_orth", id=121, selection="cat_h3_mass_orth", label=r"$m_{H3}>125 \ GeV$", tags={"h3_mass_orth"})
+    # add_category(config, name="mh3", id=120, selection="cat_mh3", label=r"$m_{H3}<125 \ GeV$", tags={"h3_mass"})
+    # add_category(config, name="mh3_orth", id=121, selection="cat_mh3_orth", label=r"$m_{H3}>125 \ GeV$", tags={"h3_mass_orth"})
 
     # add_category(config, name="leps_dr", id=126, selection="cat_leps_dr", label=r"$\Delta R_{ll} < 2.0$")
     # add_category(config, name="leps_dr_orth", id=127, selection="cat_leps_dr_orth", label="")
@@ -83,10 +82,6 @@ def add_categories(config: od.Config) -> None:
     add_category(config, name="var_cuts_orth", id=141, selection="cat_var_cuts_orth", label="")
 
     # add_category(config, name="chi2", id=132, selection="cat_chi2", label="$\chi^2 \leq 0.31$")
-
-    # add_category(config, name="3j2l", id=152, selection="cat_m3j2l", label=r"$m_{3j2l} \geq 450$")
-    # add_category(config, name="3j2l_orth", id=153, selection="cat_m3j2l_orth", label="")
-
 
     #
     # build groups
@@ -103,8 +98,10 @@ def add_categories(config: od.Config) -> None:
             config.get_category("mutau"),
         ],
         "kin": [
-            config.get_category("3b0j"), config.get_category("3b1j"), 
-            config.get_category("4b"), config.get_category("incl"),
+            config.get_category("incl"),
+            config.get_category("3b0j"), 
+            config.get_category("3b1j"), 
+            config.get_category("4b"), 
         ],
         # qcd regions last
         "sign": [
@@ -122,19 +119,20 @@ def add_categories(config: od.Config) -> None:
         #     config.get_category("3j2l"), config.get_category("3j2l_orth")
         # ],
         # "h3_mass": [
-        #     config.get_category("h3_mass"), 
-        #     # config.get_category("h3_mass_orth"),
+        #     config.get_category("mh3"), 
+        #     config.get_category("mh3_orth"),
         # ],
         # "leps_dr": [
         #     config.get_category("leps_dr"), 
-        #     # config.get_category("leps_dr_orth"),
+        #     config.get_category("leps_dr_orth"),
         #     # config.get_category("leps_dr_harsh"), 
         # ],
         # "bb1_dr": [
         #     config.get_category("bb1_dr"), config.get_category("bb1_dr_orth"),
         # ],
         # "j1_pt":[
-        #     config.get_category("j1_pt"), config.get_category("j1_pt_orth"),
+        #     config.get_category("j1_pt"), 
+        #     config.get_category("j1_pt_orth"),
         # ],
         # "chi2": [
         #     config.get_category("chi2"),

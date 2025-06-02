@@ -168,7 +168,7 @@ def build_jet_gen_matched(events, obj=None, var = None, mds=False):
         # if only one H is reconstructed it will be h1
         mds_mask = ak.where(ak.is_none(h1), False, mds_mask)
         mds_mask = ak.fill_none(mds_mask, True)
-        h1, h2 = order_pairs(h1, h2, ~mds_mask)
+        h1, h2 = order_pairs(h1, h2, mds_mask)
 
 
     vectors = output_vectors(
@@ -521,7 +521,7 @@ def add_variables(config: od.Config) -> None:
     add_variable(
         config,
         name="mtautau_gen",
-        binning=(40, 123.5, 126.0),
+        binning=(40, 123.0, 126.0),
         unit="GeV",
         x_title=r"$m_{H\rightarrow\tau\tau}^{gen}$",
     )
@@ -529,7 +529,7 @@ def add_variables(config: od.Config) -> None:
     add_variable(
         config,
         name="mbb_gen",
-        binning=(40, 122.0, 126.0),
+        binning=(40, 121.5, 126.0),
         unit="GeV",
         x_title=r"$m_{H \rightarrow bb}^{gen}$",
     )
@@ -669,30 +669,36 @@ def add_variables(config: od.Config) -> None:
     add_variable(
         config,
         name="chi2",
-        binning=(50, 0, 0.4),
-        # # for flat-s binning
-        # binning=(120, 0, 0.4),
+        # binning=(50, 0, 0.4),
+        # for flat-s binning
+        binning=(5000, 0, 0.4),
         x_title=r"$\chi^2$",
     )
 
     add_variable(
         config,
-        name="chi2_1",
-        binning=(50, 0, 0.15),
+        name="chi21",
+        # binning=(50, 0, 0.15),
+        # for flat-s binning
+        binning=(5000, 0, 0.15),
         x_title=r"$\chi^2_{H1}$",
     )
 
     add_variable(
         config,
-        name="chi2_2",
-        binning=(50, 0, 0.4),
+        name="chi22",
+        # binning=(50, 0, 0.4),
+        # for flat-s binning
+        binning=(5000, 0, 0.4),
         x_title=r"$\chi^2_{H2}$",
     )
 
     add_variable(
         config,
         name="dhh",
-        binning=(50, 0, 20),
+        # binning=(50, 0, 20),
+        # for flat-s binning
+        binning=(5000, 0, 20),
         x_title=r"$D_{HH}$",
     )
 
@@ -701,7 +707,9 @@ def add_variables(config: od.Config) -> None:
         name="m3j2l",
         expression=partial(build_higgs_reco, obj="3j2l", var="mass"),
         aux={"inputs": build_higgs_reco.inputs},
-        binning=(60, 150.0, 1300.0),
+        # binning=(60, 150.0, 1300.0),
+        # for flat-s binning
+        binning=(5000, 150.0, 1300.0),
         unit="GeV",
         x_title=r"$m_{3j2l}$",
     )
@@ -856,7 +864,7 @@ def add_variables(config: od.Config) -> None:
 
     add_variable(
         config,
-        name="h1_mass",
+        name="mh1",
         expression=partial(build_higgs_reco, obj="h1", var="mass"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(40, 0.0, 400.0),
@@ -866,7 +874,7 @@ def add_variables(config: od.Config) -> None:
 
     add_variable(
         config,
-        name="h2_mass",
+        name="mh2",
         expression=partial(build_higgs_reco, obj="h2", var="mass"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(40, 0.0, 400.0),
@@ -876,7 +884,7 @@ def add_variables(config: od.Config) -> None:
 
     add_variable(
         config,
-        name="h3_mass",
+        name="mh3",
         expression=partial(build_higgs_reco, obj="h3", var="mass"),
         aux={"inputs": build_higgs_reco.inputs},
         binning=(40, 0.0, 400.0),

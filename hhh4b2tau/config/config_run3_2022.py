@@ -101,9 +101,27 @@ def add_config(
     for process_name in process_names:
         # add the process
         proc = cfg.add_process(procs.get(process_name))
-        if process_name.startswith("hhh_"):
-            proc.add_tag("hhh")
-            proc.add_tag("signal")
+
+        def apply_tags(process):
+            if process_name.startswith("hhh_"):
+                process.add_tag("hhh")
+                process.add_tag("signal")
+            elif process_name == "tt" or process_name.startswith("tt_"):
+                process.add_tag({"has_top", "ttbar", "tt"})
+
+            elif process_name.startswith("st"):
+                process.add_tag({"has_top", "single_top", "st"})
+
+            if process_name.startswith("dy"):
+                process.add_tag("dy")
+
+            if process_name.startswith("w_lnu_"):
+                process.add_tag("w_lnu")
+
+        apply_tags(proc)
+
+        for subproc, _, _ in proc.walk_processes():
+            apply_tags(subproc)
 
     from hhh4b2tau.config.add_genmatch_sub_procs import add_genmatch_subprocesses
     add_genmatch_subprocesses(cfg=cfg)
@@ -193,7 +211,7 @@ def add_config(
         elif dataset.name.startswith("st"):
             dataset.add_tag({"has_top", "single_top", "st"})
         if dataset.name.startswith("dy"):
-            dataset.add_tag("is_dy")
+            dataset.add_tag("dy")
         if dataset.name.startswith("w_lnu_"):
             dataset.add_tag("w_lnu")
         # datasets that are known to have no lhe info at all
@@ -243,6 +261,9 @@ def add_config(
     # set default weight_producer
     cfg.x.default_weight_producer = "default"
 
+
+
+    import hhh4b2tau.hist_hooks.morphing as morphing
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
     cfg.x.process_groups = {
@@ -358,14 +379,13 @@ def add_config(
             "delta_r_h12", "delta_r_h13", "delta_r_h23",
             "cos_jj1", "cos_jj2", "cos_ll",
             "cos_h12", "cos_h13", "cos_h23",
-            "h1_mass", "h2_mass", "h3_mass",
+            "mh1", "mh2", "mh3",
             "h1_energy", "h2_energy", "h3_energy",
             "h1_pt", "h2_pt", "h3_pt",
             "h1_phi", "h2_phi", "h3_phi",
             "h1_eta", "h2_eta", "h3_eta",
             "h1_abs_eta", "h2_abs_eta", "h3_abs_eta",
             "mhhh", "m3j2l",
-            # "chi2",
             "lep_jet_dr", "lep_jet_mass",
             "muon_pt", 
             "ht",
@@ -1166,7 +1186,7 @@ def add_config(
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{json_pog_era}/btagging.json.gz", "v1"))
     # hh-btag repository (lightweight) with TF saved model directories
-    add_external("hh_btag_repo", ("https://gitlab.cern.ch/hh/bbtautau/hh-btag/-/archive/master/hh-btag-master.tar.gz", "v3"))  # noqa
+    add_external("hh_btag_repo", ("/afs/cern.ch/work/m/mrieger/public/hbt/external_files/hh-btag-master-d7a71eb3.tar.gz", "v3"))  # noqa
     # add_external("hh_btag_repo", ("https://github.com/hh-italian-group/HHbtag/archive/df5220db5d4a32d05dc81d652083aece8c99ccab.tar.gz", "v2"))  # noqa
     # Tobias' tautauNN (https://github.com/uhh-cms/tautauNN)
     add_external("res_pdnn", ("/afs/cern.ch/work/m/mrieger/public/hbt/models/res_prod3/model_fold0.tgz", "v1"))
@@ -1333,7 +1353,15 @@ def add_config(
     # hist hooks
     ################################################################################################
 
-    cfg.x.hist_hooks = DotDict()
+    cfg.x.hist_hooks = DotDict.wrap()
+
+    # add a hist hook to work with histograms of data samples
+    # i.e. morph data for hypothetical coupling that has not been generated yet
+    # from hhh4b2tau.hist_hooks.morphing import morphing_hook as add_morphing_hooks
+    # add_morphing_hooks(cfg)
+    cfg.x.hist_hooks = DotDict.wrap({
+        "morphing": morphing.morphing_hook,
+    })
 
     # simple blinding
     cfg.x.hist_hooks.blind = lambda task, hists: {p: h for p, h in hists.items() if not p.is_data}
@@ -1343,15 +1371,11 @@ def add_config(
     add_qcd_hooks(cfg)
 
     # binning
-    from hhh4b2tau.hist_hooks.binning import add_hooks as add_binning_hooks
+    from hbt.hist_hooks.binning import add_hooks as add_binning_hooks
+    # from hhh4b2tau.hist_hooks.binning import add_hooks as add_binning_hooks
     add_binning_hooks(cfg)
 
-    # add a hist hook to work with histograms of data samples
-    # i.e. morph data for hypothetical coupling that has not been generated yet
-    import hhh4b2tau.hist_hooks.morphing as morphing
-    cfg.x.hist_hooks = DotDict.wrap({
-        "morphing": morphing.morphing_hook,
-    })
+
 
     ################################################################################################
     # LFN settings

@@ -121,7 +121,7 @@ def min_func_pair(func, array: ak.Array, table: ak.Array, idx: ak.Array, ordered
     pair2 = ak.flatten(ak.drop_none(pair2, axis=1), axis=2)
 
     if ordered == True:
-        bb1, bb2 = order_pairs(pair1, pair2, overload_mask=overload_mask)
+        bb1, bb2 = order_pairs(pair1, pair2, ~overload_mask)
 
     elif ordered == False:
         bb1, bb2 =swap_random(pair1, pair2)
@@ -146,7 +146,7 @@ def get_idx(array: ak.Array) -> ak.Array:
     idx = ak.drop_none(idx)
     return idx
 
-def order_pairs(array0: ak.Array, array1: ak.Array, overload_mask: ak.Array) -> ak.Array:
-    pair1 =ak.where(overload_mask, array1, array0)
-    pair2 =ak.where(overload_mask, array0, array1)
+def order_pairs(array0: ak.Array, array1: ak.Array, mask: ak.Array) -> ak.Array:
+    pair1 = ak.where(mask, array0, array1)
+    pair2 = ak.where(mask, array1, array0)
     return pair1, pair2

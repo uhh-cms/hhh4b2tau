@@ -171,12 +171,12 @@ class _VarCut(Categorizer):
 
 
 @_VarCut.categorizer()          
-def cat_h3_mass(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+def cat_mh3(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     self.rebuild_higgs_reco_mask(events, "h3", "mass", lower = 125)
     return events, self.final_mask
 
 @_VarCut.categorizer()          
-def cat_h3_mass_orth(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+def cat_mh3_orth(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     self.rebuild_higgs_reco_mask(events, "h3", "mass", lower = 125)
     return events, ~self.final_mask
 

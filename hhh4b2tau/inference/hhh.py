@@ -18,37 +18,40 @@ def hhh(self):
     # variable = "chi2"
     kin_cat =["3b0j", "3b1j", "4b"]
     data = ["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH"]
+    # data = ["TT", "ggHH_kl1_kt1_13p6TeV_hbbhtt", "ttH", "DY"]
+    categories = [
+        'incl', 
+        "mutau__incl__os__iso" , 
+        "mutau__incl__os__iso__var_cuts" , 
+    ]
 
-    self.add_category(
-        "incl",
-        config_category="incl",
-        config_variable=variable,
-        data_from_processes=data,
-        mc_stats=True,
-    )
+    for cat in categories:
 
+        self.add_category(
+            cat,
+            config_category=cat,
+            config_variable=variable,
+            data_from_processes=data,
+            mc_stats=True,
+        )
 
-    self.add_category(
-        f"mutau__incl__os__iso" ,
-        config_category=f"mutau__incl__os__iso" ,
-        config_variable=variable,
-        data_from_processes=data,
-        mc_stats=True,
-    )
-    self.add_category(
-        f"mutau__incl__os__iso__var_cuts" ,
-        config_category=f"mutau__incl__os__iso__var_cuts" ,
-        config_variable=variable,
-        data_from_processes=data,
-        mc_stats=True,
-    )
     # self.add_category(
-    #     f"mutau__incl__os__iso__var_cuts__3j2l" ,
-    #     config_category=f"mutau__incl__os__iso__var_cuts__3j2l" ,
+    #     "incl",
+    #     config_category="incl",
     #     config_variable=variable,
     #     data_from_processes=data,
     #     mc_stats=True,
     # )
+
+
+    # self.add_category(
+    #     "mutau__incl__os__iso" ,
+    #     config_category="mutau__incl__os__iso" ,
+    #     config_variable=variable,
+    #     data_from_processes=data,
+    #     mc_stats=True,
+    # )
+
 
     #
     # processes
@@ -73,6 +76,29 @@ def hhh(self):
         "ggHHH_c30_d40_13p6TeV_hbbhbbhtt",
         config_process="hhh_4b2tau_c30_d40",
         is_signal=True,
+    )
+
+    self.add_process(
+        "DY",
+        config_process="dy",
+        config_mc_datasets=[
+            "dy_m4to10_amcatnlo",
+            "dy_m10to50_amcatnlo",
+            "dy_m50toinf_amcatnlo",
+            "dy_m50toinf_0j_amcatnlo",
+            "dy_m50toinf_1j_amcatnlo",
+            "dy_m50toinf_2j_amcatnlo",
+            "dy_m50toinf_1j_pt40to100_amcatnlo",
+            "dy_m50toinf_1j_pt100to200_amcatnlo",
+            "dy_m50toinf_1j_pt200to400_amcatnlo",
+            "dy_m50toinf_1j_pt400to600_amcatnlo",
+            "dy_m50toinf_1j_pt600toinf_amcatnlo",
+            "dy_m50toinf_2j_pt40to100_amcatnlo",
+            "dy_m50toinf_2j_pt100to200_amcatnlo",
+            "dy_m50toinf_2j_pt200to400_amcatnlo",
+            "dy_m50toinf_2j_pt400to600_amcatnlo",
+            "dy_m50toinf_2j_pt600toinf_amcatnlo",
+        ],
     )
 
     #

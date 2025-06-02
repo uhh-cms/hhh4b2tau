@@ -76,7 +76,9 @@ def add_hooks(config: od.Config) -> None:
         signal_process_name: str = "",
         n_bins: int = 10,
         constraint: BinningConstraint | None = None,
-        y_min = 1.0e-5,
+        y_min: float = 1.0e-5,
+        low_edge: float = 0,
+        max_edge: float = 1,
     ) -> dict[od.Process, hist.Histogram]:
         """Rebinnig of the histograms in *hists* to archieve a flat-signal distribution.
 
@@ -95,7 +97,9 @@ def add_hooks(config: od.Config) -> None:
             background_hists: dict[od.Process, hist.Hist],
             variable: str,
             n_bins: int = 10,
-            y_min = 1.0e-5,
+            y_min: float =  1.0e-5,
+            low_edge: float = 0,
+            max_edge: float = 1,
         ) -> tuple[np.ndarray, np.ndarray]:
             """
             Determine new bin edges that result in a flat signal distribution.
@@ -111,15 +115,14 @@ def add_hooks(config: od.Config) -> None:
             :return: A tuple containing the new bin edges and the indices that define the new bin edges.
             """
             # prepare parameters
-            low_edge, max_edge = 0, 1
+            # low_edge, max_edge = 0, 1
             bin_edges = [max_edge]
             indices_gathering = [0]
-
             # bookkeep reasons for stopping binning
             stop_reason = ""
             # accumulated signal yield up to the current index
             y_already_binned = 0.0
-            
+            # y_min = 1.0e-5
 
             # prepare signal
             # fine binned histograms bin centers are approx equivalent to dnn output
@@ -336,8 +339,9 @@ def add_hooks(config: od.Config) -> None:
             variable=task_infos["variable_name"],
             n_bins=n_bins,
             y_min=y_min,
+            low_edge=low_edge,
+            max_edge=max_edge,
         )
-        # from IPython import embed; embed(header="before applying edges - 337 in binning.py ")
 
         # 3. apply to hists
         for process, histogram in hists.items():
@@ -364,9 +368,10 @@ def add_hooks(config: od.Config) -> None:
     
     # some usual binning constraints
     def constrain_tt(counts: dict[str, BinCount]) -> bool:
-        # have at least four tt events
+        # have at least one tt, one dy, and four total background events
         # as well as positive yields
         return (
+            # counts["tt"].num >= 1 and
             counts["tt"].num >= 4 and
             counts["tt"].val > 0
         )
@@ -384,18 +389,39 @@ def add_hooks(config: od.Config) -> None:
         n_bins=10,
         constraint=BinningConstraint(["tt", "dy"], constrain_tt_dy),
     )
-    # hhh
-    config.x.hist_hooks.flats_c30_d40_n10 = functools.partial(
-        flat_s,
-        signal_process_name="hhh_4b2tau_c30_d40",
-        n_bins=10,
-        y_min=5e-10,
-    )
-
     config.x.hist_hooks.flats_kl1_n10_guarded_tt = functools.partial(
         flat_s,
         signal_process_name="hhh_4b2tau_c30_d40",
         n_bins=10,
         constraint=BinningConstraint(["tt"], constrain_tt),
-        # y_min=5e-10,
+    )
+
+    config.x.hist_hooks.flats_kl1_kc1_n10_chi2_guarded_tt = functools.partial(
+        flat_s,
+        signal_process_name="hhh_4b2tau_c30_d40",
+        n_bins=10,
+        constraint=BinningConstraint(["tt"], constrain_tt),
+        y_min=5e-10,
+        low_edge=0,
+        max_edge=0.4,
+    )
+
+    config.x.hist_hooks.flats_kl1_kc1_n10_dhh_guarded_tt = functools.partial(
+        flat_s,
+        signal_process_name="hhh_4b2tau_c30_d40",
+        n_bins=10,
+        constraint=BinningConstraint(["tt"], constrain_tt),
+        y_min=5e-10,
+        low_edge=0,
+        max_edge=20,
+    )
+
+    config.x.hist_hooks.flats_kl1_kc1_n10_m3j2l_guarded_tt = functools.partial(
+        flat_s,
+        signal_process_name="hhh_4b2tau_c30_d40",
+        n_bins=10,
+        constraint=BinningConstraint(["tt"], constrain_tt),
+        y_min=5e-10,
+        low_edge=150.0,
+        max_edge=1300.0,
     )

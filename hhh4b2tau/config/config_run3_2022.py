@@ -1371,8 +1371,8 @@ def add_config(
     add_qcd_hooks(cfg)
 
     # binning
-    from hbt.hist_hooks.binning import add_hooks as add_binning_hooks
-    # from hhh4b2tau.hist_hooks.binning import add_hooks as add_binning_hooks
+    # from hbt.hist_hooks.binning import add_hooks as add_binning_hooks
+    from hhh4b2tau.hist_hooks.binning import add_hooks as add_binning_hooks
     add_binning_hooks(cfg)
 
 

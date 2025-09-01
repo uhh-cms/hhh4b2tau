@@ -523,7 +523,7 @@ def add_variables(config: od.Config) -> None:
         name="mtautau_gen",
         binning=(40, 123.0, 126.0),
         unit="GeV",
-        x_title=r"$m_{H\rightarrow\tau\tau}^{gen}$",
+        x_title=r"$m_{H_3\rightarrow\tau\tau}^{gen}$",
     )
 
     add_variable(
@@ -670,26 +670,23 @@ def add_variables(config: od.Config) -> None:
         config,
         name="chi2",
         # binning=(50, 0, 0.4),
-        # for flat-s binning
-        binning=(5000, 0, 0.4),
+        binning=(5000, 0, 0.4), # for flat-s binning
         x_title=r"$\chi^2$",
     )
 
     add_variable(
         config,
-        name="chi21",
+        name="chi2_1",
         # binning=(50, 0, 0.15),
-        # for flat-s binning
-        binning=(5000, 0, 0.15),
+        binning=(5000, 0, 0.15), # for flat-s binning
         x_title=r"$\chi^2_{H1}$",
     )
 
     add_variable(
         config,
-        name="chi22",
+        name="chi2_2",
         # binning=(50, 0, 0.4),
-        # for flat-s binning
-        binning=(5000, 0, 0.4),
+        binning=(5000, 0, 0.4), # for flat-s binning
         x_title=r"$\chi^2_{H2}$",
     )
 
@@ -697,8 +694,7 @@ def add_variables(config: od.Config) -> None:
         config,
         name="dhh",
         # binning=(50, 0, 20),
-        # for flat-s binning
-        binning=(5000, 0, 20),
+        binning=(5000, 0, 20),  # for flat-s binning
         x_title=r"$D_{HH}$",
     )
 
@@ -707,9 +703,8 @@ def add_variables(config: od.Config) -> None:
         name="m3j2l",
         expression=partial(build_higgs_reco, obj="3j2l", var="mass"),
         aux={"inputs": build_higgs_reco.inputs},
-        # binning=(60, 150.0, 1300.0),
-        # for flat-s binning
-        binning=(5000, 150.0, 1300.0),
+        binning=(60, 150.0, 1300.0),
+        # binning=(5000, 150.0, 1300.0),  # for flat-s binning
         unit="GeV",
         x_title=r"$m_{3j2l}$",
     )

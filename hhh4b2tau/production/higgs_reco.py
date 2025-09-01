@@ -74,13 +74,13 @@ def higgs_reco_mds(self, events: ak.Array, **kwargs):
     bb1_idx = ak.where(self.jet_num_mask, self.lone_pair_idx, bb1_idx)
 
     # special treatment because of two seperate values that are minimized
-    chi2_1 = chi2_12(events.Jet[bb1_idx]) 
-    chi2_2 = chi2_12(events.Jet[bb2_idx])
+    chi21 = chi2_12(events.Jet[bb1_idx]) 
+    chi22 = chi2_12(events.Jet[bb2_idx])
 
     events = set_ak_column(events, 'BB1_idx', bb1_idx)
     events = set_ak_column(events, 'BB2_idx', bb2_idx)
-    events = set_ak_column_f32(events, 'chi2_1', chi2_1)
-    events = set_ak_column_f32(events, 'chi2_2', chi2_2)
+    events = set_ak_column_f32(events, 'chi2_1', chi21)
+    events = set_ak_column_f32(events, 'chi2_2', chi22)
     return events
 
 @higgs_reco_mds.init

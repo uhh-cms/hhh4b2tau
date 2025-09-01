@@ -8,12 +8,18 @@ from __future__ import annotations
 
 __all__ = []
 
+import law
+
 from columnflow.types import Any
 from columnflow.columnar_util import ArrayFunction, deferred_column
 from columnflow.util import maybe_import
 
-np = maybe_import("numpy")
+from typing import Hashable, Iterable, Callable
 
+np = maybe_import("numpy")
+ak = maybe_import("awkward")
+
+_logger = law.logger.get_logger(__name__)
 
 @deferred_column
 def IF_NANO_V9(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
@@ -123,3 +129,46 @@ def hash_events(arr: np.ndarray) -> np.ndarray:
         ak.values_astype(arr.luminosityBlock, np.int64) * 10**max_digits_event +
         ak.values_astype(arr.event, np.int64)
     )
+
+def round_sig(
+    value: int | float | np.number,
+    sig: int = 4,
+    convert: Callable | None = None,
+) -> int | float | np.number:
+    """
+    Helper function to round number *value* on *sig* significant digits and
+    optionally transform output to type *convert*
+    """
+    if not np.isfinite(value):
+        # cannot round infinite
+        _logger.warning("cannot round infinite number")
+        return value
+
+    from math import floor, log10
+
+    def try_rounding(_value):
+        try:
+            n_digits = sig - int(floor(log10(abs(_value)))) - 1
+            if convert in (int, np.int8, np.int16, np.int32, np.int64):
+                # do not round on decimals when converting to integer
+                n_digits = min(n_digits, 0)
+            return round(_value, n_digits)
+        except Exception:
+            _logger.warning(f"Cannot round number {value} to {sig} significant digits. Number will not be rounded")
+            return value
+
+    # round first to not lose information from type conversion
+    rounded_value = try_rounding(value)
+
+    # convert number if "convert" is given
+    if convert not in (None, False):
+        try:
+            rounded_value = convert(rounded_value)
+        except Exception:
+            _logger.warning(f"Cannot convert {rounded_value} to {convert.__name__}")
+            return rounded_value
+
+        # some types need rounding again after converting (e.g. np.float32 to float)
+        rounded_value = try_rounding(rounded_value)
+
+    return rounded_value

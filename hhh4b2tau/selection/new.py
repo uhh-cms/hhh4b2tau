@@ -313,6 +313,8 @@ def new_var_cuts_call(
         results.steps.jet_veto_map & 
         results.steps.json
         )
+    mutau_mask = (events.channel_id == self.config_inst.channels.n.mutau.id)
+    hhh_mask = hbt_mask & mutau_mask & results.steps.three_btag
     
     electron_indices = results.objects.Electron.Electron
     muon_indices = results.objects.Muon.Muon
@@ -337,7 +339,8 @@ def new_var_cuts_call(
 
     results.steps.update({
         "dihiggs": hbt_mask,
-        "mutau": events.channel_id == self.config_inst.channels.n.mutau.id,
+        "mutau": mutau_mask,
+        "hhh": hhh_mask,
         "h3_mass": h3_mass_mask,
         "leps_dr": leps_dr_mask,
         "j1_pt": j1_pt_mask,
@@ -385,7 +388,7 @@ def new_loose_call(
     events = self[attach_coffea_behavior](events, **kwargs)
 
     # remove b-tag requirements
-    del results.steps["one_btag"], results.steps["two_btag"], results.steps["three_btag"]
+    del results.steps["one_jet"], results.steps["two_jet"], results.steps["three_jet"], results.steps["one_btag"], results.steps["two_btag"], results.steps["three_btag"]
 
     return events, results
 

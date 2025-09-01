@@ -261,9 +261,9 @@ def add_config(
     # set default weight_producer
     cfg.x.default_weight_producer = "default"
 
-
-
     import hhh4b2tau.hist_hooks.morphing as morphing
+
+
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
     cfg.x.process_groups = {
@@ -284,7 +284,7 @@ def add_config(
             "tt_sl",
             "tt_dl",
             "tt_fh",
-            # "dy",
+            "dy",
             # "qcd",
             # "st",
             # "v",
@@ -311,11 +311,13 @@ def add_config(
 
         "sm_higgs": (sm_higgs := [
             "tth",
-            "hhh_4b2tau_c30_d40",
             "hh_ggf_hbb_htt_kl1_kt1",
+            "hhh_4b2tau_c30_d40",
         ]),
+        # "sm": list(set(split_backgrounds + sm_higgs)),
         "sm": sorted(list(set(split_backgrounds + sm_higgs))),
 
+        # "standard": list(set(split_backgrounds + sm_higgs + hhh_compare_3)),
         "standard": sorted(list(set(split_backgrounds + sm_higgs + hhh_compare_3))),
     }
 
@@ -365,6 +367,7 @@ def add_config(
             },
         }
 
+
     # category groups for conveniently looping over certain categories
     # (used during plotting)
     cfg.x.category_groups = {}
@@ -375,16 +378,14 @@ def add_config(
         "all":( all_var := [ 
             # "{cos,delta_r}_{bb1,bb2,taulep,h12,h13,h23}",
             # "{h1,h2,h3}_{mass,pt,phi,eta,abs_eta,energy}",
-            "delta_r_jj1", "delta_r_jj2", "delta_r_ll", 
-            "delta_r_h12", "delta_r_h13", "delta_r_h23",
-            "cos_jj1", "cos_jj2", "cos_ll",
-            "cos_h12", "cos_h13", "cos_h23",
-            "mh1", "mh2", "mh3",
-            "h1_energy", "h2_energy", "h3_energy",
-            "h1_pt", "h2_pt", "h3_pt",
-            "h1_phi", "h2_phi", "h3_phi",
-            "h1_eta", "h2_eta", "h3_eta",
-            "h1_abs_eta", "h2_abs_eta", "h3_abs_eta",
+            "delta_r_ll", 
+            "cos_ll",
+            "mh3",
+            "h3_energy",
+            "h3_pt",
+            "h3_phi",
+            "h3_eta",
+            "h3_abs_eta",
             "mhhh", "m3j2l",
             "lep_jet_dr", "lep_jet_mass",
             "muon_pt", 
@@ -392,6 +393,18 @@ def add_config(
             "jets_pt", "jet1_eta", "jet_phi", "jet1_pt",
             "jet_delta_phi", "jet_delta_r_12", "jet_delta_r_13",
         ]),
+        "jet": [
+            "mh1", "mh2", 
+            "h1_pt", "h2_pt", 
+            "h1_energy", "h2_energy", 
+            "h1_phi", "h2_phi", 
+            "h1_eta", "h2_eta", 
+            "h1_abs_eta", "h2_abs_eta",
+            "cos_h12", "cos_h13", "cos_h23", 
+            "cos_jj1", "cos_jj2", 
+            "delta_r_jj1", "delta_r_jj2", 
+            "delta_r_h12", "delta_r_h13", "delta_r_h23",
+        ],
         "all_gen": [
             "mtautau_gen", "mbb_gen", "mhhh_gen", "mlnu_gen", "hpt_gen", "h1bpt_gen",
             "h2bpt_gen", "htaupt_gen",
@@ -434,7 +447,7 @@ def add_config(
                       c3=str(c3).replace("-", "m").replace(".", "p"),
                       d4=str(d4).replace("-", "m").replace(".", "p"),
                       ) : {"unstack": True}
-                      for c3,d4 in morphing.all_cc}
+                      for c3,d4 in morphing.new}
     }
 
     # variable_settings groups for conveniently looping over different values for the variable-settings parameter
@@ -446,6 +459,12 @@ def add_config(
     cfg.x.custom_style_config_groups = {
         "small_legend": {
             "legend_cfg": {"ncols": 2, "fontsize": 16, "columnspacing": 0.6},
+        },
+        "small_legend_1col": {
+            "legend_cfg": {"ncols": 1, "fontsize": 18, "columnspacing": 0.6},
+        },
+        "big_legend": {
+            "legend_cfg": {"ncols": 1, "fontsize": 32, "columnspacing": 0.6},
         },
     }
     cfg.x.default_custom_style_config = "small_legend"
@@ -464,10 +483,10 @@ def add_config(
         "two_jet": r"$\geq$ 2 jet",
         "three_jet": r"$\geq$ 3 jet",
         "four_jet": r"$\geq$ 4 jet",
-        "one_btag": r"$\geq$ 1 btg",
-        "two_btag": r"$\geq$ 2 btg",
-        "three_btag": r"$\geq$ 3 btg",
-        "four_btag": r"$\geq$ 4 btg",
+        "one_btag": r"$\geq$ 1 b",
+        "two_btag": r"$\geq$ 2 b",
+        "three_btag": r"$\geq$ 3 b",
+        "four_btag": r"$\geq$ 4 b",
         "json": "DQM cut",
         "trigger": "Trigger",
         "met_filter": r"$\cancle{E}_{T} Filter$",
@@ -477,6 +496,10 @@ def add_config(
         "bjet": "Bjets",
         "dihiggs": "HH",
         "mutau": r"$\mu$ $\tau_h$",
+        "h3_mass": r"m_{h3}",
+        "leps_dr": r"\Delta R_{ll}",
+        "j1_pt": r"j_1 \ p_T",
+        "hhh": "HHH",
     }
 
 
@@ -1321,7 +1344,7 @@ def add_config(
     
     from hhh4b2tau.config.categories import add_categories, add_categories_incl_only
     add_categories(cfg)
-    # add_categories_incl_only(cfg)
+    # add_categories_incl_only(cfg) # use for cutflow and gen plots only
 
     from hhh4b2tau.config.variables import add_variables
     add_variables(cfg)
@@ -1348,7 +1371,6 @@ def add_config(
     else:
         raise False
     
-
     ################################################################################################
     # hist hooks
     ################################################################################################
@@ -1374,8 +1396,6 @@ def add_config(
     # from hbt.hist_hooks.binning import add_hooks as add_binning_hooks
     from hhh4b2tau.hist_hooks.binning import add_hooks as add_binning_hooks
     add_binning_hooks(cfg)
-
-
 
     ################################################################################################
     # LFN settings

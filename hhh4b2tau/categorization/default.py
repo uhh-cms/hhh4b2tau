@@ -114,11 +114,38 @@ def cat_3b1j(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
     return events, (threeb_mask & onej_mask)
 
 @categorizer(uses={"Jet.{pt,phi,eta,mass,btagDeepFlavB}"})
+def cat_1b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
+    btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
+    return events, ak.sum(btag_mask, axis=1) >= 1
+
+@categorizer(uses={"Jet.{pt,phi,eta,mass,btagDeepFlavB}"})
+def cat_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
+    btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
+    return events, ak.sum(btag_mask, axis=1) >= 2
+
+@categorizer(uses={"Jet.{pt,phi,eta,mass,btagDeepFlavB}"})
+def cat_3b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
+    btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
+    return events, ak.sum(btag_mask, axis=1) >= 3
+
+@categorizer(uses={"Jet.{pt,phi,eta,mass,btagDeepFlavB}"})
 def cat_4b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     # four or more b jets
     btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
     btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
     return events, ak.sum(btag_mask, axis=1) >= 4
+
+@categorizer(uses={"Jet.{pt,phi,eta,mass,btagDeepFlavB}"})
+def cat_5b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    # four or more b jets
+    btag_wp = self.config_inst.x.btag_working_points.deepjet.medium
+    btag_mask = (events.Jet.btagDeepFlavB >= btag_wp)
+    return events, ak.sum(btag_mask, axis=1) >= 5
+
+
 
 @categorizer(uses={"Jet.{pt,phi,eta,mass}"})
 def cat_j1_pt(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
@@ -183,12 +210,12 @@ def cat_mh3_orth(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
 
 @_VarCut.categorizer()
 def cat_leps_cos(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    self.rebuild_higgs_reco_mask(events, "leps", "dr", higher = -0.25)
+    self.rebuild_higgs_reco_mask(events, "leps", "cos", higher = -0.25)
     return events, self.final_mask
 
 @_VarCut.categorizer()
 def cat_leps_cos_orth(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    self.rebuild_higgs_reco_mask(events, "leps", "dr", higher = -0.25)
+    self.rebuild_higgs_reco_mask(events, "leps", "cos", higher = -0.25)
     return events, ~self.final_mask
 
 @_VarCut.categorizer()
@@ -204,12 +231,12 @@ def cat_leps_dr_orth(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.
 
 @_VarCut.categorizer()
 def cat_bb1_dr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    self.rebuild_higgs_reco_mask(events, "bb1", "dr", lower = 1.6)
+    self.rebuild_higgs_reco_mask(events, "bb1", "dr", lower = 2.4)
     return events, self.final_mask
 
 @_VarCut.categorizer()
 def cat_bb1_dr_orth(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    self.rebuild_higgs_reco_mask(events, "bb1", "dr", lower = 1.6)
+    self.rebuild_higgs_reco_mask(events, "bb1", "dr", lower = 2.4)
     return events, ~self.final_mask
 
 @_VarCut.categorizer()
@@ -229,8 +256,10 @@ def cat_var_cuts(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
     h3_mass_mask = self.final_mask
     self.rebuild_higgs_reco_mask(events, "leps", "dr", lower = 2.0)
     leps_dr_mask = self.final_mask
+    self.rebuild_higgs_reco_mask(events, "bb1", "dr", lower = 2.4)
+    jj1_dr_mask =  self.final_mask
     j1_pt_mask = ak.fill_none((ak.firsts(events.Jet.pt[:, :1]) >= 100), False)
-    combo_mask = (h3_mass_mask & leps_dr_mask & j1_pt_mask)
+    combo_mask = (h3_mass_mask & leps_dr_mask & jj1_dr_mask & j1_pt_mask)
     return events, combo_mask
 
 @_VarCut.categorizer()
@@ -239,6 +268,8 @@ def cat_var_cuts_orth(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak
     h3_mass_mask = self.final_mask
     self.rebuild_higgs_reco_mask(events, "leps", "dr", lower = 2.0)
     leps_dr_mask = self.final_mask
+    self.rebuild_higgs_reco_mask(events, "bb1", "dr", lower = 2.4)
+    jj1_dr_mask =  self.final_mask
     j1_pt_mask = ak.fill_none((ak.firsts(events.Jet.pt[:, :1]) >= 100), False)
-    combo_mask = (h3_mass_mask & leps_dr_mask & j1_pt_mask)
+    combo_mask = (h3_mass_mask & leps_dr_mask & jj1_dr_mask & j1_pt_mask)
     return events, ~combo_mask

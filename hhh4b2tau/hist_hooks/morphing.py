@@ -1,7 +1,7 @@
 from columnflow.util import maybe_import
 import order as od
 hist = maybe_import("hist")
-sympy = maybe_import("sympy")
+sm = maybe_import("sympy")
 np = maybe_import("numpy")
 
 morphing_coupling_combinations = (
@@ -17,6 +17,8 @@ morphing_coupling_combinations = (
     (-1, 0),
     (-1, -1),
     (-1.5, -0.5),
+    # (19, 19),
+    # (0, 99),
 )
 
 new = (
@@ -32,7 +34,7 @@ def morph(kl,kc,s): # kl,kc couplings, s vector of cross-sections
         # define the matrix with nine scalings
         # box, two triangles, pentagon, interferences
         # kl=c3+1, kc=d4+1
-        M = sympy.Matrix([
+        M = sm.Matrix([
             [
                 (c3+1)**4,
                 (c3+1)**3,
@@ -48,7 +50,7 @@ def morph(kl,kc,s): # kl,kc couplings, s vector of cross-sections
         ])
 
         # the vector of couplings
-        c = sympy.Matrix([
+        c = sm.Matrix([
             [kl**4],
             [kl**3],
             [kl**2],  
@@ -106,7 +108,6 @@ def morphing_hook(
         else:
             raise Exception("Histograms are missing! Exactly nine are required for morphing.")
 
-    # from IPython import embed; embed()
     # create the new HHH shape
     hists[hhh_morph0] = morph(kl=new[0][0]+1,kc=new[0][1]+1,s=data_histo)
     hists[hhh_morph1] = morph(kl=new[1][0]+1,kc=new[1][1]+1,s=data_histo)

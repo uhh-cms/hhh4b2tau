@@ -118,14 +118,14 @@ def stylize_processes(config: od.Config) -> None:
             d4=str(d4).replace("-", "m").replace(".", "p"),
             ), default=None)):
             p.color1 = cfg.x.colors.purple
-            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match $H_{{1}}, !H_{{2}}$"
+            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match only $H_{{1}}$"
 
         if (p := config.get_process("hhh_4b2tau_c3{c3}_d4{d4}_match_h1_and_h2".format(
             c3=str(c3).replace("-", "m").replace(".", "p"),
             d4=str(d4).replace("-", "m").replace(".", "p"),
             ), default=None)):
             p.color1 = cfg.x.colors.bright_blue
-            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match $H_{{1}} + H_{{2}}$"
+            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match $H_{{1}}$ and $H_{{2}}$"
 
         if (p := config.get_process("hhh_4b2tau_c3{c3}_d4{d4}_match_h2".format(
             c3=str(c3).replace("-", "m").replace(".", "p"),
@@ -139,7 +139,7 @@ def stylize_processes(config: od.Config) -> None:
             d4=str(d4).replace("-", "m").replace(".", "p"),
             ), default=None)):
             p.color1 = cfg.x.colors.yellow
-            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match $H_{{2}}, !H_{{1}}$"
+            p.label=f"$(\kappa_{{\lambda}}={c3+1}, \kappa_{{\chi}}={d4+1})$ match only $H_{{2}}$"
 
 
 
@@ -155,8 +155,8 @@ def stylize_processes(config: od.Config) -> None:
 
     if (p := config.get_process("tth", default=None)):
         p.color1 = cfg.x.colors.purple
-        p.unstack=True
         p.label = r"$t\bar{t}H$"
+        p.unstack=True
         p.scale="stack"
 
     if (p := config.get_process("tt", default=None)):

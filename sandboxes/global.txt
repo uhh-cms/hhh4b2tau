@@ -1,0 +1,8 @@
+# version 1
+
+-r ${CF_BASE}/sandboxes/columnar.txt
+-r ${CF_BASE}/sandboxes/dev.txt
+
+-e ${CF_BASE}
+-e ${CF_BASE}/modules/law
+-e ${CF_BASE}/modules/order

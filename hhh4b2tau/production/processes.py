@@ -282,3 +282,104 @@ def process_ids_ttbar_setup(
     for proc in self.ttbar_leaf_processes:
         key = key_func(proc.x.hadron_flavor)
         self.id_table[key] = proc.id
+
+def compare_idx(
+    self,
+    array: ak.Array,
+    col1: str,
+    col2: str,
+    threshold: int=2
+) -> ak.Array:
+    mask_col1 = ak.num(array[col1], axis=-1) >= threshold
+    mask_col2 = ak.num(array[col2], axis=-1) >= threshold
+    masked_array = ak.mask(array, mask_col1 & mask_col2)
+    return ak.fill_none(
+        ak.all(
+            ak.sort(masked_array[col1], axis=-1) == ak.sort(masked_array[col2],
+            axis=-1
+        ), axis=-1),
+        False
+    )
+
+@producer(
+    compare_idx=compare_idx,
+)
+def process_ids_genmatched_higgs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    # as always, we assume that each dataset has exactly one process associated to it
+    if len(self.dataset_inst.processes) != 1:
+        raise NotImplementedError(
+            f"dataset {self.dataset_inst.name} has {len(self.dataset_inst.processes)} processes "
+            "assigned, which is not yet implemented",
+        )
+    # get the number of nlo jets and the di-lepton pt
+    process_idx = ak.full_like(events.event, self.index_map["nomatch"], dtype=np.int32)
+
+    # create masks
+    bb2_vs_h1 = self.compare_idx(events, "BB2_idx", "Gen_Matched_H1_idx")
+    bb2_vs_h2 = self.compare_idx(events, "BB2_idx", "Gen_Matched_H2_idx")
+    bb1_vs_h1 = self.compare_idx(events, "BB1_idx", "Gen_Matched_H1_idx")
+    bb1_vs_h2 = self.compare_idx(events, "BB1_idx", "Gen_Matched_H2_idx")
+
+    match_bb1 = bb1_vs_h1 | bb1_vs_h2
+    match_bb2 = bb2_vs_h1 | bb2_vs_h2
+
+    # identify correct indices
+    process_idx = ak.where(match_bb1 & match_bb2, self.index_map["match_h1_and_h2"], process_idx)
+    process_idx = ak.where(match_bb1 & ~match_bb2, self.index_map["match_h1_no_h2"], process_idx)
+    process_idx = ak.where(~match_bb1 & match_bb2, self.index_map["match_h2_no_h1"], process_idx)
+
+    # lookup the id and check for invalid values
+    process_ids = np.squeeze(np.asarray(self.id_table[0, process_idx].todense()))
+    invalid_mask = process_ids == 0
+    if ak.any(invalid_mask):
+        raise ValueError(
+            f"found {sum(invalid_mask)} dy events that could not be assigned to a process",
+        )
+
+    # store them
+    events = set_ak_column_i64(events, "process_id", process_ids)
+
+    return events
+
+@process_ids_genmatched_higgs.init
+def process_ids_genmatched_higgs_init(self):
+    if not hasattr(self, "dataset_inst"):
+        return
+    
+    if self.dataset_inst.has_tag("hhh"):
+        self.uses = {
+            "Gen_Matched_H{1,2}_idx",
+            "BB{1,2}_idx",
+        }
+        self.produces = {"process_id"}
+
+@process_ids_genmatched_higgs.setup
+def process_ids_genmatched_higgs_setup(
+    self: Producer,
+    reqs: dict,
+    inputs: dict,
+    reader_targets: InsertableDict,
+) -> None:
+
+    leaf_procs = self.dataset_inst.get_leaf_processes()
+    # retrieve process names that are relevant for gen matching
+    gen_matching_procs = list()
+    for p in leaf_procs:
+        if p.has_tag("gen_matching"):
+            gen_matching_procs.append(p)
+
+    self.process_names = ak.Array([ x.name for x in gen_matching_procs ])
+    proc_suffix_idx = ak.local_index(self.process_names)
+    self.index_map = {
+        key: proc_suffix_idx[ak.str.ends_with(self.process_names, key)]
+        for key in ["nomatch", "match_h1_no_h2", "match_h1_and_h2", "match_h2_no_h1"]
+    }
+
+    # define the lookup table
+    
+    self.id_table = sp.sparse.lil_matrix((1, len(self.process_names)), dtype=np.int64)
+
+    # fill it
+    for key, proc in enumerate(gen_matching_procs):
+        self.id_table[0, key] = proc.id

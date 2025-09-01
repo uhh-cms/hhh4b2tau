@@ -8,6 +8,7 @@ from collections import defaultdict
 
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.stats import increment_stats
+from columnflow.production.categories import category_ids
 from columnflow.columnar_util import sorted_indices_from_mask
 from columnflow.production.processes import process_ids
 from columnflow.production.cms.mc_weight import mc_weight
@@ -34,13 +35,19 @@ ak = maybe_import("awkward")
 @selector(
     uses={
         # selectors / producers called within _this_ selector
-        mc_weight, cutflow_features, process_ids, increment_stats,
+        mc_weight,
+        # cutflow_features,
+        category_ids,
+        process_ids, increment_stats,
         gen_higgs_decay_products, gen_tth_decay_products, gen_Hadron_products,
         
     },
     produces={
         # selectors / producers whose newly created columns should be kept
-        mc_weight, cutflow_features, process_ids, 
+        mc_weight, 
+        # cutflow_features,
+        category_ids,
+        process_ids, 
         gen_higgs_decay_products, gen_tth_decay_products, gen_Hadron_products,
     },
     exposed=True,
@@ -62,15 +69,15 @@ def gen_studies(
     ):
         events = self[gen_higgs_decay_products](events, **kwargs)
     
-    if (self.dataset_inst.is_mc and
-        any(self.dataset_inst.name.lower().startswith(x)
-            for x in ("tth_hbb_powheg",))
-    ):
-        events = self[gen_tth_decay_products](events, **kwargs)
+    # if (self.dataset_inst.is_mc and
+    #     any(self.dataset_inst.name.lower().startswith(x)
+    #         for x in ("tth_hbb_powheg",))
+    # ):
+    #     events = self[gen_tth_decay_products](events, **kwargs)
 
-    events = self[gen_Hadron_products](events, **kwargs)
+    # events = self[gen_Hadron_products](events, **kwargs)
 
-    from IPython import embed; embed(header="gen_studies")
+    # from IPython import embed; embed(header="gen_studies")
 
     # select events with at least 4 gen b jets
     # n_gen_b_jet = ak.num(events.gen_b_jet)
@@ -90,8 +97,11 @@ def gen_studies(
 
     # if self.dataset_inst.is_mc and self.dataset_inst.name.startswith("tau"):
     #     events = self[gen_higgs_decay_products](events, **kwargs)
-    
+    events = self[category_ids](events, **kwargs)
     results.event = ak.ones_like(events.event, dtype=bool)
+
+    results.aux["n_jets"] = ak.num(events.Jet.pt, axis=-1)
+
 
     # create process ids
     events = self[process_ids](events, **kwargs)
@@ -101,7 +111,7 @@ def gen_studies(
         events = self[mc_weight](events, **kwargs)
 
     # add cutflow features, passing per-object masks
-    events = self[cutflow_features](events, results.objects, **kwargs)
+    # events = self[cutflow_features](events, results.objects, **kwargs)
 
     # increment stats
     weight_map = {

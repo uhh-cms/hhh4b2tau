@@ -102,8 +102,30 @@ def add_config(
         # add the process
         proc = cfg.add_process(procs.get(process_name))
 
-        
+        def apply_tags(process):
+            if process_name.startswith("hhh_"):
+                process.add_tag("hhh")
+                process.add_tag("signal")
+            elif process_name == "tt" or process_name.startswith("tt_"):
+                process.add_tag({"has_top", "ttbar", "tt"})
 
+            elif process_name.startswith("st"):
+                process.add_tag({"has_top", "single_top", "st"})
+
+            if process_name.startswith("dy"):
+                process.add_tag("dy")
+
+            if process_name.startswith("w_lnu_"):
+                process.add_tag("w_lnu")
+
+        apply_tags(proc)
+
+        for subproc, _, _ in proc.walk_processes():
+            apply_tags(subproc)
+
+    from hhh4b2tau.config.add_genmatch_sub_procs import add_genmatch_subprocesses
+    add_genmatch_subprocesses(cfg=cfg)
+    
     from hhh4b2tau.config.styles import stylize_processes
     stylize_processes(cfg)
 
@@ -189,7 +211,7 @@ def add_config(
         elif dataset.name.startswith("st"):
             dataset.add_tag({"has_top", "single_top", "st"})
         if dataset.name.startswith("dy"):
-            dataset.add_tag("is_dy")
+            dataset.add_tag("dy")
         if dataset.name.startswith("w_lnu_"):
             dataset.add_tag("w_lnu")
         # datasets that are known to have no lhe info at all
@@ -205,6 +227,9 @@ def add_config(
         if dataset_name.startswith("hh_"):
             dataset.add_tag("signal")
             dataset.add_tag("nonresonant_signal")
+        if dataset_name.startswith("hhh_"):
+            dataset.add_tag("hhh")
+            dataset.add_tag("signal")
         if dataset_name.startswith(("graviton_hh_", "radion_hh_")):
             dataset.add_tag("signal")
             dataset.add_tag("resonant_signal")
@@ -229,19 +254,15 @@ def add_config(
     cfg.x.default_producer = "default"
     cfg.x.default_ml_model = None
     cfg.x.default_inference_model = "example"
-    cfg.x.default_categories = ("incl",)
+    cfg.x.default_categories = ("mutau__incl__os__iso",)
+    # cfg.x.default_categories = ("incl",)
     cfg.x.default_variables = ("n_jet", "jet1_pt")
 
     # set default weight_producer
     cfg.x.default_weight_producer = "default"
 
-    # add a hist hook to work with histograms of data samples
-    # i.e. morph data for hypothetical coupling that has not been generated yet
-    import hhh4b2tau.plotting.morphing as morphing
+    import hhh4b2tau.hist_hooks.morphing as morphing
 
-    cfg.x.hist_hooks = {
-    "morphing": morphing.morphing_hook,
-    }
 
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
@@ -263,7 +284,7 @@ def add_config(
             "tt_sl",
             "tt_dl",
             "tt_fh",
-            # "dy",
+            "dy",
             # "qcd",
             # "st",
             # "v",
@@ -284,16 +305,20 @@ def add_config(
             f"hhh_4b2tau_c3{x}_d4{y}" for x,y in ((0, 0), (19, 19), (4, 9), ("m1p5", "m0p5"), ("m1", "m1"), (1, 2))
         ],
 
-        "hhh_compare_3": [
+        "hhh_compare_3": (hhh_compare_3 := [
             f"hhh_4b2tau_c3{x}_d4{y}" for x,y in ((1, 0), (4, 9))
-        ],
+        ]),
 
         "sm_higgs": (sm_higgs := [
             "tth",
-            "hhh_4b2tau_c30_d40",
             "hh_ggf_hbb_htt_kl1_kt1",
+            "hhh_4b2tau_c30_d40",
         ]),
+        # "sm": list(set(split_backgrounds + sm_higgs)),
         "sm": sorted(list(set(split_backgrounds + sm_higgs))),
+
+        # "standard": list(set(split_backgrounds + sm_higgs + hhh_compare_3)),
+        "standard": sorted(list(set(split_backgrounds + sm_higgs + hhh_compare_3))),
     }
 
     # dataset groups for conveniently looping over certain datasets
@@ -342,6 +367,7 @@ def add_config(
             },
         }
 
+
     # category groups for conveniently looping over certain categories
     # (used during plotting)
     cfg.x.category_groups = {}
@@ -349,23 +375,36 @@ def add_config(
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     cfg.x.variable_groups = {
-        "all": [
-            "delta_r_bb1", "delta_r_bb2", "delta_r_taulep", 
+        "all":( all_var := [ 
+            # "{cos,delta_r}_{bb1,bb2,taulep,h12,h13,h23}",
+            # "{h1,h2,h3}_{mass,pt,phi,eta,abs_eta,energy}",
+            "delta_r_ll", 
+            "cos_ll",
+            "mh3",
+            "h3_energy",
+            "h3_pt",
+            "h3_phi",
+            "h3_eta",
+            "h3_abs_eta",
+            "mhhh", "m3j2l",
+            "lep_jet_dr", "lep_jet_mass",
+            "muon_pt", 
+            "ht",
+            "jets_pt", "jet1_eta", "jet_phi", "jet1_pt",
+            "jet_delta_phi", "jet_delta_r_12", "jet_delta_r_13",
+        ]),
+        "jet": [
+            "mh1", "mh2", 
+            "h1_pt", "h2_pt", 
+            "h1_energy", "h2_energy", 
+            "h1_phi", "h2_phi", 
+            "h1_eta", "h2_eta", 
+            "h1_abs_eta", "h2_abs_eta",
+            "cos_h12", "cos_h13", "cos_h23", 
+            "cos_jj1", "cos_jj2", 
+            "delta_r_jj1", "delta_r_jj2", 
             "delta_r_h12", "delta_r_h13", "delta_r_h23",
-            "cos_bb1", "cos_bb2", "cos_taulep",
-            "cos_h12", "cos_h13", "cos_h23",
-            "mhhh", "h1_mass", "h2_mass", "h3_mass",
-            "n_fatjet", "n_jet",
-            "m_3btaulep", "m_3btaulep_pt",
-            # "h1_unsort_mass", "h2_unsort_mass",
-            "delta_r_bb1_chi", "delta_r_bb2_chi",
-            "delta_r_h12_chi", "delta_r_h13_chi", "delta_r_h23_chi",
-            "cos_bb1_chi", "cos_bb2_chi",
-            "cos_h12_chi", "cos_h13_chi", "cos_h23_chi",
-            "h1_mass_chi", "h2_mass_chi",
-            "m_3btaulep_chi", "m_3btaulep_pt_chi",
-            "mds_h1_mass_chi", "mds_h2_mass_chi", "min_chi"
-                ],
+        ],
         "all_gen": [
             "mtautau_gen", "mbb_gen", "mhhh_gen", "mlnu_gen", "hpt_gen", "h1bpt_gen",
             "h2bpt_gen", "htaupt_gen",
@@ -377,6 +416,15 @@ def add_config(
         ]
     }
 
+    # resolved_variables = dict()
+    # for var_group, vals in cfg.x.variable_groups:
+    #     values = list()
+    #     for val in vals:
+    #         values.extend(law.util.brace_expand(val))
+    #     resolved_variables[var_group] = values[:]
+    
+    # cfg.x.variable_groups = resolved_variables
+
     # shift groups for conveniently looping over certain shifts
     # (used during plotting)
     cfg.x.shift_groups = {}
@@ -385,7 +433,10 @@ def add_config(
     # (used during plotting)
     cfg.x.general_settings_groups = {
         "compare_shapes": {"skip_ratio": True, "shape_norm": True, "cms_label": "simpw"},
+        
     }
+
+    cfg.x.default_general_settings = {"skip_ratio": True, "cms_label": "simpw"}
 
     # process_settings groups for conveniently looping over different values for the process-settings parameter
     # (used during plotting)
@@ -396,7 +447,7 @@ def add_config(
                       c3=str(c3).replace("-", "m").replace(".", "p"),
                       d4=str(d4).replace("-", "m").replace(".", "p"),
                       ) : {"unstack": True}
-                      for c3,d4 in morphing.all_cc}
+                      for c3,d4 in morphing.new}
     }
 
     # variable_settings groups for conveniently looping over different values for the variable-settings parameter
@@ -409,15 +460,48 @@ def add_config(
         "small_legend": {
             "legend_cfg": {"ncols": 2, "fontsize": 16, "columnspacing": 0.6},
         },
+        "small_legend_1col": {
+            "legend_cfg": {"ncols": 1, "fontsize": 18, "columnspacing": 0.6},
+        },
+        "big_legend": {
+            "legend_cfg": {"ncols": 1, "fontsize": 32, "columnspacing": 0.6},
+        },
     }
     cfg.x.default_custom_style_config = "small_legend"
 
     # selector step groups for conveniently looping over certain steps
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
-        "default": ["json", "trigger", "met_filter", "jet_veto_map", "lepton", "jet2", "bjet"],
-        "3b2tau": ["one_jet", "two_jet", "three_jet", "one_tau", "two_tau",],
+        "default": ["json", "trigger", "met_filter", "jet_veto_map", "lepton",],
+        "n_jet": ["one_jet", "two_jet", "three_jet", ],
+        "standard": ["dihiggs", "mutau", "three_jet", "one_btag", "two_btag", "three_btag",],
     }
+
+    # selector step labels (for cutflow plots)
+    cfg.x.selector_step_labels = {
+        "one_jet": r"$\geq$ 1 jet",
+        "two_jet": r"$\geq$ 2 jet",
+        "three_jet": r"$\geq$ 3 jet",
+        "four_jet": r"$\geq$ 4 jet",
+        "one_btag": r"$\geq$ 1 b",
+        "two_btag": r"$\geq$ 2 b",
+        "three_btag": r"$\geq$ 3 b",
+        "four_btag": r"$\geq$ 4 b",
+        "json": "DQM cut",
+        "trigger": "Trigger",
+        "met_filter": r"$\cancle{E}_{T} Filter$",
+        "jet_veto_map": "Jet Veto",
+        "lepton": r"e, $\mu$, $\tau$",
+        "jet2": "Jets (v2)",
+        "bjet": "Bjets",
+        "dihiggs": "HH",
+        "mutau": r"$\mu$ $\tau_h$",
+        "h3_mass": r"m_{h3}",
+        "leps_dr": r"\Delta R_{ll}",
+        "j1_pt": r"j_1 \ p_T",
+        "hhh": "HHH",
+    }
+
 
     # calibrator groups for conveniently looping over certain calibrators
     # (used during calibration)
@@ -425,7 +509,11 @@ def add_config(
 
     # producer groups for conveniently looping over certain producers
     # (used during the ProduceColumns task)
-    cfg.x.producer_groups = {}
+    cfg.x.producer_groups = {
+        "mds": ["default", "produce_genmatched_procids_mds",],
+        "chi2": ["default", "produce_genmatched_procids_chi2",],
+        "dhh": ["default", "produce_genmatched_procids_dhh",],
+    }
 
     # ml_model groups for conveniently looping over certain ml_models
     # (used during the machine learning tasks)
@@ -822,6 +910,25 @@ def add_config(
         )
 
     ################################################################################################
+    # dataset / process specific methods
+    ################################################################################################
+
+    # # top pt reweighting
+    # # https://twiki.cern.ch/twiki/bin/view/CMS/TopPtReweighting?rev=31
+    # from columnflow.production.cms.top_pt_weight import TopPtWeightConfig
+    # cfg.x.top_pt_weight = TopPtWeightConfig(
+    #     params={
+    #         "a": 0.0615,
+    #         "a_up": 0.0615 * 1.5,
+    #         "a_down": 0.0615 * 0.5,
+    #         "b": -0.0005,
+    #         "b_up": -0.0005 * 1.5,
+    #         "b_down": -0.0005 * 0.5,
+    #     },
+    #     pt_max=500.0,
+    # )
+
+    ################################################################################################
     # shifts
     ################################################################################################
 
@@ -1102,7 +1209,8 @@ def add_config(
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{json_pog_era}/btagging.json.gz", "v1"))
     # hh-btag repository (lightweight) with TF saved model directories
-    add_external("hh_btag_repo", ("https://github.com/hh-italian-group/HHbtag/archive/df5220db5d4a32d05dc81d652083aece8c99ccab.tar.gz", "v2"))  # noqa
+    add_external("hh_btag_repo", ("/afs/cern.ch/work/m/mrieger/public/hbt/external_files/hh-btag-master-d7a71eb3.tar.gz", "v3"))  # noqa
+    # add_external("hh_btag_repo", ("https://github.com/hh-italian-group/HHbtag/archive/df5220db5d4a32d05dc81d652083aece8c99ccab.tar.gz", "v2"))  # noqa
     # Tobias' tautauNN (https://github.com/uhh-cms/tautauNN)
     add_external("res_pdnn", ("/afs/cern.ch/work/m/mrieger/public/hbt/models/res_prod3/model_fold0.tgz", "v1"))
 
@@ -1156,7 +1264,10 @@ def add_config(
             # general event info, mandatory for reading files with coffea
             ColumnCollection.MANDATORY_COFFEA,  # additional columns can be added as strings, similar to object info
             # object info
-            "Jet.*", 
+            "Jet.{pt,eta,phi,mass,hadronFlavour,puId,hhbtag,btagPNet*,btagDeep*}",
+            "HHBJet.{pt,eta,phi,mass,hadronFlavour,puId,hhbtag,btagPNet*,btagDeep*}",
+            "GenMatchH1.{pt,eta,phi,mass,hadronFlavour,puId,hhbtag,btagPNet*,btagDeep*}",
+            "GenMatchH2.{pt,eta,phi,mass,hadronFlavour,puId,hhbtag,btagPNet*,btagDeep*}",
             "FatJet.*",          
             "MET.pt", "MET.phi", "MET.significance", "MET.covXX", "MET.covXY", "MET.covYY",
             "Muon.*",
@@ -1164,7 +1275,7 @@ def add_config(
             "Tau.*",
             "PV.npvs",
             "PFCandidate.*",
-            "GenJet.*", "GenJetAK8.*", "GenVisTau.*",
+            "GenJet.*", "GenJetAK8.*", "GenVisTau.*", "GenPart.*",
             # all columns added during selection using a ColumnCollection flag
             ColumnCollection.ALL_FROM_SELECTOR,
         },
@@ -1202,9 +1313,9 @@ def add_config(
     })
 
     # define per-dataset event weights
-    for dataset in cfg.datasets:
-        if dataset.has_tag("ttbar"):
-            dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
+    # for dataset in cfg.datasets:
+    #     if dataset.has_tag("has_top"):
+    #         dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
 
     # versions per task family, either referring to strings or to callables receving the invoking
     # task instance and parameters to be passed to the task family
@@ -1231,8 +1342,9 @@ def add_config(
     # note: it is recommended to always add an inclusive category with id=1 or name="incl" which is used
     #       in various places, e.g. for the inclusive cutflow plots and the "empty" selector
     
-    from hhh4b2tau.config.categories import add_categories
+    from hhh4b2tau.config.categories import add_categories, add_categories_incl_only
     add_categories(cfg)
+    # add_categories_incl_only(cfg) # use for cutflow and gen plots only
 
     from hhh4b2tau.config.variables import add_variables
     add_variables(cfg)
@@ -1258,6 +1370,32 @@ def add_config(
         add_triggers_2023(cfg)
     else:
         raise False
+    
+    ################################################################################################
+    # hist hooks
+    ################################################################################################
+
+    cfg.x.hist_hooks = DotDict.wrap()
+
+    # add a hist hook to work with histograms of data samples
+    # i.e. morph data for hypothetical coupling that has not been generated yet
+    # from hhh4b2tau.hist_hooks.morphing import morphing_hook as add_morphing_hooks
+    # add_morphing_hooks(cfg)
+    cfg.x.hist_hooks = DotDict.wrap({
+        "morphing": morphing.morphing_hook,
+    })
+
+    # simple blinding
+    cfg.x.hist_hooks.blind = lambda task, hists: {p: h for p, h in hists.items() if not p.is_data}
+
+    # qcd estimation
+    from hbt.hist_hooks.qcd import add_hooks as add_qcd_hooks
+    add_qcd_hooks(cfg)
+
+    # binning
+    # from hbt.hist_hooks.binning import add_hooks as add_binning_hooks
+    from hhh4b2tau.hist_hooks.binning import add_hooks as add_binning_hooks
+    add_binning_hooks(cfg)
 
     ################################################################################################
     # LFN settings
